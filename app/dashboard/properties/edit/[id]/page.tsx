@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import PropertyEditForm from "@/components/properties/property-edit-form"
-import { PropertyProvider } from "@/components/providers/property-provider"
+import { PropertyProvider } from "@/contexts/property-context"
 
 export default function PropertyEditPage() {
   const router = useRouter()
@@ -60,7 +60,7 @@ export default function PropertyEditPage() {
   }
 
   return (
-    <PropertyProvider propertyId={params?.id as string}>
+    <PropertyProvider>
       <PropertyEditForm propertyId={params?.id as string} />
     </PropertyProvider>
   )
