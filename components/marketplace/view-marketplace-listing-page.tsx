@@ -21,7 +21,7 @@ import { useMarketplace } from "@/contexts/marketplace-context"
 import { useMarketplacePermissions } from "@/hooks/use-marketplace-permissions"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { toast } from "sonner"
-import { formatCurrency, formatDate } from "@/lib/utils"
+import { formatCurrency } from "@/lib/utils"
 
 export function ViewMarketplaceListingPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -137,13 +137,13 @@ export function ViewMarketplaceListingPage({ params }: { params: { id: string } 
                             <ArrowLeft className="h-5 w-5 rotate-180" />
                           </button>
                           <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 space-x-1">
-                            {listing.images.map((_, index: number) => (
+                            {listing.images.map((_: string, index: number) => (
                               <button
-                                key={index}
-                                onClick={() => setCurrentImageIndex(index)}
-                                className={`h-2 w-2 rounded-full ${
-                                  index === currentImageIndex ? "bg-white" : "bg-white/50"
-                                }`}
+                              key={index}
+                              onClick={() => setCurrentImageIndex(index)}
+                              className={`h-2 w-2 rounded-full ${
+                                index === currentImageIndex ? "bg-white" : "bg-white/50"
+                              }`}
                               />
                             ))}
                           </div>
@@ -191,7 +191,7 @@ export function ViewMarketplaceListingPage({ params }: { params: { id: string } 
                     </div>
                     <div>
                       <h3 className="text-sm font-medium text-muted-foreground">Listed On</h3>
-                      <p className="text-lg font-semibold text-foreground">{formatDate(listing.createdAt)}</p>
+                      <p className="text-lg font-semibold text-foreground">{new Date(listing.createdAt).toLocaleDateString()}</p>
                     </div>
                   </div>
 
