@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import SignupForm from "@/components/auth/buyer-signup-form";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import SignupForm from "@/components/auth/buyer-signup-form";
 
 export default function SignupPage() {
   return (
