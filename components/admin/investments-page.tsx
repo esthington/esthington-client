@@ -1,506 +1,605 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import type React from "react";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
-  Plus,
+  Search,
+  MapPin,
+  Building,
   ArrowUpDown,
-  MoreHorizontal,
+  Grid3X3,
+  List,
+  Star,
+  TrendingUp,
+  Percent,
   Edit,
   Trash2,
   Eye,
-  Star,
-  TrendingUp,
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { AnimatedCard } from "@/components/ui/animated-card";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import FadeIn from "@/components/animations/fade-in"
-import type { ColumnDef } from "@tanstack/react-table"
-import { DataTable } from "@/lib/table-utils"
-import Image from "next/image"
-import { useInvestments } from "@/contexts/investments-context"
-import type { Investment } from "@/contexts/investments-context"
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import FadeIn from "@/components/animations/fade-in";
+import StaggerChildren from "@/components/animations/stagger-children";
+import StaggerItem from "@/components/animations/stagger-item";
+import Image from "next/image";
+import { useInvestment } from "@/contexts/investments-context";
+import { useAuth } from "@/contexts/auth-context";
 
-export function AdminInvestmentsPage() {
-  const router = useRouter()
+export default function InvestmentsPage() {
+  const router = useRouter();
+  const { user } = useAuth();
   const {
-    investments,
+    filteredInvestments,
     isLoading,
-    deleteInvestment,
-    toggleFeatured,
-    toggleTrending,
-    changeInvestmentStatus,
+    filters,
+    // sortOption,
+    setFilters,
+    // setSortOption,
     fetchInvestments,
-  } = useInvestments()
+  } = useInvestment();
 
-  const [selectedInvestment, setSelectedInvestment] = useState<Investment | null>(null)
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [showStatusDialog, setShowStatusDialog] = useState(false)
-  const [newStatus, setNewStatus] = useState<"active" | "pending" | "closed">("active")
-  const [activeTab, setActiveTab] = useState("all")
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
   useEffect(() => {
-    fetchInvestments()
-  }, [fetchInvestments])
+    fetchInvestments();
+  }, []);
 
-  const handleViewInvestment = (investment: Investment) => {
-    router.push(`/dashboard/admin/investments/${investment.id}`)
-  }
+  // Update search query and filter investments
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    // We'll handle search in the UI for now, but in a real app this would be part of the context filters
+  };
 
-  const handleEditInvestment = (investment: Investment) => {
-    router.push(`/dashboard/admin/investments/edit/${investment.id}`)
-  }
-
-  const handleDeleteInvestment = (investment: Investment) => {
-    setSelectedInvestment(investment)
-    setShowDeleteDialog(true)
-  }
-
-  const handleChangeStatus = (investment: Investment, status: "active" | "pending" | "closed") => {
-    setSelectedInvestment(investment)
-    setNewStatus(status)
-    setShowStatusDialog(true)
-  }
-
-  const confirmDelete = async () => {
-    if (selectedInvestment) {
-      await deleteInvestment(selectedInvestment.id)
-      setShowDeleteDialog(false)
+  // Filter by search query locally (this could be moved to the context in a real app)
+  const searchFilteredInvestments = filteredInvestments.filter((property) => {
+    if (
+      searchQuery &&
+      !property.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      !property.propertyId?.location
+        ?.toLowerCase()
+        .includes(searchQuery.toLowerCase())
+    ) {
+      return false;
     }
-  }
+    return true;
+  });
 
-  const confirmStatusChange = async () => {
-    if (selectedInvestment) {
-      await changeInvestmentStatus(selectedInvestment.id, newStatus)
-      setShowStatusDialog(false)
+  const handleInvestNow = (id: string) => {
+    router.push(`/dashboard/invest-now?propertyId=${id}`);
+  };
+
+  const handleViewDetails = (id: string) => {
+    router.push(`/dashboard/investments/${id}`);
+  };
+
+  const handleEditInvestment = (id: string) => {
+    router.push(`/dashboard/investments/edit/${id}`);
+  };
+
+  const handleDeleteInvestment = (id: string) => {
+    // Implement delete confirmation dialog here
+    if (window.confirm("Are you sure you want to delete this investment?")) {
+      // Call delete function from context
     }
-  }
+  };
 
-  const handleToggleFeatured = async (id: string) => {
-    await toggleFeatured(id)
-  }
-
-  const handleToggleTrending = async (id: string) => {
-    await toggleTrending(id)
-  }
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "active":
-        return <Badge className="bg-green-500 hover:bg-green-600">Active</Badge>
-      case "pending":
-        return <Badge className="bg-amber-500 hover:bg-amber-600">Pending</Badge>
-      case "closed":
-        return <Badge className="bg-gray-500 hover:bg-gray-600">Closed</Badge>
-      default:
-        return <Badge>Unknown</Badge>
-    }
-  }
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "active":
-        return <CheckCircle className="h-4 w-4 text-green-500" />
-      case "pending":
-        return <AlertTriangle className="h-4 w-4 text-amber-500" />
-      case "closed":
-        return <XCircle className="h-4 w-4 text-gray-500" />
-      default:
-        return null
-    }
-  }
-
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat("en-NG", {
       style: "currency",
       currency: "NGN",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(amount)
-  }
-
-  const columns: ColumnDef<Investment>[] = [
-    {
-      accessorKey: "title",
-      header: "Investment",
-      cell: ({ row }) => {
-        const investment = row.original
-        return (
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-md overflow-hidden">
-              <Image
-                src={investment.images[0] || "/placeholder.svg"}
-                alt={investment.title}
-                width={40}
-                height={40}
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <div>
-              <div className="font-medium">{investment.title}</div>
-              <div className="text-sm text-muted-foreground">{investment.location}</div>
-            </div>
-          </div>
-        )
-      },
-    },
-    {
-      accessorKey: "price",
-      header: ({ column }) => {
-        return (
-          <div className="text-right">
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-              Value
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        )
-      },
-      cell: ({ row }) => <div className="text-right">{formatCurrency(row.original.price)}</div>,
-    },
-    {
-      accessorKey: "returnRate",
-      header: ({ column }) => {
-        return (
-          <div className="text-center">
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-              ROI
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        )
-      },
-      cell: ({ row }) => (
-        <div className="text-center">
-          <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-200">
-            {row.original.returnRate}%
-          </Badge>
-        </div>
-      ),
-    },
-    {
-      accessorKey: "funded",
-      header: ({ column }) => {
-        return (
-          <div className="text-center">
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-              Funded
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        )
-      },
-      cell: ({ row }) => (
-        <div className="text-center">
-          <div className="flex items-center justify-center">
-            <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div className="h-full bg-blue-500" style={{ width: `${row.original.funded}%` }} />
-            </div>
-            <span className="ml-2 text-sm">{row.original.funded}%</span>
-          </div>
-        </div>
-      ),
-    },
-    {
-      accessorKey: "status",
-      header: ({ column }) => {
-        return (
-          <div className="text-center">
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-              Status
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        )
-      },
-      cell: ({ row }) => {
-        const status = row.original.status
-        return (
-          <div className="flex items-center justify-center gap-2">
-            {getStatusIcon(status)}
-            <span className="capitalize">{status}</span>
-          </div>
-        )
-      },
-    },
-    {
-      accessorKey: "createdAt",
-      header: ({ column }) => {
-        return (
-          <div className="text-center">
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-              Created
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        )
-      },
-      cell: ({ row }) => <div className="text-center">{row.original.createdAt}</div>,
-    },
-    {
-      id: "actions",
-      cell: ({ row }) => {
-        const investment = row.original
-        return (
-          <div className="text-right">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <MoreHorizontal className="h-4 w-4" />
-                  <span className="sr-only">Open menu</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleViewInvestment(investment)}>
-                  <Eye className="mr-2 h-4 w-4" />
-                  View Details
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleEditInvestment(investment)}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit Investment
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => handleToggleFeatured(investment.id)}>
-                  <Star className="mr-2 h-4 w-4" />
-                  {investment.featured ? "Remove Featured" : "Mark as Featured"}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleToggleTrending(investment.id)}>
-                  <TrendingUp className="mr-2 h-4 w-4" />
-                  {investment.trending ? "Remove Trending" : "Mark as Trending"}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                {investment.status !== "active" && (
-                  <DropdownMenuItem onClick={() => handleChangeStatus(investment, "active")}>
-                    <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                    Activate
-                  </DropdownMenuItem>
-                )}
-                {investment.status !== "pending" && (
-                  <DropdownMenuItem onClick={() => handleChangeStatus(investment, "pending")}>
-                    <AlertTriangle className="mr-2 h-4 w-4 text-amber-500" />
-                    Set to Pending
-                  </DropdownMenuItem>
-                )}
-                {investment.status !== "closed" && (
-                  <DropdownMenuItem onClick={() => handleChangeStatus(investment, "closed")}>
-                    <XCircle className="mr-2 h-4 w-4 text-gray-500" />
-                    Close Investment
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => handleDeleteInvestment(investment)}
-                  className="text-red-500 focus:text-red-500"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Investment
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )
-      },
-    },
-  ]
-
-  const filteredInvestments = () => {
-    switch (activeTab) {
-      case "active":
-        return investments.filter((inv) => inv.status === "active")
-      case "pending":
-        return investments.filter((inv) => inv.status === "pending")
-      case "closed":
-        return investments.filter((inv) => inv.status === "closed")
-      case "featured":
-        return investments.filter((inv) => inv.featured)
-      default:
-        return investments
-    }
-  }
+    }).format(amount);
+  };
 
   return (
-    <FadeIn>
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="space-y-6">
+      <FadeIn>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Investment Management</h1>
-            <p className="text-muted-foreground">Create and manage investment opportunities</p>
+            <h1 className="text-2xl font-bold text-white">
+              Estate Investments
+            </h1>
+            <p className="text-gray-400 mt-1">
+              Discover and invest in premium real estate opportunities
+            </p>
           </div>
-          <Button onClick={() => router.push("/dashboard/admin/investments/create")}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Investment
-          </Button>
         </div>
+      </FadeIn>
 
-        <Tabs defaultValue="all" onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="all">All Investments</TabsTrigger>
-            <TabsTrigger value="active">Active</TabsTrigger>
-            <TabsTrigger value="pending">Pending</TabsTrigger>
-            <TabsTrigger value="closed">Closed</TabsTrigger>
-            <TabsTrigger value="featured">Featured</TabsTrigger>
-          </TabsList>
+      <FadeIn delay={0.1}>
+        <div className="mb-4">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>All Investments</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+      </FadeIn>
 
-          <TabsContent value="all" className="mt-4">
-            <DataTable
-              columns={columns}
-              data={filteredInvestments()}
-              searchPlaceholder="Search investments..."
-              searchColumn="title"
-            />
-          </TabsContent>
-
-          <TabsContent value="active" className="mt-4">
-            <DataTable
-              columns={columns}
-              data={filteredInvestments()}
-              searchPlaceholder="Search active investments..."
-              searchColumn="title"
-            />
-          </TabsContent>
-
-          <TabsContent value="pending" className="mt-4">
-            <DataTable
-              columns={columns}
-              data={filteredInvestments()}
-              searchPlaceholder="Search pending investments..."
-              searchColumn="title"
-            />
-          </TabsContent>
-
-          <TabsContent value="closed" className="mt-4">
-            <DataTable
-              columns={columns}
-              data={filteredInvestments()}
-              searchPlaceholder="Search closed investments..."
-              searchColumn="title"
-            />
-          </TabsContent>
-
-          <TabsContent value="featured" className="mt-4">
-            <DataTable
-              columns={columns}
-              data={filteredInvestments()}
-              searchPlaceholder="Search featured investments..."
-              searchColumn="title"
-            />
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      {/* Delete Dialog */}
-      {selectedInvestment && (
-        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Delete Investment</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete this investment? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="flex items-center gap-4 py-4">
-              <div className="h-12 w-12 rounded-md overflow-hidden">
-                <Image
-                  src={selectedInvestment.images[0] || "/placeholder.svg"}
-                  alt={selectedInvestment.title}
-                  width={48}
-                  height={48}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-
-              <div>
-                <h3 className="font-medium">{selectedInvestment.title}</h3>
-                <p className="text-sm text-muted-foreground">{selectedInvestment.location}</p>
-              </div>
+      <FadeIn delay={0.2}>
+        <AnimatedCard className="p-6 bg-[#0F0F12]/80 backdrop-blur-xl border-[#1F1F23]">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search investments..."
+                className="pl-10 bg-[#1F1F23]/50 border-[#2B2B30]"
+                value={searchQuery}
+                onChange={handleSearchChange}
+              />
             </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={confirmDelete}>
-                Delete Investment
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Status Change Dialog */}
-      {selectedInvestment && (
-        <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Change Investment Status</DialogTitle>
-              <DialogDescription>
-                {newStatus === "active"
-                  ? "Are you sure you want to activate this investment? It will be visible to all users."
-                  : newStatus === "pending"
-                    ? "Are you sure you want to set this investment to pending? It will be hidden from users."
-                    : "Are you sure you want to close this investment? No new investments will be accepted."}
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="flex items-center gap-4 py-4">
-              <div className="h-12 w-12 rounded-md overflow-hidden">
-                <Image
-                  src={selectedInvestment.images[0] || "/placeholder.svg"}
-                  alt={selectedInvestment.title}
-                  width={48}
-                  height={48}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-
-              <div>
-                <h3 className="font-medium">{selectedInvestment.title}</h3>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-sm text-muted-foreground">Current status:</span>
-                  {getStatusBadge(selectedInvestment.status)}
-                </div>
-              </div>
-            </div>
-
-            <div className="py-2">
-              <p className="text-sm font-medium mb-2">New status:</p>
-              {getStatusBadge(newStatus)}
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowStatusDialog(false)}>
-                Cancel
-              </Button>
-              <Button
-                variant={newStatus === "active" ? "default" : newStatus === "pending" ? "secondary" : "outline"}
-                onClick={confirmStatusChange}
+            <div className="flex flex-wrap gap-2">
+              <Select
+                value={filters.location}
+                onValueChange={(value) => setFilters({ location: value })}
               >
-                Confirm Change
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
-    </FadeIn>
-  )
+                <SelectTrigger className="w-[140px] bg-[#1F1F23]/50 border-[#2B2B30]">
+                  <MapPin className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Location" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1F1F23] border-[#2B2B30]">
+                  <SelectItem value="all">All Locations</SelectItem>
+                  <SelectItem value="Lagos">Lagos</SelectItem>
+                  <SelectItem value="Abuja">Abuja</SelectItem>
+                  <SelectItem value="Port Harcourt">Port Harcourt</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={filters.type}
+                onValueChange={(value) => setFilters({ type: value })}
+              >
+                <SelectTrigger className="w-[140px] bg-[#1F1F23]/50 border-[#2B2B30]">
+                  <Building className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Property Type" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1F1F23] border-[#2B2B30]">
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="Residential">Residential</SelectItem>
+                  <SelectItem value="Commercial">Commercial</SelectItem>
+                  <SelectItem value="Industrial">Industrial</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={filters.sortBy}
+                onValueChange={(value) => setFilters({ sortBy: value })}
+              >
+                <SelectTrigger className="w-[140px] bg-[#1F1F23]/50 border-[#2B2B30]">
+                  <ArrowUpDown className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Sort By" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1F1F23] border-[#2B2B30]">
+                  <SelectItem value="trending">Trending</SelectItem>
+                  <SelectItem value="featured">Featured</SelectItem>
+                  <SelectItem value="returnRate-high">
+                    Return Rate (High)
+                  </SelectItem>
+                  <SelectItem value="returnRate-low">
+                    Return Rate (Low)
+                  </SelectItem>
+                  <SelectItem value="target-high">Price (High)</SelectItem>
+                  <SelectItem value="target-low">Price (Low)</SelectItem>
+                  <SelectItem value="funded-high">Funding (High)</SelectItem>
+                  <SelectItem value="funded-low">Funding (Low)</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Tabs
+                defaultValue={viewMode}
+                onValueChange={(value) => setViewMode(value as "grid" | "list")}
+              >
+                <TabsList className="h-10 bg-[#1F1F23]/50 border-[#2B2B30]">
+                  <TabsTrigger
+                    value="grid"
+                    className="px-3 data-[state=active]:bg-[#2B2B30]"
+                  >
+                    <Grid3X3 className="h-4 w-4" />
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="list"
+                    className="px-3 data-[state=active]:bg-[#2B2B30]"
+                  >
+                    <List className="h-4 w-4" />
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-400">Return Rate:</span>
+                <span className="text-sm font-medium text-white">
+                  {filters.returnRateRange[0]}% - {filters.returnRateRange[1]}%
+                </span>
+              </div>
+              <div className="w-full sm:w-1/2">
+                <Slider
+                  value={filters.returnRateRange}
+                  min={5}
+                  max={20}
+                  step={1}
+                  onValueChange={(value) =>
+                    setFilters({ returnRateRange: value as [number, number] })
+                  }
+                  className="w-full"
+                />
+              </div>
+            </div>
+          </div>
+        </AnimatedCard>
+      </FadeIn>
+
+      <FadeIn delay={0.3}>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <LoadingSpinner size="lg" />
+          </div>
+        ) : searchFilteredInvestments.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <Building className="h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-white mb-2">
+              No properties found
+            </h3>
+            <p className="text-gray-400 max-w-md">
+              We couldn't find any properties matching your search criteria. Try
+              adjusting your filters or search query.
+            </p>
+          </div>
+        ) : viewMode === "grid" ? (
+          <StaggerChildren className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {searchFilteredInvestments.map((property) => (
+              <StaggerItem key={property._id}>
+                <AnimatedCard className="overflow-hidden bg-[#0F0F12]/80 backdrop-blur-xl border-[#1F1F23] hover:border-blue-500/50 transition-all duration-300">
+                  <div className="relative">
+                    <div className="relative h-48 w-full">
+                      <Image
+                        src={
+                          typeof property.propertyId === "object" &&
+                          property.propertyId?.thumbnail
+                            ? property.propertyId.thumbnail
+                            : "/placeholder.svg?height=400&width=600&query=property"
+                        }
+                        alt={property.title}
+                        fill
+                        className="object-cover transition-transform duration-500 hover:scale-110"
+                      />
+                    </div>
+                    <div className="absolute top-2 right-2 flex gap-1">
+                      {property.featured && (
+                        <Badge
+                          variant="default"
+                          className="bg-blue-500 hover:bg-blue-600"
+                        >
+                          <Star className="h-3 w-3 mr-1" /> Featured
+                        </Badge>
+                      )}
+                      {property.trending && (
+                        <Badge
+                          variant="default"
+                          className="bg-purple-500 hover:bg-purple-600"
+                        >
+                          <TrendingUp className="h-3 w-3 mr-1" /> Trending
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                      <div className="flex justify-between items-center">
+                        <Badge
+                          variant="outline"
+                          className="bg-black/50 backdrop-blur-md border-white/20 text-white"
+                        >
+                          {typeof property.propertyId === "object"
+                            ? property.propertyId?.type
+                            : "Real Estate"}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className="bg-blue-500/80 backdrop-blur-md border-blue-400/30 text-white"
+                        >
+                          <Percent className="h-3 w-3 mr-1" />{" "}
+                          {property.returnRate}% ROI
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <h3 className="text-lg font-semibold text-white mb-1 line-clamp-1">
+                      {property.title}
+                    </h3>
+                    <div className="flex items-center text-sm text-gray-400 mb-3">
+                      <MapPin className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
+                      <span className="truncate">
+                        {typeof property.propertyId === "object"
+                          ? property.propertyId?.location
+                          : "Nigeria"}
+                      </span>
+                    </div>
+
+                    <div className="space-y-3 mb-4">
+                      <div>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-gray-400">
+                            Funding Progress
+                          </span>
+                          <span className="text-white font-medium">
+                            {property.percentageFunded}%
+                          </span>
+                        </div>
+                        <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                            style={{ width: `${property.percentageFunded}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-400">
+                        <span>
+                          Target: {formatCurrency(property.targetAmount)}
+                        </span>
+                        <span>{property.totalInvestors} investors</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-xs text-gray-400">
+                          Minimum Investment
+                        </div>
+                        <div className="text-white font-semibold">
+                          {formatCurrency(property.minimumInvestment)}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => handleViewDetails(property._id)}
+                          variant="outline"
+                          size="sm"
+                          className="border-blue-500/30 hover:bg-blue-500/10 text-blue-400"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+
+                        {isAdmin ? (
+                          <>
+                            <Button
+                              onClick={() => handleEditInvestment(property._id)}
+                              variant="outline"
+                              size="sm"
+                              className="border-amber-500/30 hover:bg-amber-500/10 text-amber-400"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              onClick={() =>
+                                handleDeleteInvestment(property._id)
+                              }
+                              variant="outline"
+                              size="sm"
+                              className="border-red-500/30 hover:bg-red-500/10 text-red-400"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            onClick={() => handleInvestNow(property._id)}
+                            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0"
+                          >
+                            Invest Now
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </AnimatedCard>
+              </StaggerItem>
+            ))}
+          </StaggerChildren>
+        ) : (
+          <StaggerChildren className="space-y-4">
+            {searchFilteredInvestments.map((property) => (
+              <StaggerItem key={property._id}>
+                <AnimatedCard className="overflow-hidden bg-[#0F0F12]/80 backdrop-blur-xl border-[#1F1F23] hover:border-blue-500/50 transition-all duration-300">
+                  <div className="flex flex-col sm:flex-row">
+                    <div className="relative sm:w-64 h-48 sm:h-auto flex-shrink-0">
+                      <Image
+                        src={
+                          typeof property.propertyId === "object" &&
+                          property.propertyId?.thumbnail
+                            ? property.propertyId.thumbnail
+                            : "/placeholder.svg?height=400&width=600&query=property"
+                        }
+                        alt={property.title}
+                        fill
+                        className="object-cover transition-transform duration-500 hover:scale-110"
+                      />
+                      <div className="absolute top-2 right-2 flex gap-1">
+                        {property.featured && (
+                          <Badge
+                            variant="default"
+                            className="bg-blue-500 hover:bg-blue-600"
+                          >
+                            <Star className="h-3 w-3 mr-1" /> Featured
+                          </Badge>
+                        )}
+                        {property.trending && (
+                          <Badge
+                            variant="default"
+                            className="bg-purple-500 hover:bg-purple-600"
+                          >
+                            <TrendingUp className="h-3 w-3 mr-1" /> Trending
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="p-4 flex-1">
+                      <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                        <div>
+                          <h3 className="text-lg font-semibold text-white">
+                            {property.title}
+                          </h3>
+                          <div className="flex items-center text-sm text-gray-400">
+                            <MapPin className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
+                            <span>
+                              {typeof property.propertyId === "object"
+                                ? property.propertyId?.location
+                                : "Nigeria"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Badge
+                            variant="outline"
+                            className="bg-black/50 backdrop-blur-md border-white/20 text-white"
+                          >
+                            {typeof property.propertyId === "object"
+                              ? property.propertyId?.type
+                              : "Real Estate"}
+                          </Badge>
+                          <Badge
+                            variant="outline"
+                            className="bg-blue-500/80 backdrop-blur-md border-blue-400/30 text-white"
+                          >
+                            <Percent className="h-3 w-3 mr-1" />{" "}
+                            {property.returnRate}% ROI
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div className="space-y-3">
+                          <div>
+                            <div className="flex justify-between text-xs mb-1">
+                              <span className="text-gray-400">
+                                Funding Progress
+                              </span>
+                              <span className="text-white font-medium">
+                                {property.percentageFunded}%
+                              </span>
+                            </div>
+                            <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                                style={{
+                                  width: `${property.percentageFunded}%`,
+                                }}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex justify-between text-xs text-gray-400">
+                            <span>
+                              Target: {formatCurrency(property.targetAmount)}
+                            </span>
+                            <span>{property.totalInvestors} investors</span>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col justify-between">
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div>
+                              <div className="text-xs text-gray-400">
+                                Min Investment
+                              </div>
+                              <div className="text-white font-medium">
+                                {formatCurrency(property.minimumInvestment)}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-gray-400">
+                                Period
+                              </div>
+                              <div className="text-white font-medium">
+                                {property.investmentPeriod} months
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex gap-2 mt-2">
+                            <Button
+                              onClick={() => handleViewDetails(property._id)}
+                              variant="outline"
+                              size="sm"
+                              className="border-blue-500/30 hover:bg-blue-500/10 text-blue-400"
+                            >
+                              <Eye className="h-4 w-4 mr-1" /> View Details
+                            </Button>
+
+                            {isAdmin ? (
+                              <>
+                                <Button
+                                  onClick={() =>
+                                    handleEditInvestment(property._id)
+                                  }
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-amber-500/30 hover:bg-amber-500/10 text-amber-400"
+                                >
+                                  <Edit className="h-4 w-4 mr-1" /> Edit
+                                </Button>
+                                <Button
+                                  onClick={() =>
+                                    handleDeleteInvestment(property._id)
+                                  }
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-red-500/30 hover:bg-red-500/10 text-red-400"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-1" /> Delete
+                                </Button>
+                              </>
+                            ) : (
+                              <Button
+                                onClick={() => handleInvestNow(property._id)}
+                                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0"
+                              >
+                                Invest Now
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </AnimatedCard>
+              </StaggerItem>
+            ))}
+          </StaggerChildren>
+        )}
+      </FadeIn>
+    </div>
+  );
 }

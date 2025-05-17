@@ -2,7 +2,32 @@
 
 import type React from "react";
 
-import { Home, Building, Settings, LogOut, User, HelpCircle, Menu, LinkIcon, ArrowUpRight, History, Briefcase, Star, ShoppingBag, ChevronDown, ChevronRight, Wallet, CreditCard, BanknoteIcon as Bank, ArrowDownCircle, Bell, Shield, Users, Map, Landmark } from 'lucide-react';
+import {
+  Home,
+  Building,
+  Settings,
+  LogOut,
+  User,
+  HelpCircle,
+  Menu,
+  LinkIcon,
+  ArrowUpRight,
+  History,
+  Briefcase,
+  Star,
+  ShoppingBag,
+  ChevronDown,
+  ChevronRight,
+  Wallet,
+  CreditCard,
+  BanknoteIcon as Bank,
+  ArrowDownCircle,
+  Bell,
+  Shield,
+  Users,
+  Map,
+  Landmark,
+} from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import Image from "next/image";
@@ -330,18 +355,7 @@ export default function AgentSidebar() {
                           <NavItem href="/dashboard/marketplace" icon={Map}>
                             Marketplace
                           </NavItem>
-                          <NavItem
-                            href="/dashboard/marketplace/add"
-                            icon={Building}
-                          >
-                            Add Listing
-                          </NavItem>
-                          <NavItem
-                            href="/dashboard/marketplace/manage"
-                            icon={Briefcase}
-                          >
-                            Manage Listings
-                          </NavItem>
+
                           <NavItem
                             href="/dashboard/my-purchases"
                             icon={Landmark}

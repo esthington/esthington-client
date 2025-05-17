@@ -4,14 +4,13 @@ import { SystemProvider } from "@/contexts/system-context"
 import { SecurityProvider } from "@/contexts/security-context"
 import { NotificationsProvider } from "@/contexts/notifications-context"
 import { MarketplaceProvider } from "@/contexts/marketplace-context"
-import { PurchasesProvider } from "@/contexts/purchases-context"
 import { ManagementProvider } from "@/contexts/management-context"
 import { ReferralsProvider } from "@/contexts/referrals-context"
 import { PropertyProvider } from "@/contexts/property-context"
-import { InvestmentsProvider } from "@/contexts/investments-context"
 import { WalletProvider } from "@/contexts/wallet-context"
 // Add UIProvider import
 import { UIProvider } from "@/contexts/ui-context"
+import { InvestmentProvider } from "@/contexts/investments-context"
 
 export default function DashboardLayout({
   children,
@@ -23,21 +22,21 @@ export default function DashboardLayout({
       <SecurityProvider>
         <NotificationsProvider>
           <MarketplaceProvider>
-            <PurchasesProvider>
+            <PropertyProvider>
               <ManagementProvider>
                 <ReferralsProvider>
                   <PropertyProvider>
-                    <InvestmentsProvider>
+                    <InvestmentProvider>
                       <WalletProvider>
                         <UIProvider>
                           <Layout>{children}</Layout>
                         </UIProvider>
                       </WalletProvider>
-                    </InvestmentsProvider>
+                    </InvestmentProvider>
                   </PropertyProvider>
                 </ReferralsProvider>
               </ManagementProvider>
-            </PurchasesProvider>
+            </PropertyProvider>
           </MarketplaceProvider>
         </NotificationsProvider>
       </SecurityProvider>

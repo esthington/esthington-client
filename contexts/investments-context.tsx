@@ -1,809 +1,889 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { createContext, useContext, useState, useEffect, useCallback } from "react"
-import { useRouter } from "next/navigation"
-import { successToast, errorToast } from "@/lib/toast"
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from "react";
+import { toast } from "sonner";
+import { apiConfig, apiConfigFile } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
+import { useWallet } from "@/contexts/wallet-context";
 
-// Define types for our context
-type InvestmentStatus = "active" | "pending" | "closed"
-
-interface InvestmentProperty {
-  id: string
-  title: string
-  location: string
+// Enums
+export enum InvestmentStatus {
+  DRAFT = "draft",
+  PENDING = "pending",
+  ACTIVE = "active",
+  COMPLETED = "completed",
+  CANCELLED = "cancelled",
 }
 
-interface InvestmentUser {
-  id: string
-  name: string
-  email: string
-  avatar: string
+export enum ReturnType {
+  FIXED = "fixed",
+  VARIABLE = "variable",
+  PROFIT_SHARING = "profit_sharing",
 }
 
-interface InvestmentDocument {
-  name: string
-  size: number
-  url: string
+export enum PayoutFrequency {
+  MONTHLY = "monthly",
+  QUARTERLY = "quarterly",
+  SEMI_ANNUALLY = "semi_annually",
+  ANNUALLY = "annually",
+  END_OF_TERM = "end_of_term",
 }
 
-export interface Investment {
-  id: string
-  title: string
-  description: string
-  location: string
-  price: number
-  type: string
-  returnRate: number
-  investmentPeriod: string
-  minInvestment: number
-  totalInvestors: number
-  funded: number
-  target: number
-  status: InvestmentStatus
-  featured: boolean
-  trending: boolean
-  createdAt: string
-  amenities?: string[]
-  images: string[]
-  documents?: InvestmentDocument[]
-  investors?: {
-    id: string
-    name: string
-    amount: number
-    date: string
-  }[]
-  companyId?: string
+export enum InvestmentCategory {
+  REAL_ESTATE = "real_estate",
 }
 
-interface InvestmentFilters {
-  location: string
-  type: string
-  returnRateRange: [number, number]
-  priceRange: [number, number]
-  status?: InvestmentStatus
-  featured?: boolean
-  trending?: boolean
-}
+// Types
+export type PropertyType = {
+  _id: string;
+  title: string;
+  location: string;
+  price: number;
+  type: string;
+  thumbnail?: string;
+  investmentId?: string;
+};
 
-interface InvestmentSortOption {
-  field: string
-  direction: "asc" | "desc"
-}
+export type InvestmentDetailsType = {
+  _id: string;
+  title: string;
+  description: string;
+  propertyId: PropertyType;
+  location: string;
+  minimumInvestment: number;
+  targetAmount: number;
+  raisedAmount: number;
+  returnRate: number;
+  returnType: ReturnType;
+  durations: [];
+  payoutFrequency: PayoutFrequency;
+  investmentPlans: [];
+  investmentPeriod: string;
+  riskLevel: string;
+  startDate: string;
+  minInvestment: string;
+  maxInvestors: string;
+  endDate: string;
+  status: InvestmentStatus;
+  type: InvestmentCategory;
+  featured: boolean;
+  trending: boolean;
+  investors: {
+    userId: string;
+    amount: number;
+    date: string;
+  }[];
+  totalInvestors: number;
+  documents: string[];
+  amenities: string[];
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  percentageFunded: number;
+  remainingAmount: number;
+};
 
-interface InvestmentContextType {
+export type UserInvestmentType = {
+  _id: string;
+  userId: string;
+  investmentId: string | InvestmentDetailsType;
+  amount: number;
+  status: InvestmentStatus;
+  startDate: string;
+  endDate: string;
+  expectedReturn: number;
+  actualReturn: number;
+  nextPayoutDate?: string;
+  payouts: {
+    date: string;
+    amount: number;
+    status: "pending" | "paid" | "failed";
+    transactionId?: string;
+  }[];
+  createdAt: string;
+  updatedAt: string;
+  totalPayouts: number;
+  remainingPayouts: number;
+};
+
+export type InvestmentFilterType = {
+  searchQuery: string;
+  location: string;
+  type: string;
+  returnRateRange: [number, number];
+  priceRange: [number, number];
+  status?: InvestmentStatus;
+  featured?: boolean;
+  trending?: boolean;
+  sortBy: string;
+  viewMode: "grid" | "list";
+};
+
+// Context type
+type InvestmentContextType = {
   // State
-  investments: Investment[]
-  userInvestments: Investment[]
-  filteredInvestments: Investment[]
-  selectedInvestment: Investment | null
-  isLoading: boolean
-  isSubmitting: boolean
-  filters: InvestmentFilters
-  sortOption: InvestmentSortOption
+  investments: InvestmentDetailsType[];
+  filteredInvestments: InvestmentDetailsType[];
+  userInvestments: UserInvestmentType[];
+  availableProperties: PropertyType[];
+  selectedInvestment: InvestmentDetailsType | null;
+  filters: InvestmentFilterType;
 
-  // Actions - General
-  fetchInvestments: () => Promise<void>
-  fetchUserInvestments: () => Promise<void>
-  getInvestmentById: (id: string) => Promise<Investment | null>
-  setFilters: (filters: Partial<InvestmentFilters>) => void
-  setSortOption: (option: InvestmentSortOption) => void
-  clearFilters: () => void
+  // Filter actions
+  setFilters: (filters: Partial<InvestmentFilterType>) => void;
+  resetFilters: () => void;
 
-  // Actions - Admin
-  createInvestment: (investment: Partial<Investment>) => Promise<boolean>
-  updateInvestment: (id: string, data: Partial<Investment>) => Promise<boolean>
-  deleteInvestment: (id: string) => Promise<boolean>
-  toggleFeatured: (id: string) => Promise<boolean>
-  toggleTrending: (id: string) => Promise<boolean>
-  changeInvestmentStatus: (id: string, status: InvestmentStatus) => Promise<boolean>
+  // Data fetching
+  fetchInvestments: () => Promise<void>;
+  fetchUserInvestments: () => Promise<void>;
+  fetchAvailableProperties: () => Promise<void>;
+  getInvestmentById: (id: string) => Promise<InvestmentDetailsType | null>;
+  getProperties: (params?: {}) => Promise<any>; // Add this line
 
-  // Actions - User
-  investInProperty: (investmentId: string, amount: number) => Promise<boolean>
-}
+  // CRUD operations
+  createInvestment: (formData: FormData) => Promise<string | null>;
+  updateInvestment: (id: string, formData: FormData) => Promise<boolean>;
+  deleteInvestment: (id: string) => Promise<boolean>;
 
-// Create the context
-const InvestmentsContext = createContext<InvestmentContextType | undefined>(undefined)
+  // Status operations
+  toggleFeatured: (id: string) => Promise<boolean>;
+  toggleTrending: (id: string) => Promise<boolean>;
+  changeInvestmentStatus: (
+    id: string,
+    status: InvestmentStatus
+  ) => Promise<boolean>;
 
-// Mock data for investments
-const mockInvestments: Investment[] = [
-  {
-    id: "1",
-    title: "Luxury Apartment Complex",
-    description:
-      "A premium residential development featuring 24 luxury apartments in the heart of Lagos. Each unit comes with high-end finishes, smart home technology, and access to exclusive amenities including a rooftop infinity pool, fitness center, and 24/7 security.",
-    location: "Lagos, Nigeria",
-    price: 250000000,
-    type: "Residential",
-    returnRate: 12,
-    investmentPeriod: "36 months",
-    minInvestment: 100000,
-    totalInvestors: 45,
-    funded: 75,
-    target: 250000000,
-    status: "active",
-    featured: true,
-    trending: true,
-    createdAt: "2023-05-15",
-    amenities: [
-      "Swimming Pool",
-      "Gym",
-      "24/7 Security",
-      "Parking",
-      "Smart Home Features",
-      "Rooftop Garden",
-      "Children's Play Area",
-      "Backup Power",
-    ],
-    images: [
-      "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fHJlYWwlMjBlc3RhdGV8ZW58MHx8MHx8fDA%3D",
-      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fGx1eHVyeSUyMGFwYXJ0bWVudHxlbnwwfHwwfHx8MA%3D%3D",
-      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YXBhcnRtZW50JTIwYnVpbGRpbmd8ZW58MHx8MHx8fDA%3D",
-    ],
-    documents: [
-      { name: "Investment Prospectus.pdf", size: 2.4, url: "#" },
-      { name: "Financial Projections.pdf", size: 1.8, url: "#" },
-      { name: "Legal Documentation.pdf", size: 3.2, url: "#" },
-    ],
-    investors: [
-      { id: "1", name: "John Doe", amount: 500000, date: "2023-06-10" },
-      { id: "2", name: "Jane Smith", amount: 250000, date: "2023-06-12" },
-      { id: "3", name: "Robert Johnson", amount: 1000000, date: "2023-06-15" },
-      { id: "4", name: "Sarah Williams", amount: 150000, date: "2023-06-18" },
-      { id: "5", name: "Michael Brown", amount: 300000, date: "2023-06-20" },
-    ],
-  },
-  {
-    id: "2",
-    title: "Commercial Office Building",
-    description:
-      "A modern 12-story office building in Abuja's central business district. The property features flexible office spaces, meeting rooms, high-speed elevators, underground parking, and energy-efficient design. Ideal for corporate headquarters and professional services firms.",
-    location: "Abuja, Nigeria",
-    price: 450000000,
-    type: "Commercial",
-    returnRate: 15,
-    investmentPeriod: "48 months",
-    minInvestment: 250000,
-    totalInvestors: 28,
-    funded: 60,
-    target: 450000000,
-    status: "active",
-    featured: false,
-    trending: true,
-    createdAt: "2023-06-22",
-    amenities: [
-      "Underground Parking",
-      "High-speed Elevators",
-      "Conference Facilities",
-      "24/7 Security",
-      "Backup Power",
-      "Central Air Conditioning",
-      "Fiber Optic Internet",
-    ],
-    images: [
-      "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Y29tbWVyY2lhbCUyMGJ1aWxkaW5nfGVufDB8fDB8fHww",
-      "https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8b2ZmaWNlfGVufDB8fDB8fHww",
-      "https://images.unsplash.com/photo-1497215842964-222b430dc094?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTV8fG9mZmljZXxlbnwwfHwwfHx8MA%3D%3D",
-    ],
-    documents: [
-      { name: "Commercial Property Prospectus.pdf", size: 3.1, url: "#" },
-      { name: "Market Analysis.pdf", size: 2.2, url: "#" },
-      { name: "Rental Income Projections.pdf", size: 1.5, url: "#" },
-    ],
-    investors: [
-      { id: "6", name: "David Wilson", amount: 750000, date: "2023-07-05" },
-      { id: "7", name: "Emily Davis", amount: 500000, date: "2023-07-08" },
-      { id: "8", name: "James Taylor", amount: 1250000, date: "2023-07-12" },
-      { id: "9", name: "Olivia Martin", amount: 300000, date: "2023-07-15" },
-    ],
-  },
-  {
-    id: "3",
-    title: "Residential Housing Estate",
-    description:
-      "A premium residential estate featuring 50 luxury homes in a gated community. Each home comes with modern amenities, spacious layouts, and beautiful landscaping. The estate includes communal facilities like a clubhouse, swimming pool, and children's playground.",
-    location: "Port Harcourt, Nigeria",
-    price: 350000000,
-    type: "Residential",
-    returnRate: 10,
-    investmentPeriod: "24 months",
-    minInvestment: 50000,
-    totalInvestors: 120,
-    funded: 90,
-    target: 350000000,
-    status: "active",
-    featured: true,
-    trending: false,
-    createdAt: "2023-07-10",
-    amenities: [
-      "Gated Community",
-      "Clubhouse",
-      "Swimming Pool",
-      "Children's Playground",
-      "24/7 Security",
-      "Landscaped Gardens",
-      "Backup Power",
-    ],
-    images: [
-      "https://images.unsplash.com/photo-1448630360428-65456885c650?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8aG91c2luZyUyMGVzdGF0ZXxlbnwwfHwwfHx8MA%3D%3D",
-      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8aG91c2V8ZW58MHx8MHx8fDA%3D",
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fGhvdXNlfGVufDB8fDB8fHww",
-    ],
-  },
-  {
-    id: "4",
-    title: "Shopping Mall Development",
-    description:
-      "A modern shopping mall development in Lagos featuring retail spaces, food courts, entertainment zones, and ample parking. The mall is strategically located in a high-traffic area with excellent visibility and accessibility.",
-    location: "Lagos, Nigeria",
-    price: 650000000,
-    type: "Commercial",
-    returnRate: 18,
-    investmentPeriod: "60 months",
-    minInvestment: 500000,
-    totalInvestors: 15,
-    funded: 40,
-    target: 650000000,
-    status: "pending",
-    featured: false,
-    trending: true,
-    createdAt: "2023-08-05",
-    images: [
-      "https://images.unsplash.com/photo-1519567770579-c2fc5e9ca471?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fHNob3BwaW5nJTIwbWFsbHxlbnwwfHwwfHx8MA%3D%3D",
-      "https://images.unsplash.com/photo-1581417478175-a9ef18f210c2?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8N3x8c2hvcHBpbmclMjBtYWxsfGVufDB8fDB8fHww",
-      "https://images.unsplash.com/photo-1567449303078-57ad995bd17a?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fHNob3BwaW5nJTIwbWFsbHxlbnwwfHwwfHx8MA%3D%3D",
-    ],
-  },
-  {
-    id: "5",
-    title: "Waterfront Luxury Villas",
-    description:
-      "A collection of luxury waterfront villas offering stunning views and premium amenities. Each villa features spacious living areas, private pools, and direct access to the waterfront. The development includes a private marina, clubhouse, and 24/7 security.",
-    location: "Lagos, Nigeria",
-    price: 850000000,
-    type: "Residential",
-    returnRate: 14,
-    investmentPeriod: "48 months",
-    minInvestment: 200000,
-    totalInvestors: 32,
-    funded: 55,
-    target: 850000000,
-    status: "active",
-    featured: true,
-    trending: true,
-    createdAt: "2023-09-18",
-    images: [
-      "https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8bHV4dXJ5JTIwdmlsbGF8ZW58MHx8MHx8fDA%3D",
-      "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fGx1eHVyeSUyMGhvdXNlfGVufDB8fDB8fHww",
-      "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTR8fGx1eHVyeSUyMGhvdXNlfGVufDB8fDB8fHww",
-    ],
-  },
-  {
-    id: "6",
-    title: "Industrial Warehouse Complex",
-    description:
-      "A modern industrial warehouse complex strategically located with excellent access to major transportation routes. The complex features high-ceiling warehouses, loading docks, office spaces, and ample parking for trucks and staff vehicles.",
-    location: "Abuja, Nigeria",
-    price: 320000000,
-    type: "Industrial",
-    returnRate: 16,
-    investmentPeriod: "36 months",
-    minInvestment: 150000,
-    totalInvestors: 25,
-    funded: 80,
-    target: 320000000,
-    status: "closed",
-    featured: false,
-    trending: false,
-    createdAt: "2023-10-25",
-    images: [
-      "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8d2FyZWhvdXNlfGVufDB8fDB8fHww",
-      "https://images.unsplash.com/photo-1553413077-190dd305871c?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8d2FyZWhvdXNlfGVufDB8fDB8fHww",
-      "https://images.unsplash.com/photo-1565891741441-64926e441838?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fHdhcmVob3VzZXxlbnwwfHwwfHx8MA%3D%3D",
-    ],
-  },
-]
+  // User operations
+  investInProperty: (investmentId: string, amount: number) => Promise<boolean>;
 
-// Mock user investments
-const mockUserInvestments = [
-  {
-    id: "1",
-    title: "Luxury Apartment Complex",
-    description: "A premium residential development featuring 24 luxury apartments in the heart of Lagos.",
-    location: "Lagos, Nigeria",
-    price: 250000000,
-    type: "Residential",
-    returnRate: 12,
-    investmentPeriod: "36 months",
-    minInvestment: 100000,
-    totalInvestors: 45,
-    funded: 75,
-    target: 250000000,
-    status: "active",
-    featured: true,
-    trending: true,
-    createdAt: "2023-05-15",
-    images: [
-      "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fHJlYWwlMjBlc3RhdGV8ZW58MHx8MHx8fDA%3D",
-    ],
-    userInvestment: {
-      amount: 500000,
-      date: "2023-06-10",
-      returns: 60000,
-      nextPayout: "2023-12-10",
-    },
-  },
-  {
-    id: "3",
-    title: "Residential Housing Estate",
-    description: "A premium residential estate featuring 50 luxury homes in a gated community.",
-    location: "Port Harcourt, Nigeria",
-    price: 350000000,
-    type: "Residential",
-    returnRate: 10,
-    investmentPeriod: "24 months",
-    minInvestment: 50000,
-    totalInvestors: 120,
-    funded: 90,
-    target: 350000000,
-    status: "active",
-    featured: true,
-    trending: false,
-    createdAt: "2023-07-10",
-    images: [
-      "https://images.unsplash.com/photo-1448630360428-65456885c650?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8aG91c2luZyUyMGVzdGF0ZXxlbnwwfHwwfHx8MA%3D%3D",
-    ],
-    userInvestment: {
-      amount: 250000,
-      date: "2023-07-15",
-      returns: 25000,
-      nextPayout: "2023-12-15",
-    },
-  },
-]
+  // Loading states
+  isLoading: boolean;
+  isSubmitting: boolean;
+};
 
-// Create the provider component
-export const InvestmentsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const router = useRouter()
-  const [investments, setInvestments] = useState<Investment[]>([])
-  const [userInvestments, setUserInvestments] = useState<Investment[]>([])
-  const [filteredInvestments, setFilteredInvestments] = useState<Investment[]>([])
-  const [selectedInvestment, setSelectedInvestment] = useState<Investment | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+// Default filter values
+const defaultFilters: InvestmentFilterType = {
+  searchQuery: "",
+  location: "all",
+  type: "all",
+  returnRateRange: [0, 50],
+  priceRange: [0, 1000000000],
+  sortBy: "trending",
+  viewMode: "grid",
+};
 
-  // Default filters and sort options
-  const [filters, setFiltersState] = useState<InvestmentFilters>({
-    location: "all",
-    type: "all",
-    returnRateRange: [5, 20],
-    priceRange: [0, 1000000000],
-  })
+// Create context
+const InvestmentContext = createContext<InvestmentContextType | undefined>(
+  undefined
+);
 
-  const [sortOption, setSortOptionState] = useState<InvestmentSortOption>({
-    field: "trending",
-    direction: "desc",
-  })
+// Provider component
+export function InvestmentProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const { fundWallet, refreshWalletData } = useWallet();
+
+  // State
+  const [investments, setInvestments] = useState<InvestmentDetailsType[]>([]);
+  const [userInvestments, setUserInvestments] = useState<UserInvestmentType[]>(
+    []
+  );
+  const [availableProperties, setAvailableProperties] = useState<
+    PropertyType[]
+  >([]);
+  const [selectedInvestment, setSelectedInvestment] =
+    useState<InvestmentDetailsType | null>(null);
+  const [filters, setFiltersState] =
+    useState<InvestmentFilterType>(defaultFilters);
+
+  // Loading states
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  // Initialize with data
+  useEffect(() => {
+    fetchInvestments();
+    if (user?.id) {
+      fetchUserInvestments();
+    }
+  }, [user]);
 
   // Fetch all investments
-  const fetchInvestments = useCallback(async () => {
-    setIsLoading(true)
+  const fetchInvestments = async () => {
+    setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      setInvestments(mockInvestments)
-      applyFiltersAndSort(mockInvestments)
+      const response = await apiConfig.get("/investments", {
+        withCredentials: true,
+      });
+
+      if (response.status === 200) {
+        setInvestments(response.data.data || []);
+      }
     } catch (error) {
-      console.error("Error fetching investments:", error)
-      errorToast("Failed to load investments")
+      console.error("Failed to fetch investments:", error);
+      toast.error("Failed to load investments");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [])
+  };
 
   // Fetch user investments
-  const fetchUserInvestments = useCallback(async () => {
-    setIsLoading(true)
+  const fetchUserInvestments = async () => {
+    if (!user?.id) return;
+
+    setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      setUserInvestments(
-        mockUserInvestments.map(({ userInvestment, ...investment }) => ({
-          ...investment,
-          status: investment.status as InvestmentStatus,
-        }))
-      )
+      const response = await apiConfig.get(`/users/${user.id}/investments`, {
+        withCredentials: true,
+      });
+
+      if (response.status === 200) {
+        setUserInvestments(response.data.data || []);
+      }
     } catch (error) {
-      console.error("Error fetching user investments:", error)
-      errorToast("Failed to load your investments")
+      console.error("Failed to fetch user investments:", error);
+      toast.error("Failed to load your investments");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [])
+  };
+
+  // Add the getProperties function implementation
+  // Add this function inside the InvestmentProvider component, before the return statement
+  const getProperties = async (params?: {}): Promise<any> => {
+    try {
+      const response = await apiConfig.get("/properties/all", {
+        withCredentials: true,
+        params,
+      });
+
+      if (response.status === 200) {
+        return {
+          properties: response.data.data || [],
+        };
+      }
+      return { properties: [] };
+    } catch (error: any) {
+      console.error("Error fetching properties:", error);
+
+      return { properties: [] };
+    }
+  };
+
+  // Update the fetchAvailableProperties function to use getProperties
+  const fetchAvailableProperties = async () => {
+    setIsLoading(true);
+    try {
+      // First try to get properties specifically available for investment
+      let response = await apiConfig.get("/properties/all", {
+        withCredentials: true,
+      });
+
+      if (
+        response.status === 200 &&
+        response.data.data &&
+        response.data.data.length > 0
+      ) {
+        setAvailableProperties(response.data.data || []);
+      } else {
+        // If no specific endpoint or no data, fall back to getting all properties
+        const result = await getProperties();
+        setAvailableProperties(result.properties || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch available properties:", error);
+
+      // Try fallback to all properties
+      try {
+        const result = await getProperties();
+        setAvailableProperties(result.properties || []);
+      } catch (fallbackError) {
+        console.error("Fallback also failed:", fallbackError);
+        setAvailableProperties([]);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Get investment by ID
-  const getInvestmentById = useCallback(async (id: string) => {
-    setIsLoading(true)
+  const getInvestmentById = async (
+    id: string
+  ): Promise<InvestmentDetailsType | null> => {
+    setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 800))
-      const investment = mockInvestments.find((inv) => inv.id === id) || null
-      setSelectedInvestment(investment)
-      return investment
+      const response = await apiConfig.get(`/investments/${id}`, {
+        withCredentials: true,
+      });
+
+      if (response.status === 200) {
+        const investment = response.data.data;
+        setSelectedInvestment(investment);
+        return investment;
+      }
+      return null;
     } catch (error) {
-      console.error("Error fetching investment details:", error)
-      errorToast("Failed to load investment details")
-      return null
+      console.error("Failed to fetch investment details:", error);
+      toast.error("Failed to load investment details");
+      return null;
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [])
+  };
 
-  // Apply filters and sorting
-  const applyFiltersAndSort = useCallback(
-    (investmentsToFilter: Investment[]) => {
-      // Apply filters
-      let filtered = [...investmentsToFilter]
-
-      if (filters.location !== "all") {
-        filtered = filtered.filter((inv) => inv.location.includes(filters.location))
+  // Filter and sort investments based on filters
+  const filteredInvestments = investments
+    .filter((investment) => {
+      // Filter by search query
+      if (
+        filters.searchQuery &&
+        !investment.title
+          .toLowerCase()
+          .includes(filters.searchQuery.toLowerCase()) &&
+        !investment.description
+          .toLowerCase()
+          .includes(filters.searchQuery.toLowerCase()) &&
+        !(
+          typeof investment.propertyId === "object" &&
+          investment.propertyId.location
+            .toLowerCase()
+            .includes(filters.searchQuery.toLowerCase())
+        )
+      ) {
+        return false;
       }
 
-      if (filters.type !== "all") {
-        filtered = filtered.filter((inv) => inv.type === filters.type)
+      // Filter by location
+      if (
+        filters.location !== "all" &&
+        !(
+          typeof investment.propertyId === "object" &&
+          investment.propertyId.location.includes(filters.location)
+        )
+      ) {
+        return false;
       }
 
-      filtered = filtered.filter(
-        (inv) => inv.returnRate >= filters.returnRateRange[0] && inv.returnRate <= filters.returnRateRange[1],
-      )
-
-      filtered = filtered.filter((inv) => inv.price >= filters.priceRange[0] && inv.price <= filters.priceRange[1])
-
-      if (filters.status) {
-        filtered = filtered.filter((inv) => inv.status === filters.status)
+      // Filter by type
+      if (filters.type !== "all" && investment.type !== filters.type) {
+        return false;
       }
 
-      if (filters.featured !== undefined) {
-        filtered = filtered.filter((inv) => inv.featured === filters.featured)
+      // Filter by return rate range
+      if (
+        investment.returnRate < filters.returnRateRange[0] ||
+        investment.returnRate > filters.returnRateRange[1]
+      ) {
+        return false;
       }
 
-      if (filters.trending !== undefined) {
-        filtered = filtered.filter((inv) => inv.trending === filters.trending)
+      // Filter by price range
+      if (
+        investment.targetAmount < filters.priceRange[0] ||
+        investment.targetAmount > filters.priceRange[1]
+      ) {
+        return false;
       }
 
-      // Apply sorting
-      filtered.sort((a, b) => {
-        const direction = sortOption.direction === "asc" ? 1 : -1
+      // Filter by status
+      if (filters.status && investment.status !== filters.status) {
+        return false;
+      }
 
-        switch (sortOption.field) {
-          case "trending":
-            return ((b.trending ? 1 : 0) - (a.trending ? 1 : 0)) * direction
-          case "featured":
-            return ((b.featured ? 1 : 0) - (a.featured ? 1 : 0)) * direction
-          case "returnRate":
-            return (b.returnRate - a.returnRate) * direction
-          case "price":
-            return (b.price - a.price) * direction
-          case "funded":
-            return (b.funded - a.funded) * direction
-          case "createdAt":
-            return (new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) * direction
-          default:
-            return 0
-        }
-      })
+      // Filter by featured
+      if (
+        filters.featured !== undefined &&
+        investment.featured !== filters.featured
+      ) {
+        return false;
+      }
 
-      setFilteredInvestments(filtered)
-    },
-    [filters, sortOption],
-  )
+      // Filter by trending
+      if (
+        filters.trending !== undefined &&
+        investment.trending !== filters.trending
+      ) {
+        return false;
+      }
 
-  // Set filters
-  const setFilters = useCallback(
-    (newFilters: Partial<InvestmentFilters>) => {
-      setFiltersState((prev) => {
-        const updated = { ...prev, ...newFilters }
-        applyFiltersAndSort(investments)
-        return updated
-      })
-    },
-    [investments, applyFiltersAndSort],
-  )
-
-  // Set sort option
-  const setSortOption = useCallback(
-    (option: InvestmentSortOption) => {
-      setSortOptionState(option)
-      applyFiltersAndSort(investments)
-    },
-    [investments, applyFiltersAndSort],
-  )
-
-  // Clear filters
-  const clearFilters = useCallback(() => {
-    setFiltersState({
-      location: "all",
-      type: "all",
-      returnRateRange: [5, 20],
-      priceRange: [0, 1000000000],
+      return true;
     })
-    applyFiltersAndSort(investments)
-  }, [investments, applyFiltersAndSort])
+    .sort((a, b) => {
+      // Sort based on sortBy option
+      switch (filters.sortBy) {
+        case "trending":
+          return (b.trending ? 1 : 0) - (a.trending ? 1 : 0);
+        case "featured":
+          return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
+        case "returnRate-high":
+          return b.returnRate - a.returnRate;
+        case "returnRate-low":
+          return a.returnRate - b.returnRate;
+        case "target-high":
+          return b.targetAmount - a.targetAmount;
+        case "target-low":
+          return a.targetAmount - b.targetAmount;
+        case "funded-high":
+          return b.percentageFunded - a.percentageFunded;
+        case "funded-low":
+          return a.percentageFunded - b.percentageFunded;
+        case "newest":
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        case "oldest":
+          return (
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
+        default:
+          return 0;
+      }
+    });
 
-  // Create investment (admin)
-  const createInvestment = useCallback(
-    async (investment: Partial<Investment>) => {
-      setIsSubmitting(true)
-      try {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1500))
+  // Update filters
+  const setFilters = (newFilters: Partial<InvestmentFilterType>) => {
+    setFiltersState((prev) => ({ ...prev, ...newFilters }));
+  };
 
-        const newInvestment: Investment = {
-          id: `${investments.length + 1}`,
-          title: investment.title || "New Investment",
-          description: investment.description || "",
-          location: investment.location || "",
-          price: investment.price || 0,
-          type: investment.type || "Residential",
-          returnRate: investment.returnRate || 10,
-          investmentPeriod: investment.investmentPeriod || "36 months",
-          minInvestment: investment.minInvestment || 100000,
-          totalInvestors: 0,
-          funded: 0,
-          target: investment.price || 0,
-          status: "pending",
-          featured: investment.featured || false,
-          trending: investment.trending || false,
-          createdAt: new Date().toISOString().split("T")[0],
-          amenities: investment.amenities || [],
-          images: investment.images || ["/placeholder.svg?height=400&width=600"],
-          documents: investment.documents || [],
+  // Reset filters to default
+  const resetFilters = () => {
+    setFiltersState(defaultFilters);
+  };
+
+  // Create investment
+  const createInvestment = async (
+    formData: FormData
+  ): Promise<string | null> => {
+    setIsSubmitting(true);
+    try {
+      const response = await apiConfigFile.post("/investments", formData, {
+        withCredentials: true,
+      });
+
+      if (response.status === 201) {
+        const newInvestment = response.data.data;
+        setInvestments((prev) => [...prev, newInvestment]);
+
+        // Remove the property from available properties
+        if (newInvestment.propertyId) {
+          const propertyId =
+            typeof newInvestment.propertyId === "object"
+              ? newInvestment.propertyId._id
+              : newInvestment.propertyId;
+
+          setAvailableProperties((prev) =>
+            prev.filter((p) => p._id !== propertyId)
+          );
         }
 
-        setInvestments((prev) => [...prev, newInvestment])
-        successToast("Investment created successfully")
-        return true
-      } catch (error) {
-        console.error("Error creating investment:", error)
-        errorToast("Failed to create investment")
-        return false
-      } finally {
-        setIsSubmitting(false)
+        toast.success("Investment created successfully");
+        return newInvestment._id;
       }
-    },
-    [investments],
-  )
+      return null;
+    } catch (error) {
+      console.error("Failed to create investment:", error);
+      toast.error("Failed to create investment");
+      return null;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-  // Update investment (admin)
-  const updateInvestment = useCallback(
-    async (id: string, data: Partial<Investment>) => {
-      setIsSubmitting(true)
-      try {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1200))
+  // Update investment
+  const updateInvestment = async (
+    id: string,
+    formData: FormData
+  ): Promise<boolean> => {
+    setIsSubmitting(true);
+    try {
+      const response = await apiConfigFile.put(`/investments/${id}`, formData, {
+        withCredentials: true,
+      });
 
-        setInvestments((prev) => prev.map((inv) => (inv.id === id ? { ...inv, ...data } : inv)))
-
-        if (selectedInvestment?.id === id) {
-          setSelectedInvestment((prev) => (prev ? { ...prev, ...data } : null))
-        }
-
-        successToast("Investment updated successfully")
-        return true
-      } catch (error) {
-        console.error("Error updating investment:", error)
-        errorToast("Failed to update investment")
-        return false
-      } finally {
-        setIsSubmitting(false)
-      }
-    },
-    [selectedInvestment],
-  )
-
-  // Delete investment (admin)
-  const deleteInvestment = useCallback(
-    async (id: string) => {
-      try {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-
-        setInvestments((prev) => prev.filter((inv) => inv.id !== id))
-
-        if (selectedInvestment?.id === id) {
-          setSelectedInvestment(null)
-        }
-
-        successToast("Investment deleted successfully")
-        return true
-      } catch (error) {
-        console.error("Error deleting investment:", error)
-        errorToast("Failed to delete investment")
-        return false
-      }
-    },
-    [selectedInvestment],
-  )
-
-  // Toggle featured status (admin)
-  const toggleFeatured = useCallback(
-    async (id: string) => {
-      try {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 800))
-
-        setInvestments((prev) => prev.map((inv) => (inv.id === id ? { ...inv, featured: !inv.featured } : inv)))
-
-        if (selectedInvestment?.id === id) {
-          setSelectedInvestment((prev) => (prev ? { ...prev, featured: !prev.featured } : null))
-        }
-
-        successToast(
-          `Investment ${investments.find((inv) => inv.id === id)?.featured ? "removed from" : "marked as"} featured`,
-        )
-        return true
-      } catch (error) {
-        console.error("Error toggling featured status:", error)
-        errorToast("Failed to update featured status")
-        return false
-      }
-    },
-    [investments, selectedInvestment],
-  )
-
-  // Toggle trending status (admin)
-  const toggleTrending = useCallback(
-    async (id: string) => {
-      try {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 800))
-
-        setInvestments((prev) => prev.map((inv) => (inv.id === id ? { ...inv, trending: !inv.trending } : inv)))
-
-        if (selectedInvestment?.id === id) {
-          setSelectedInvestment((prev) => (prev ? { ...prev, trending: !prev.trending } : null))
-        }
-
-        successToast(
-          `Investment ${investments.find((inv) => inv.id === id)?.trending ? "removed from" : "marked as"} trending`,
-        )
-        return true
-      } catch (error) {
-        console.error("Error toggling trending status:", error)
-        errorToast("Failed to update trending status")
-        return false
-      }
-    },
-    [investments, selectedInvestment],
-  )
-
-  // Change investment status (admin)
-  const changeInvestmentStatus = useCallback(
-    async (id: string, status: InvestmentStatus) => {
-      try {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-
-        setInvestments((prev) => prev.map((inv) => (inv.id === id ? { ...inv, status } : inv)))
-
-        if (selectedInvestment?.id === id) {
-          setSelectedInvestment((prev) => (prev ? { ...prev, status } : null))
-        }
-
-        const statusText = status === "active" ? "activated" : status === "pending" ? "set to pending" : "closed"
-
-        successToast(`Investment has been ${statusText}`)
-        return true
-      } catch (error) {
-        console.error("Error changing investment status:", error)
-        errorToast("Failed to update investment status")
-        return false
-      }
-    },
-    [investments, selectedInvestment],
-  )
-
-  // Invest in property (user)
-  const investInProperty = useCallback(
-    async (investmentId: string, amount: number) => {
-      setIsSubmitting(true)
-      try {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1500))
-
-        // Update the investment
+      if (response.status === 200) {
+        const updatedInvestment = response.data.data;
         setInvestments((prev) =>
-          prev.map((inv) => {
-            if (inv.id === investmentId) {
-              const newFundedAmount = Math.min(inv.funded + (amount / inv.target) * 100, 100)
-              const newTotalInvestors = inv.totalInvestors + 1
+          prev.map((investment) =>
+            investment._id === id ? updatedInvestment : investment
+          )
+        );
 
-              return {
-                ...inv,
-                funded: newFundedAmount,
-                totalInvestors: newTotalInvestors,
-              }
-            }
-            return inv
-          }),
-        )
-
-        // Add to user investments
-        const investment = investments.find((inv) => inv.id === investmentId)
-        if (investment) {
-          const userInvestment = {
-            ...investment,
-            userInvestment: {
-              amount,
-              date: new Date().toISOString().split("T")[0],
-              returns: (amount * investment.returnRate) / 100,
-              nextPayout: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-            },
-          }
-
-          setUserInvestments((prev) => {
-            const exists = prev.some((inv) => inv.id === investmentId)
-            return exists
-              ? prev.map((inv) => (inv.id === investmentId ? userInvestment : inv))
-              : [...prev, userInvestment]
-          })
+        // Update selected investment if it's the one being edited
+        if (selectedInvestment?._id === id) {
+          setSelectedInvestment(updatedInvestment);
         }
 
-        successToast("Investment successful! Thank you for investing.")
-        return true
-      } catch (error) {
-        console.error("Error investing in property:", error)
-        errorToast("Failed to process your investment")
-        return false
-      } finally {
-        setIsSubmitting(false)
+        toast.success("Investment updated successfully");
+        return true;
       }
-    },
-    [investments],
-  )
+      return false;
+    } catch (error) {
+      console.error("Failed to update investment:", error);
+      toast.error("Failed to update investment");
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-  // Initialize data on mount
-  useEffect(() => {
-    fetchInvestments()
-  }, [fetchInvestments])
+  // Delete investment
+  const deleteInvestment = async (id: string): Promise<boolean> => {
+    setIsSubmitting(true);
+    try {
+      const investment = investments.find((inv) => inv._id === id);
+      if (!investment) return false;
 
-  // Update filtered investments when investments or filters change
-  useEffect(() => {
-    applyFiltersAndSort(investments)
-  }, [investments, filters, sortOption, applyFiltersAndSort])
+      const response = await apiConfig.delete(`/investments/${id}`, {
+        withCredentials: true,
+      });
 
-  const contextValue: InvestmentContextType = {
+      if (response.status === 200) {
+        setInvestments((prev) =>
+          prev.filter((investment) => investment._id !== id)
+        );
+
+        // Clear selected investment if it's the one being deleted
+        if (selectedInvestment?._id === id) {
+          setSelectedInvestment(null);
+        }
+
+        // If the investment was linked to a property, make it available again
+        if (
+          typeof investment.propertyId === "object" &&
+          investment.propertyId?._id
+        ) {
+          const propertyId = investment.propertyId._id;
+
+          // Fetch the property details to add back to available properties
+          const propertyResponse = await apiConfig.get(
+            `/properties/${propertyId}`,
+            {
+              withCredentials: true,
+            }
+          );
+
+          if (propertyResponse.status === 200) {
+            const property = propertyResponse.data.data;
+            setAvailableProperties((prev) => [...prev, property]);
+          }
+        }
+
+        toast.success("Investment deleted successfully");
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Failed to delete investment:", error);
+      toast.error("Failed to delete investment");
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Toggle featured status
+  const toggleFeatured = async (id: string): Promise<boolean> => {
+    try {
+      const investment = investments.find((inv) => inv._id === id);
+      if (!investment) return false;
+
+      const response = await apiConfig.patch(
+        `/investments/${id}/featured`,
+        { featured: !investment.featured },
+        {
+          withCredentials: true,
+        }
+      );
+
+      if (response.status === 200) {
+        setInvestments((prev) =>
+          prev.map((inv) =>
+            inv._id === id ? { ...inv, featured: !inv.featured } : inv
+          )
+        );
+
+        // Update selected investment if it's the one being modified
+        if (selectedInvestment?._id === id) {
+          setSelectedInvestment((prev) =>
+            prev ? { ...prev, featured: !prev.featured } : null
+          );
+        }
+
+        toast.success(
+          investment.featured
+            ? "Investment removed from featured"
+            : "Investment marked as featured"
+        );
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Failed to update featured status:", error);
+      toast.error("Failed to update featured status");
+      return false;
+    }
+  };
+
+  // Toggle trending status
+  const toggleTrending = async (id: string): Promise<boolean> => {
+    try {
+      const investment = investments.find((inv) => inv._id === id);
+      if (!investment) return false;
+
+      const response = await apiConfig.patch(
+        `/investments/${id}/trending`,
+        { trending: !investment.trending },
+        {
+          withCredentials: true,
+        }
+      );
+
+      if (response.status === 200) {
+        setInvestments((prev) =>
+          prev.map((inv) =>
+            inv._id === id ? { ...inv, trending: !inv.trending } : inv
+          )
+        );
+
+        // Update selected investment if it's the one being modified
+        if (selectedInvestment?._id === id) {
+          setSelectedInvestment((prev) =>
+            prev ? { ...prev, trending: !prev.trending } : null
+          );
+        }
+
+        toast.success(
+          investment.trending
+            ? "Investment removed from trending"
+            : "Investment marked as trending"
+        );
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Failed to update trending status:", error);
+      toast.error("Failed to update trending status");
+      return false;
+    }
+  };
+
+  // Change investment status
+  const changeInvestmentStatus = async (
+    id: string,
+    status: InvestmentStatus
+  ): Promise<boolean> => {
+    try {
+      const response = await apiConfig.patch(
+        `/investments/${id}/status`,
+        { status },
+        {
+          withCredentials: true,
+        }
+      );
+
+      if (response.status === 200) {
+        setInvestments((prev) =>
+          prev.map((inv) => (inv._id === id ? { ...inv, status } : inv))
+        );
+
+        // Update selected investment if it's the one being modified
+        if (selectedInvestment?._id === id) {
+          setSelectedInvestment((prev) => (prev ? { ...prev, status } : null));
+        }
+
+        const statusText =
+          status === InvestmentStatus.ACTIVE
+            ? "activated"
+            : status === InvestmentStatus.PENDING
+            ? "set to pending"
+            : status === InvestmentStatus.COMPLETED
+            ? "marked as completed"
+            : status === InvestmentStatus.DRAFT
+            ? "saved as draft"
+            : "cancelled";
+
+        toast.success(`Investment has been ${statusText}`);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Failed to update investment status:", error);
+      toast.error("Failed to update investment status");
+      return false;
+    }
+  };
+
+  // Invest in property
+  const investInProperty = async (
+    investmentId: string,
+    amount: number
+  ): Promise<boolean> => {
+    if (!user?.id) {
+      toast.error("You must be logged in to invest");
+      return false;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // First check if the investment exists and is active
+      const investment = investments.find((inv) => inv._id === investmentId);
+      if (!investment) {
+        throw new Error("Investment not found");
+      }
+
+      if (investment.status !== InvestmentStatus.ACTIVE) {
+        throw new Error("This investment is not currently active");
+      }
+
+      if (amount < investment.minimumInvestment) {
+        throw new Error(
+          `Minimum investment amount is ${investment.minimumInvestment}`
+        );
+      }
+
+      // Process payment using wallet
+      const reference = `INV-${investmentId}-${Date.now()}`;
+      const success = await fundWallet(
+        amount * -1, // Negative amount for payment
+        "investment",
+        {
+          reference,
+          investmentId,
+          description: `Investment in ${investment.title}`,
+        }
+      );
+
+      if (!success) {
+        throw new Error("Payment failed. Please check your wallet balance.");
+      }
+
+      // Create user investment record
+      const response = await apiConfig.post(
+        `/investments/${investmentId}/invest`,
+        {
+          userId: user.id,
+          amount,
+        },
+        {
+          withCredentials: true,
+        }
+      );
+
+      if (response.status !== 201) {
+        // Refund the wallet if the investment record creation fails
+        await fundWallet(amount, "investment_refund", {
+          reference: `REFUND-${reference}`,
+          investmentId,
+          description: `Refund for failed investment in ${investment.title}`,
+        });
+
+        throw new Error("Failed to process investment");
+      }
+
+      const userInvestment = response.data.data;
+
+      // Update investments list with new funding amount
+      setInvestments((prev) =>
+        prev.map((inv) => {
+          if (inv._id === investmentId) {
+            const newRaisedAmount = inv.raisedAmount + amount;
+            const newPercentageFunded = Math.min(
+              100,
+              (newRaisedAmount / inv.targetAmount) * 100
+            );
+
+            return {
+              ...inv,
+              raisedAmount: newRaisedAmount,
+              totalInvestors: inv.totalInvestors + 1,
+              percentageFunded: newPercentageFunded,
+              investors: [
+                ...inv.investors,
+                {
+                  userId: user.id,
+                  amount,
+                  date: new Date().toISOString(),
+                },
+              ],
+            };
+          }
+          return inv;
+        })
+      );
+
+      // Add to user investments
+      setUserInvestments((prev) => [...prev, userInvestment]);
+
+      // Refresh wallet data
+      await refreshWalletData();
+
+      toast.success("Investment successful! Thank you for investing.");
+      return true;
+    } catch (error: any) {
+      console.error("Error investing in property:", error);
+      toast.error(error.message || "Failed to process your investment");
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Include getProperties in the context value
+  const value = {
+    // State
     investments,
-    userInvestments,
     filteredInvestments,
+    userInvestments,
+    availableProperties,
     selectedInvestment,
-    isLoading,
-    isSubmitting,
     filters,
-    sortOption,
+
+    // Filter actions
+    setFilters,
+    resetFilters,
+
+    // Data fetching
     fetchInvestments,
     fetchUserInvestments,
+    fetchAvailableProperties,
     getInvestmentById,
-    setFilters,
-    setSortOption,
-    clearFilters,
+    getProperties, // Add this line
+
+    // CRUD operations
     createInvestment,
     updateInvestment,
     deleteInvestment,
+
+    // Status operations
     toggleFeatured,
     toggleTrending,
     changeInvestmentStatus,
-    investInProperty,
-  }
 
-  return <InvestmentsContext.Provider value={contextValue}>{children}</InvestmentsContext.Provider>
+    // User operations
+    investInProperty,
+
+    // Loading states
+    isLoading,
+    isSubmitting,
+  };
+
+  return (
+    <InvestmentContext.Provider value={value}>
+      {children}
+    </InvestmentContext.Provider>
+  );
 }
 
-// Custom hook to use the investments context
-export const useInvestments = () => {
-  const context = useContext(InvestmentsContext)
+// Custom hook to use the context
+export function useInvestment() {
+  const context = useContext(InvestmentContext);
   if (context === undefined) {
-    throw new Error("useInvestments must be used within an InvestmentsProvider")
+    throw new Error("useInvestment must be used within an InvestmentProvider");
   }
-  return context
+  return context;
 }

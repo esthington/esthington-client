@@ -50,7 +50,7 @@ export default function SplashScreen() {
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.2, duration: 0.5 }}
-        className="relative w-64 h-64 mb-8"
+        className="relative w-20 h-20 mb-8"
       >
         {mounted && (
           <Image

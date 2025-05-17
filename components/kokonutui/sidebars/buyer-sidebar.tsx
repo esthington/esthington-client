@@ -268,15 +268,17 @@ export default function BuyerSidebar() {
                           exit="closed"
                           variants={sectionVariants}
                         >
+                          <NavItem href="/dashboard/my-wallet" icon={Wallet}>
+                            My Wallet
+                          </NavItem>
+                          
                           <NavItem
                             href="/dashboard/fund-wallet"
                             icon={CreditCard}
                           >
                             Fund Wallet
                           </NavItem>
-                          <NavItem href="/dashboard/my-wallet" icon={Wallet}>
-                            My Wallet
-                          </NavItem>
+
                           <NavItem
                             href="/dashboard/my-bank-account"
                             icon={Bank}

@@ -7,412 +7,580 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
-import { successToast, errorToast } from "@/lib/toast";
-import { useWallet } from "@/contexts/wallet-context";
+import { apiConfig, apiConfigFile } from "@/lib/api";
+import { toast } from "sonner";
 
-// Types for purchases
-export type PurchaseStatus =
-  | "completed"
-  | "pending"
-  | "processing"
-  | "failed"
-  | "refunded";
-
-export type Purchase = {
-  id: string;
-  landId: string;
-  landTitle: string;
-  landLocation: string;
-  landType: string;
-  landImage: string;
-  purchaseAmount: number;
-  purchaseDate: string;
-  status: PurchaseStatus;
-  documentUrl?: string;
+// Types
+export interface PropertyPlot {
+  _id?: string;
+  plotId: string;
   size: string;
-  transactionId?: string;
-  paymentMethod: "card" | "bank_transfer" | "wallet";
-  buyer: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  seller: {
-    id: string;
-    name: string;
-    companyId?: string;
-  };
-};
+  price: string | number;
+  status: "Available" | "Reserved" | "Sold";
+}
 
-// Context type
-export type PurchasesContextType = {
-  // Purchases
-  purchases: Purchase[];
-  filteredPurchases: Purchase[];
-  filters: {
-    status: string;
-    type: string;
-    searchQuery: string;
-    dateRange: [Date | null, Date | null];
-  };
+export interface Property {
+  _id: string;
+  title: string;
+  description: string;
+  location: string;
+  price: number;
+  plotSize: string;
+  totalPlots: number;
+  availablePlots: number;
+  type: "Land" | "Residential" | "Commercial";
+  status: "Available" | "Sold Out" | "Coming Soon";
+  featured: boolean;
+  companyId?: string;
+  amenities: string[];
+  plots: PropertyPlot[];
+  images: string[];
+  layoutImage?: string;
+  documents?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PropertyResponse {
+  properties: Property[];
+  totalCount: number;
+  totalPages: number;
+  currentPage: number;
+}
+
+// Define the context type
+interface PropertyContextType {
+  // Properties
+  properties: Property[];
+  filteredProperties: Property[];
+  selectedProperty: Property | null;
   isLoading: boolean;
-  isSubmitting: boolean;
+
+  // Filters
+  searchQuery: string;
+  locationFilter: string;
+  typeFilter: string;
+  sortOption: string;
+  viewMode: "grid" | "list";
 
   // CRUD operations
-  getPurchase: (id: string) => Purchase | undefined;
-  createPurchase: (
-    purchase: Omit<Purchase, "id" | "purchaseDate" | "status">
-  ) => Promise<string>;
-  updatePurchase: (id: string, data: Partial<Purchase>) => Promise<void>;
-  deletePurchase: (id: string) => Promise<void>;
+  getPropertyById: (id: string) => Promise<Property | null>;
+  createProperty: (property: FormData) => Promise<Property | null>;
+  updateProperty: (id: string, property: FormData) => Promise<Property | null>;
+  deleteProperty: (id: string) => Promise<boolean>;
+  uploadPropertyImages: (id: string, images: File[]) => Promise<string[]>;
+  deletePropertyImage: (id: string, imageId: string) => Promise<boolean>;
+
+  // Property purchase
+  initiatePropertyPurchase: (id: string, plotIds: string[]) => Promise<any>;
 
   // Filter operations
-  setFilters: (filters: Partial<PurchasesContextType["filters"]>) => void;
-  resetFilters: () => void;
+  setSearchQuery: (query: string) => void;
+  setLocationFilter: (location: string) => void;
+  setTypeFilter: (type: string) => void;
+  setSortOption: (option: string) => void;
+  setViewMode: (mode: "grid" | "list") => void;
 
-  // Document operations
-  downloadDocument: (id: string) => Promise<void>;
-  uploadDocument: (id: string, file: File) => Promise<void>;
+  // Selection
+  selectProperty: (property: Property | null) => void;
 
-  // Status operations
-  completePurchase: (id: string) => Promise<void>;
-  cancelPurchase: (id: string) => Promise<void>;
-  refundPurchase: (id: string) => Promise<void>;
-};
+  // Data fetching
+  getProperties: (params?: {
+    page?: number;
+    limit?: number;
+    featured?: boolean;
+    type?: string;
+    location?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    status?: string;
+    search?: string;
+  }) => Promise<PropertyResponse>;
+  getPropertyTypes: () => Promise<string[]>;
+  getPropertyLocations: () => Promise<string[]>;
+  refreshPropertyData: () => Promise<void>;
+}
 
-// Default filters
-const defaultFilters = {
-  status: "all",
-  type: "all",
-  searchQuery: "",
-  dateRange: [null, null] as [Date | null, Date | null],
-};
-
-// Mock purchases
-const mockPurchases: Purchase[] = [
-  {
-    id: "1",
-    landId: "1",
-    landTitle: "Premium Land in Lekki Phase 1",
-    landLocation: "Lekki Phase 1, Lagos",
-    landType: "Residential",
-    landImage:
-      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8bGFuZHxlbnwwfHwwfHx8MA%3D%3D",
-    purchaseAmount: 75000000,
-    purchaseDate: "2023-05-15",
-    status: "completed",
-    documentUrl: "#",
-    size: "1000 sqm",
-    paymentMethod: "card",
-    buyer: {
-      id: "user1",
-      name: "John Doe",
-      email: "john.doe@example.com",
-    },
-    seller: {
-      id: "seller1",
-      name: "ABC Properties",
-      companyId: "company1",
-    },
-  },
-  {
-    id: "2",
-    landId: "3",
-    landTitle: "Waterfront Land in Banana Island",
-    landLocation: "Banana Island, Lagos",
-    landType: "Residential",
-    landImage:
-      "https://images.unsplash.com/photo-1502787530428-11cf61d6ba18?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fGxhbmR8ZW58MHx8MHx8fDA%3D",
-    purchaseAmount: 250000000,
-    purchaseDate: "2023-06-10",
-    status: "completed",
-    documentUrl: "#",
-    size: "1500 sqm",
-    paymentMethod: "bank_transfer",
-    buyer: {
-      id: "user1",
-      name: "John Doe",
-      email: "john.doe@example.com",
-    },
-    seller: {
-      id: "seller3",
-      name: "XYZ Realtors",
-      companyId: "company3",
-    },
-  },
-  {
-    id: "3",
-    landId: "4",
-    landTitle: "Industrial Land in Agbara",
-    landLocation: "Agbara, Ogun State",
-    landType: "Industrial",
-    landImage:
-      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fGxhbmR8ZW58MHx8MHx8fDA%3D",
-    purchaseAmount: 85000000,
-    purchaseDate: "2023-07-01",
-    status: "pending",
-    size: "5000 sqm",
-    paymentMethod: "wallet",
-    buyer: {
-      id: "user1",
-      name: "John Doe",
-      email: "john.doe@example.com",
-    },
-    seller: {
-      id: "seller4",
-      name: "Industrial Estates Ltd",
-      companyId: "company2",
-    },
-  },
-];
-
-// Create context
-const PurchasesContext = createContext<PurchasesContextType | undefined>(
+// Create the context with a default value
+const PropertyContext = createContext<PropertyContextType | undefined>(
   undefined
 );
 
+// Provider props
+interface PropertyProviderProps {
+  children: ReactNode;
+}
+
 // Provider component
-export function PurchasesProvider({ children }: { children: ReactNode }) {
-  const [purchases, setPurchases] = useState<Purchase[]>([]);
-  const [filters, setFiltersState] = useState(defaultFilters);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+export function PropertyProvider({ children }: PropertyProviderProps) {
+  // State for properties
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(
+    null
+  );
+  const [isLoading, setIsLoading] = useState(true);
 
-  const { balance, withdrawMoney } = useWallet();
+  // State for filters
+  const [searchQuery, setSearchQuery] = useState("");
+  const [locationFilter, setLocationFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [sortOption, setSortOption] = useState("newest");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  // Initialize purchases
+  // Load initial data
   useEffect(() => {
-    const initPurchases = async () => {
-      setIsLoading(true);
-      try {
-        // In a real app, this would be an API call
-        setPurchases(mockPurchases);
-      } catch (error) {
-        console.error("Failed to initialize purchases:", error);
-        errorToast("Failed to load purchases");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    initPurchases();
+    refreshPropertyData();
   }, []);
 
-  // Filter purchases based on filters
-  const filteredPurchases = purchases.filter((purchase) => {
-    // Filter by search query
-    if (
-      filters.searchQuery &&
-      !purchase.landTitle
-        .toLowerCase()
-        .includes(filters.searchQuery.toLowerCase()) &&
-      !purchase.landLocation
-        .toLowerCase()
-        .includes(filters.searchQuery.toLowerCase())
-    ) {
-      return false;
+  // Apply filters and sorting
+  useEffect(() => {
+    let result = [...properties];
+
+    // Apply search filter
+    if (searchQuery) {
+      result = result.filter(
+        (property) =>
+          property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          property.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          property.description.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
 
-    // Filter by status
-    if (filters.status !== "all" && purchase.status !== filters.status) {
-      return false;
+    // Apply location filter
+    if (locationFilter !== "all") {
+      result = result.filter((property) =>
+        property.location.includes(locationFilter)
+      );
     }
 
-    // Filter by type
-    if (filters.type !== "all" && purchase.landType !== filters.type) {
-      return false;
+    // Apply type filter
+    if (typeFilter !== "all") {
+      result = result.filter((property) => property.type === typeFilter);
     }
 
-    // Filter by date range
-    if (filters.dateRange[0] && filters.dateRange[1]) {
-      const purchaseDate = new Date(purchase.purchaseDate);
-      const startDate = filters.dateRange[0];
-      const endDate = filters.dateRange[1];
-
-      if (purchaseDate < startDate || purchaseDate > endDate) {
-        return false;
-      }
+    // Apply sorting
+    switch (sortOption) {
+      case "newest":
+        result.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        break;
+      case "oldest":
+        result.sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+        break;
+      case "price-high":
+        result.sort((a, b) => b.price - a.price);
+        break;
+      case "price-low":
+        result.sort((a, b) => a.price - b.price);
+        break;
+      default:
+        break;
     }
 
-    return true;
-  });
+    setFilteredProperties(result);
+  }, [properties, searchQuery, locationFilter, typeFilter, sortOption]);
 
-  // Set filters
-  const setFilters = (newFilters: Partial<typeof filters>) => {
-    setFiltersState((prev) => ({ ...prev, ...newFilters }));
-  };
-
-  // Reset filters
-  const resetFilters = () => {
-    setFiltersState(defaultFilters);
-  };
-
-  // Get purchase by ID
-  const getPurchase = (id: string) =>
-    purchases.find((purchase) => purchase.id === id);
-
-  // Create purchase
-  const createPurchase = async (
-    purchase: Omit<Purchase, "id" | "purchaseDate" | "status">
-  ): Promise<string> => {
-    setIsSubmitting(true);
+  // Refresh property data
+  const refreshPropertyData = async (): Promise<void> => {
+    setIsLoading(true);
     try {
-      if (balance < purchase.purchaseAmount) {
-        throw new Error("Insufficient balance");
+      const response = await getProperties({ limit: 20 });
+      setProperties(response.properties);
+    } catch (error) {
+      console.error("Error fetching properties:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Get properties with pagination and filters
+  const getProperties = async (params?: {
+    page?: number;
+    limit?: number;
+    featured?: boolean;
+    type?: string;
+    location?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    status?: string;
+    search?: string;
+  }): Promise<PropertyResponse> => {
+    try {
+      const response = await apiConfig.get("/properties", {
+        params,
+        withCredentials: true,
+      });
+
+      if (response.status === 200) {
+        return {
+          properties: response.data.data || [],
+          totalCount: response.data.total || 0,
+          totalPages: response.data.totalPages || 0,
+          currentPage: response.data.currentPage || 1,
+        };
       }
-
-      await withdrawMoney(purchase.purchaseAmount, "default-bank-account-id");
-
-      // In a real app, this would be an API call
-      const newPurchase: Purchase = {
-        ...purchase,
-        id: `purchase-${Date.now()}`,
-        purchaseDate: new Date().toISOString(),
-        status: "pending",
-      };
-
-      setPurchases((prev) => [...prev, newPurchase]);
-      successToast("Purchase created successfully");
-
-      return newPurchase.id;
+      return { properties: [], totalCount: 0, totalPages: 0, currentPage: 1 };
     } catch (error: any) {
-      console.error("Failed to create purchase:", error);
-      errorToast(error.message || "Failed to create purchase");
-      throw error;
-    } finally {
-      setIsSubmitting(false);
+      console.error("Error fetching properties:", error);
+      
+      return { properties: [], totalCount: 0, totalPages: 0, currentPage: 1 };
     }
   };
 
-  // Update purchase
-  const updatePurchase = async (id: string, data: Partial<Purchase>) => {
-    setIsSubmitting(true);
+  // Get property by ID
+  const getPropertyById = async (id: string): Promise<Property | null> => {
+    setIsLoading(true);
     try {
-      // In a real app, this would be an API call
-      setPurchases((prev) =>
-        prev.map((purchase) =>
-          purchase.id === id ? { ...purchase, ...data } : purchase
-        )
-      );
-      successToast("Purchase updated successfully");
-    } catch (error) {
-      console.error("Failed to update purchase:", error);
-      errorToast("Failed to update purchase");
-      throw error;
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+      const response = await apiConfig.get(`/properties/${id}`, {
+        withCredentials: true,
+      });
 
-  // Delete purchase
-  const deletePurchase = async (id: string) => {
-    setIsSubmitting(true);
-    try {
-      // In a real app, this would be an API call
-      setPurchases((prev) => prev.filter((purchase) => purchase.id !== id));
-      successToast("Purchase deleted successfully");
-    } catch (error) {
-      console.error("Failed to delete purchase:", error);
-      errorToast("Failed to delete purchase");
-      throw error;
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Download document
-  const downloadDocument = async (id: string) => {
-    try {
-      // In a real app, this would be an API call to download the document
-      const purchase = purchases.find((p) => p.id === id);
-
-      if (!purchase || !purchase.documentUrl) {
-        throw new Error("Document not found");
+      if (response.status === 200) {
+        return response.data.data;
       }
-
-      // Simulate download
-      window.open(purchase.documentUrl, "_blank");
-      successToast("Document download started");
-    } catch (error) {
-      console.error("Failed to download document:", error);
-      errorToast("Failed to download document");
-      throw error;
+      return null;
+    } catch (error: any) {
+      console.error("Error fetching property:", error);
+      toast.error("Failed to load property details", {
+        description:
+          error.response?.data?.message ||
+          "Please try again or contact support if the issue persists.",
+      });
+      return null;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Upload document
-  const uploadDocument = async (id: string, file: File) => {
-    setIsSubmitting(true);
+  // Get property types
+  const getPropertyTypes = async (): Promise<string[]> => {
     try {
-      // In a real app, this would be an API call to upload the document
-      // For now, we'll just simulate a successful upload
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const response = await apiConfig.get("/properties/types", {
+        withCredentials: true,
+      });
 
-      // Update the purchase with the document URL
-      setPurchases((prev) =>
-        prev.map((purchase) =>
-          purchase.id === id
-            ? { ...purchase, documentUrl: URL.createObjectURL(file) }
-            : purchase
-        )
+      if (response.status === 200) {
+        return response.data.types || [];
+      }
+      return [];
+    } catch (error: any) {
+      console.error("Error fetching property types:", error);
+      return [];
+    }
+  };
+
+  // Get property locations
+  const getPropertyLocations = async (): Promise<string[]> => {
+    try {
+      const response = await apiConfig.get("/properties/locations", {
+        withCredentials: true,
+      });
+
+      if (response.status === 200) {
+        return response.data.locations || [];
+      }
+      return [];
+    } catch (error: any) {
+      console.error("Error fetching property locations:", error);
+      return [];
+    }
+  };
+
+  // Create property
+  const createProperty = async (
+    formData: FormData
+  ): Promise<Property | null> => {
+    setIsLoading(true);
+    try {
+      const response = await apiConfigFile.post("/properties", formData, {
+        withCredentials: true,
+      });
+
+      if (response.status === 201) {
+        const newProperty = response.data.data;
+
+        // Update local state
+        setProperties((prev) => [...prev, newProperty]);
+
+        toast.success("Property created successfully", {
+          description: `${newProperty.title} has been added to your properties.`,
+        });
+
+        return newProperty;
+      }
+      return null;
+    } catch (error: any) {
+      console.error("Error creating property:", error);
+      toast.error("Failed to create property", {
+        description:
+          error.response?.data?.message ||
+          "Please try again or contact support if the issue persists.",
+      });
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Update property
+  const updateProperty = async (
+    id: string,
+    formData: FormData
+  ): Promise<Property | null> => {
+    setIsLoading(true);
+    try {
+      const response = await apiConfigFile.put(`/properties/${id}`, formData, {
+        withCredentials: true,
+      });
+
+      if (response.status === 200) {
+        const updatedProperty = response.data.data;
+
+        // Update local state
+        setProperties((prev) =>
+          prev.map((property) =>
+            property._id === id ? updatedProperty : property
+          )
+        );
+
+        toast.success("Property updated successfully", {
+          description: `Changes to ${updatedProperty.title} have been saved.`,
+        });
+
+        return updatedProperty;
+      }
+      return null;
+    } catch (error: any) {
+      console.error("Error updating property:", error);
+      toast.error("Failed to update property", {
+        description:
+          error.response?.data?.message ||
+          "Please try again or contact support if the issue persists.",
+      });
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Delete property
+  const deleteProperty = async (id: string): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const response = await apiConfig.delete(`/properties/${id}`, {
+        withCredentials: true,
+      });
+
+      if (response.status === 200) {
+        // Update local state
+        setProperties((prev) => prev.filter((property) => property._id !== id));
+
+        toast.success("Property deleted successfully", {
+          description: "The property has been removed from your listings.",
+        });
+
+        return true;
+      }
+      return false;
+    } catch (error: any) {
+      console.error("Error deleting property:", error);
+      toast.error("Failed to delete property", {
+        description:
+          error.response?.data?.message ||
+          "Please try again or contact support if the issue persists.",
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Upload property images
+  const uploadPropertyImages = async (
+    id: string,
+    images: File[]
+  ): Promise<string[]> => {
+    setIsLoading(true);
+    try {
+      const formData = new FormData();
+
+      images.forEach((image) => {
+        formData.append("images", image);
+      });
+
+      const response = await apiConfigFile.post(
+        `/properties/${id}/images`,
+        formData,
+        {
+          withCredentials: true,
+        }
       );
 
-      successToast("Document uploaded successfully");
-    } catch (error) {
-      console.error("Failed to upload document:", error);
-      errorToast("Failed to upload document");
-      throw error;
+      if (response.status === 200) {
+        // Update local state
+        const updatedProperty = response.data.data;
+        setProperties((prev) =>
+          prev.map((property) =>
+            property._id === id ? updatedProperty : property
+          )
+        );
+
+        toast.success("Images uploaded successfully", {
+          description: `${images.length} images have been added to the property.`,
+        });
+
+        return updatedProperty.images || [];
+      }
+      return [];
+    } catch (error: any) {
+      console.error("Error uploading property images:", error);
+      toast.error("Failed to upload images", {
+        description:
+          error.response?.data?.message ||
+          "Please try again or contact support if the issue persists.",
+      });
+      return [];
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
-  // Complete purchase
-  const completePurchase = async (id: string) => {
-    return updatePurchase(id, { status: "completed" });
+  // Delete property image
+  const deletePropertyImage = async (
+    id: string,
+    imageId: string
+  ): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const response = await apiConfig.delete(
+        `/properties/${id}/images/${imageId}`,
+        {
+          withCredentials: true,
+        }
+      );
+
+      if (response.status === 200) {
+        // Update local state
+        const updatedProperty = response.data.data;
+        setProperties((prev) =>
+          prev.map((property) =>
+            property._id === id ? updatedProperty : property
+          )
+        );
+
+        toast.success("Image deleted successfully", {
+          description: "The image has been removed from the property.",
+        });
+
+        return true;
+      }
+      return false;
+    } catch (error: any) {
+      console.error("Error deleting property image:", error);
+      toast.error("Failed to delete image", {
+        description:
+          error.response?.data?.message ||
+          "Please try again or contact support if the issue persists.",
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Cancel purchase
-  const cancelPurchase = async (id: string) => {
-    return updatePurchase(id, { status: "failed" });
+  // Initiate property purchase
+  const initiatePropertyPurchase = async (
+    id: string,
+    plotIds: string[]
+  ): Promise<any> => {
+    setIsLoading(true);
+    try {
+      const response = await apiConfig.post(
+        `/properties/${id}/purchase/initiate`,
+        { plotIds },
+        {
+          withCredentials: true,
+        }
+      );
+
+      if (response.status === 200) {
+        toast.success("Purchase initiated successfully", {
+          description: "Your property purchase has been initiated.",
+        });
+
+        return response.data.data;
+      }
+      return null;
+    } catch (error: any) {
+      console.error("Error initiating property purchase:", error);
+      toast.error("Failed to initiate purchase", {
+        description:
+          error.response?.data?.message ||
+          "Please try again or contact support if the issue persists.",
+      });
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Refund purchase
-  const refundPurchase = async (id: string) => {
-    return updatePurchase(id, { status: "refunded" });
+  const selectProperty = (property: Property | null) => {
+    setSelectedProperty(property);
   };
 
-  const value = {
-    purchases,
-    filteredPurchases,
-    filters,
+  // Context value
+  const value: PropertyContextType = {
+    properties,
+    filteredProperties,
+    selectedProperty,
     isLoading,
-    isSubmitting,
-    getPurchase,
-    createPurchase,
-    updatePurchase,
-    deletePurchase,
-    setFilters,
-    resetFilters,
-    downloadDocument,
-    uploadDocument,
-    completePurchase,
-    cancelPurchase,
-    refundPurchase,
+
+    searchQuery,
+    locationFilter,
+    typeFilter,
+    sortOption,
+    viewMode,
+
+    getPropertyById,
+    createProperty,
+    updateProperty,
+    deleteProperty,
+    uploadPropertyImages,
+    deletePropertyImage,
+    initiatePropertyPurchase,
+
+    setSearchQuery,
+    setLocationFilter,
+    setTypeFilter,
+    setSortOption,
+    setViewMode,
+
+    selectProperty,
+
+    getProperties,
+    getPropertyTypes,
+    getPropertyLocations,
+    refreshPropertyData,
   };
 
   return (
-    <PurchasesContext.Provider value={value}>
+    <PropertyContext.Provider value={value}>
       {children}
-    </PurchasesContext.Provider>
+    </PropertyContext.Provider>
   );
 }
 
-// Custom hook to use the context
-export function usePurchases() {
-  const context = useContext(PurchasesContext);
+// Custom hook to use the property context
+export function useProperty() {
+  const context = useContext(PropertyContext);
   if (context === undefined) {
-    throw new Error("usePurchases must be used within a PurchasesProvider");
+    throw new Error("useProperty must be used within a PropertyProvider");
   }
   return context;
 }

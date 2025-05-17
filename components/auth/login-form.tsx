@@ -60,15 +60,7 @@ export default function LoginForm() {
           sameSite: "strict",
         });
 
-        // Store user info in localStorage
-        localStorage.setItem("userRole", user.role || "user");
-        localStorage.setItem("userId", user._id);
-        localStorage.setItem("userName", user.userName || "");
-        localStorage.setItem("userEmail", user.email);
-        localStorage.setItem(
-          "isEmailVerified",
-          user.isEmailVerified ? "true" : "false"
-        );
+       
 
         // Show success toast for successful login
         toast.success("Login successful!");
@@ -76,7 +68,9 @@ export default function LoginForm() {
        // Check if email is verified
         if (user.isEmailVerified === true) {
           // If verified, redirect to dashboard
-          router.push("/dashboard");
+          if(typeof window !== "undefined") {
+            window.location.reload();
+          }
         } else {
           // If not verified, redirect to account verification page
           router.push("/account-verify");

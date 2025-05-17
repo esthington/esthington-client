@@ -1,7 +1,7 @@
 import axios from "axios";
 import cookie from "js-cookie";
 
-// const esToken = cookie.get("esToken");
+const esToken = cookie.get("esToken");
 
 export const apiConfigFile = axios.create({
   baseURL:
@@ -12,7 +12,7 @@ export const apiConfigFile = axios.create({
   headers: {
     "Content-Type": "multipart/form-data",
     Accept: "application/json",
-    // Authorization: "Bearer " + esToken,
+    Authorization: "Bearer " + esToken,
   },
 });
 

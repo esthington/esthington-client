@@ -23,6 +23,8 @@ import {
   Briefcase,
   ChevronDown,
   ChevronRight,
+  HousePlus,
+  MapPinHouse,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -240,6 +242,9 @@ export default function AdminSidebar() {
                           <NavItem href="/dashboard" icon={Home}>
                             Overview
                           </NavItem>
+                          <NavItem href="/dashboard/companies" icon={MapPinHouse}>
+                            Companies
+                          </NavItem>
                           <NavItem href="/dashboard/properties" icon={Building}>
                             Properties
                           </NavItem>
@@ -333,12 +338,7 @@ export default function AdminSidebar() {
                           >
                             Add Listing
                           </NavItem>
-                          <NavItem
-                            href="/dashboard/marketplace/manage"
-                            icon={Briefcase}
-                          >
-                            Manage Listings
-                          </NavItem>
+                         
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -367,13 +367,13 @@ export default function AdminSidebar() {
                           variants={sectionVariants}
                         >
                           <NavItem
-                            href="/dashboard/admin/investments"
+                            href="/dashboard/investments"
                             icon={Briefcase}
                           >
                             Manage Investments
                           </NavItem>
                           <NavItem
-                            href="/dashboard/admin/investments/create"
+                            href="/dashboard/investments/create"
                             icon={PlusCircle}
                           >
                             Create Investment

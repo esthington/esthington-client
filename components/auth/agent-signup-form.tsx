@@ -73,7 +73,9 @@ export default function AgentSignupForm() {
           // sameSite: "strict",
         });
 
-        router.push("/account-verify");
+        if (typeof window !== "undefined") {
+          window.location.reload();
+        }
       } else {
         // Handle case where response exists but indicates failure
         toast.error(response?.data?.message || "Failed to create account");

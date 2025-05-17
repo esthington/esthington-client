@@ -35,8 +35,6 @@ export default function ForgotPasswordForm() {
       if (response && response.status === 200) {
         setIsSubmitted(true);
         toast.success("Password reset link sent successfully!");
-        // Store the email in localStorage for reference
-        // localStorage.setItem("resetPasswordEmail", email)
       } else {
         toast.error(response?.data?.message || "Failed to send reset link");
       }

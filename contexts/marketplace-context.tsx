@@ -1,338 +1,159 @@
-"use client"
+"use client";
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import { successToast, errorToast } from "@/lib/toast"
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from "react";
+import { toast } from "sonner";
+import { apiConfig, apiConfigFile } from "@/lib/api";
 
-// Types for marketplace
+// Types for marketplace listings
 export type MarketplaceListingType = {
-  id: string
-  title: string
-  description: string
-  price: number
-  location: string
-  type: string
-  size: string
-  status: "available" | "pending" | "sold"
-  featured: boolean
-  trending: boolean
-  images: string[]
-  features: string[]
-  createdAt: string
-  updatedAt: string
-  seller: {
-    id: string
-    name: string
-    email: string
-    phone: string
-    avatar: string
-  }
-  investmentDetails?: {
-    minInvestment: number
-    expectedReturn: number
-    duration: number
-    maxInvestors: number
-    investmentType: "fractional" | "rental" | "development" | "flip"
-    currentInvestors?: number
-    totalInvested?: number
-  }
-  companyId?: string
-}
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  discountedPrice?: number;
+  thumbnail: string;
+  quantity: number;
+  sku?: string;
+  barcode?: string;
+  weight?: number;
+  dimensions?: {
+    length?: number;
+    width?: number;
+    height?: number;
+  };
+  location: string;
+  type: string;
+  size?: string;
+  status: "available" | "pending" | "sold" | "out_of_stock";
+  featured: boolean;
+  trending?: boolean;
+  images: string[];
+  features: string[];
+  documents: string[];
+  amenities?: string[];
+  createdAt: string;
+  updatedAt: string;
+  companyId: {
+    _id: string;
+  };
+  creatorId: string;
+  categories?: string[];
+  tags?: string[];
+  isDigital?: boolean;
+  downloadUrl?: string;
+  variations?: Array<{
+    id: string;
+    name: string;
+    options: Array<{
+      id: string;
+      name: string;
+      price: number;
+      discountedPrice?: number;
+      quantity: number;
+      sku?: string;
+    }>;
+  }>;
+};
 
 export type MarketplaceFilterType = {
-  searchQuery: string
-  location: string
-  type: string
-  priceRange: [number, number]
-  sortBy: string
-  viewMode: "grid" | "list"
-}
+  searchQuery: string;
+  location: string;
+  type: string;
+  priceRange: [number, number];
+  sortBy: string;
+  viewMode: "grid" | "list";
+  category?: string;
+  inStock?: boolean;
+};
 
 // Context type
 type MarketplaceContextType = {
   // Listings
-  listings: MarketplaceListingType[]
-  filteredListings: MarketplaceListingType[]
-  filters: MarketplaceFilterType
-  setFilters: (filters: Partial<MarketplaceFilterType>) => void
-  resetFilters: () => void
-
+  listings: MarketplaceListingType[];
+  filteredListings: MarketplaceListingType[];
+  filters: MarketplaceFilterType;
+  setFilters: (filters: Partial<MarketplaceFilterType>) => void;
+  resetFilters: () => void;
+  getCompanies: () => Promise<any[]>;
   // CRUD operations
-  getListing: (id: string) => MarketplaceListingType | undefined
-  addListing: (listing: Omit<MarketplaceListingType, "id" | "createdAt" | "updatedAt">) => Promise<string>
-  updateListing: (id: string, data: Partial<MarketplaceListingType>) => Promise<void>
-  deleteListing: (id: string) => Promise<void>
+  getListing: (id: string) => Promise<MarketplaceListingType | null>;
+  addListing: (formData: FormData) => Promise<string | null>;
+  updateListing: (id: string, formData: FormData) => Promise<boolean>;
+  deleteListing: (id: string) => Promise<boolean>;
 
   // Buyer operations
-  buyProperty: (listingId: string, buyerId: string) => Promise<void>
-  investInProperty: (listingId: string, investorId: string, amount: number) => Promise<void>
+  buyProperty: (listingId: string) => Promise<boolean>;
+  updateQuantity: (listingId: string, quantity: number) => Promise<boolean>;
 
   // Agent operations
-  getAgentListings: (agentId: string) => MarketplaceListingType[]
-  featureListing: (id: string, featured: boolean) => Promise<void>
+  getAgentListings: () => Promise<MarketplaceListingType[]>;
+  featureListing: (id: string, featured: boolean) => Promise<boolean>;
 
   // Admin operations
-  approveListing: (id: string) => Promise<void>
-  rejectListing: (id: string, reason: string) => Promise<void>
+  approveListing: (id: string) => Promise<boolean>;
+  rejectListing: (id: string, reason: string) => Promise<boolean>;
 
   // Loading states
-  isLoading: boolean
-  isSubmitting: boolean
-}
+  isLoading: boolean;
+  isSubmitting: boolean;
+};
 
 // Default filter values
 const defaultFilters: MarketplaceFilterType = {
   searchQuery: "",
   location: "all",
   type: "all",
-  priceRange: [5000000, 100000000],
+  priceRange: [0, 1000000],
   sortBy: "trending",
   viewMode: "grid",
-}
+  inStock: true,
+};
 
 // Create context
-const MarketplaceContext = createContext<MarketplaceContextType | undefined>(undefined)
-
-// Mock data for marketplace listings
-const mockListings: MarketplaceListingType[] = [
-  {
-    id: "1",
-    title: "Premium Land in Lekki Phase 1",
-    description: "A beautiful piece of land in the heart of Lekki Phase 1. Perfect for residential development.",
-    location: "Lekki Phase 1, Lagos",
-    price: 75000000,
-    type: "Residential",
-    size: "1000 sqm",
-    status: "available",
-    featured: true,
-    trending: true,
-    features: ["Dry Land", "C of O", "Gated Community", "24/7 Security"],
-    images: [
-      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8bGFuZHxlbnwwfHwwfHx8MA%3D%3D",
-    ],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    seller: {
-      id: "seller1",
-      name: "John Doe",
-      email: "john.doe@example.com",
-      phone: "+234 123 456 7890",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    investmentDetails: {
-      minInvestment: 1000000,
-      expectedReturn: 12,
-      duration: 24,
-      maxInvestors: 50,
-      investmentType: "fractional",
-      currentInvestors: 12,
-      totalInvested: 25000000,
-    },
-    companyId: "company1",
-  },
-  {
-    id: "2",
-    title: "Commercial Plot in Victoria Island",
-    description: "Prime commercial plot in Victoria Island. Excellent for office or retail development.",
-    location: "Victoria Island, Lagos",
-    price: 120000000,
-    type: "Commercial",
-    size: "2000 sqm",
-    status: "available",
-    featured: false,
-    trending: true,
-    features: ["Prime Location", "C of O", "Road Access", "Electricity"],
-    images: [
-      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fGxhbmR8ZW58MHx8MHx8fDA%3D",
-    ],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    seller: {
-      id: "seller2",
-      name: "Jane Smith",
-      email: "jane.smith@example.com",
-      phone: "+234 987 654 3210",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    investmentDetails: {
-      minInvestment: 2000000,
-      expectedReturn: 15,
-      duration: 36,
-      maxInvestors: 30,
-      investmentType: "development",
-      currentInvestors: 8,
-      totalInvested: 40000000,
-    },
-    companyId: "company2",
-  },
-  {
-    id: "3",
-    title: "Waterfront Land in Banana Island",
-    description: "Exclusive waterfront land in Banana Island. Perfect for luxury residential development.",
-    location: "Banana Island, Lagos",
-    price: 250000000,
-    type: "Residential",
-    size: "1500 sqm",
-    status: "available",
-    featured: true,
-    trending: false,
-    features: ["Waterfront", "C of O", "Luxury Area", "Private Access"],
-    images: [
-      "https://images.unsplash.com/photo-1502787530428-11cf61d6ba18?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fGxhbmR8ZW58MHx8MHx8fDA%3D",
-    ],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    seller: {
-      id: "seller3",
-      name: "Robert Johnson",
-      email: "robert.johnson@example.com",
-      phone: "+234 555 123 4567",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    investmentDetails: {
-      minInvestment: 5000000,
-      expectedReturn: 18,
-      duration: 48,
-      maxInvestors: 20,
-      investmentType: "fractional",
-      currentInvestors: 5,
-      totalInvested: 50000000,
-    },
-    companyId: "company3",
-  },
-  {
-    id: "4",
-    title: "Industrial Land in Agbara",
-    description: "Large industrial land in Agbara Industrial Estate. Ideal for manufacturing or warehousing.",
-    location: "Agbara, Ogun State",
-    price: 85000000,
-    type: "Industrial",
-    size: "5000 sqm",
-    status: "available",
-    featured: false,
-    trending: true,
-    features: ["Industrial Zone", "Flat Terrain", "Road Access", "Power Supply"],
-    images: [
-      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fGxhbmR8ZW58MHx8MHx8fDA%3D",
-    ],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    seller: {
-      id: "seller4",
-      name: "Michael Brown",
-      email: "michael.brown@example.com",
-      phone: "+234 777 888 9999",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    investmentDetails: {
-      minInvestment: 1500000,
-      expectedReturn: 14,
-      duration: 36,
-      maxInvestors: 40,
-      investmentType: "development",
-      currentInvestors: 15,
-      totalInvested: 35000000,
-    },
-    companyId: "company2",
-  },
-  {
-    id: "5",
-    title: "Residential Plot in Ikoyi",
-    description: "Premium residential plot in Ikoyi. Perfect for luxury home development.",
-    location: "Ikoyi, Lagos",
-    price: 180000000,
-    type: "Residential",
-    size: "1200 sqm",
-    status: "available",
-    featured: true,
-    trending: true,
-    features: ["Gated Estate", "C of O", "Luxury Area", "24/7 Security"],
-    images: [
-      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8bGFuZHxlbnwwfHwwfHx8MA%3D%3D",
-    ],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    seller: {
-      id: "seller5",
-      name: "Sarah Wilson",
-      email: "sarah.wilson@example.com",
-      phone: "+234 111 222 3333",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    investmentDetails: {
-      minInvestment: 3000000,
-      expectedReturn: 16,
-      duration: 24,
-      maxInvestors: 25,
-      investmentType: "fractional",
-      currentInvestors: 10,
-      totalInvested: 45000000,
-    },
-    companyId: "company1",
-  },
-  {
-    id: "6",
-    title: "Mixed-Use Land in Ikeja",
-    description: "Strategic mixed-use land in Ikeja. Great for commercial and residential development.",
-    location: "Ikeja, Lagos",
-    price: 65000000,
-    type: "Mixed-Use",
-    size: "1800 sqm",
-    status: "available",
-    featured: false,
-    trending: false,
-    features: ["Commercial Area", "Governor's Consent", "Road Access", "High Foot Traffic"],
-    images: [
-      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8bGFuZHxlbnwwfHwwfHx8MA%3D%3D",
-    ],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    seller: {
-      id: "seller6",
-      name: "David Lee",
-      email: "david.lee@example.com",
-      phone: "+234 444 555 6666",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    investmentDetails: {
-      minInvestment: 1000000,
-      expectedReturn: 13,
-      duration: 30,
-      maxInvestors: 35,
-      investmentType: "development",
-      currentInvestors: 20,
-      totalInvested: 30000000,
-    },
-    companyId: "company3",
-  },
-]
+const MarketplaceContext = createContext<MarketplaceContextType | undefined>(
+  undefined
+);
 
 // Provider component
 export function MarketplaceProvider({ children }: { children: ReactNode }) {
   // State for listings
-  const [listings, setListings] = useState<MarketplaceListingType[]>([])
-  const [filters, setFiltersState] = useState<MarketplaceFilterType>(defaultFilters)
+  const [listings, setListings] = useState<MarketplaceListingType[]>([]);
+  const [filters, setFiltersState] =
+    useState<MarketplaceFilterType>(defaultFilters);
 
   // Loading states
-  const [isLoading, setIsLoading] = useState<boolean>(true)
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // Initialize with mock data
+  // Initialize with data
   useEffect(() => {
-    const initData = async () => {
-      setIsLoading(true)
-      try {
-        // In a real app, this would be an API call
-        setListings(mockListings)
-      } catch (error) {
-        console.error("Failed to initialize marketplace data:", error)
-        errorToast("Failed to load marketplace listings")
-      } finally {
-        setIsLoading(false)
-      }
-    }
+    fetchListings();
+  }, []);
 
-    initData()
-  }, [])
+  // Fetch listings from API
+  const fetchListings = async () => {
+    setIsLoading(true);
+    try {
+      const response = await apiConfig.get("/marketplace/listings", {
+        withCredentials: true,
+      });
+
+      if (response.status === 200) {
+        setListings(response.data.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch marketplace listings:", error);
+      toast.error("Failed to load marketplace listings");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Filter and sort listings based on filters
   const filteredListings = listings
@@ -340,205 +161,436 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
       // Filter by search query
       if (
         filters.searchQuery &&
-        !listing.title.toLowerCase().includes(filters.searchQuery.toLowerCase()) &&
-        !listing.location.toLowerCase().includes(filters.searchQuery.toLowerCase()) &&
-        !listing.description.toLowerCase().includes(filters.searchQuery.toLowerCase())
+        !listing.title
+          .toLowerCase()
+          .includes(filters.searchQuery.toLowerCase()) &&
+        !listing.location
+          .toLowerCase()
+          .includes(filters.searchQuery.toLowerCase()) &&
+        !listing.description
+          .toLowerCase()
+          .includes(filters.searchQuery.toLowerCase())
       ) {
-        return false
+        return false;
       }
 
       // Filter by location
-      if (filters.location !== "all" && !listing.location.includes(filters.location)) {
-        return false
+      if (
+        filters.location !== "all" &&
+        !listing.location.includes(filters.location)
+      ) {
+        return false;
       }
 
       // Filter by type
       if (filters.type !== "all" && listing.type !== filters.type) {
-        return false
+        return false;
       }
 
       // Filter by price range
-      if (listing.price < filters.priceRange[0] || listing.price > filters.priceRange[1]) {
-        return false
+      const effectivePrice = listing.discountedPrice || listing.price;
+      if (
+        effectivePrice < filters.priceRange[0] ||
+        effectivePrice > filters.priceRange[1]
+      ) {
+        return false;
       }
 
-      return true
+      // Filter by category
+      if (
+        filters.category &&
+        (!listing.categories || !listing.categories.includes(filters.category))
+      ) {
+        return false;
+      }
+
+      // Filter by stock status
+      if (
+        filters.inStock &&
+        (listing.quantity <= 0 || listing.status === "out_of_stock")
+      ) {
+        return false;
+      }
+
+      return true;
     })
     .sort((a, b) => {
       // Sort based on sortBy option
       switch (filters.sortBy) {
         case "trending":
-          return (b.trending ? 1 : 0) - (a.trending ? 1 : 0)
+          return (b.trending ? 1 : 0) - (a.trending ? 1 : 0);
         case "featured":
-          return (b.featured ? 1 : 0) - (a.featured ? 1 : 0)
+          return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
         case "price-high":
-          return b.price - a.price
+          return (
+            (b.discountedPrice || b.price) - (a.discountedPrice || a.price)
+          );
         case "price-low":
-          return a.price - b.price
+          return (
+            (a.discountedPrice || a.price) - (b.discountedPrice || b.price)
+          );
         case "newest":
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        case "discount":
+          const aDiscount = a.discountedPrice
+            ? ((a.price - a.discountedPrice) / a.price) * 100
+            : 0;
+          const bDiscount = b.discountedPrice
+            ? ((b.price - b.discountedPrice) / b.price) * 100
+            : 0;
+          return bDiscount - aDiscount;
         default:
-          return 0
+          return 0;
       }
-    })
+    });
 
   // Update filters
   const setFilters = (newFilters: Partial<MarketplaceFilterType>) => {
-    setFiltersState((prev) => ({ ...prev, ...newFilters }))
-  }
+    setFiltersState((prev) => ({ ...prev, ...newFilters }));
+  };
 
   // Reset filters to default
   const resetFilters = () => {
-    setFiltersState(defaultFilters)
-  }
+    setFiltersState(defaultFilters);
+  };
 
-  // CRUD operations for listings
-  const getListing = (id: string) => listings.find((listing) => listing.id === id)
-
-  const addListing = async (
-    listing: Omit<MarketplaceListingType, "id" | "createdAt" | "updatedAt">,
-  ): Promise<string> => {
-    setIsSubmitting(true)
+  // Get a single listing by ID
+  const getListing = async (
+    id: string
+  ): Promise<MarketplaceListingType | null> => {
+    setIsLoading(true);
     try {
-      // In a real app, this would be an API call
-      const now = new Date().toISOString()
-      const newListing: MarketplaceListingType = {
-        ...listing,
-        id: `listing-${Date.now()}`,
-        createdAt: now,
-        updatedAt: now,
+      const response = await apiConfig.get(`/marketplace/listings/${id}`, {
+        withCredentials: true,
+      });
+
+      if (response.status === 200) {
+        return response.data.data;
       }
-      setListings((prev) => [...prev, newListing])
-      successToast("Listing added successfully")
-      return newListing.id
+      return null;
     } catch (error) {
-      console.error("Failed to add listing:", error)
-      errorToast("Failed to add listing")
-      throw error
+      console.error("Failed to fetch listing:", error);
+      toast.error("Failed to load listing details");
+      return null;
     } finally {
-      setIsSubmitting(false)
+      setIsLoading(false);
     }
-  }
+  };
 
-  const updateListing = async (id: string, data: Partial<MarketplaceListingType>) => {
-    setIsSubmitting(true)
+  // Add a new listing
+  const addListing = async (formData: FormData): Promise<string | null> => {
+    setIsSubmitting(true);
     try {
-      // In a real app, this would be an API call
-      setListings((prev) =>
-        prev.map((listing) =>
-          listing.id === id
-            ? {
+      console.log("FormData:", formData.get("data"),);
+      const response = await apiConfigFile.post(
+        "/marketplace/listings",
+        formData,
+        {
+          withCredentials: true,
+        }
+      );
+
+      if (response.status === 201) {
+        const newListing = response.data.data;
+        setListings((prev) => [...prev, newListing]);
+        toast.success("Listing created successfully");
+        return newListing.id;
+      }
+      return null;
+    } catch (error) {
+      console.error("Failed to create listing:", error);
+      toast.error("Failed to create listing");
+      return null;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Update an existing listing
+  const updateListing = async (
+    id: string,
+    formData: FormData
+  ): Promise<boolean> => {
+    setIsSubmitting(true);
+    try {
+      const response = await apiConfigFile.put(
+        `/marketplace/listings/${id}`,
+        formData,
+        {
+          withCredentials: true,
+        }
+      );
+
+      if (response.status === 200) {
+        const updatedListing = response.data.data;
+        setListings((prev) =>
+          prev.map((listing) => (listing.id === id ? updatedListing : listing))
+        );
+        toast.success("Listing updated successfully");
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Failed to update listing:", error);
+      toast.error("Failed to update listing");
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Delete a listing
+  const deleteListing = async (id: string): Promise<boolean> => {
+    setIsSubmitting(true);
+    try {
+      const response = await apiConfig.delete(`/marketplace/listings/${id}`, {
+        withCredentials: true,
+      });
+
+      if (response.status === 200) {
+        setListings((prev) => prev.filter((listing) => listing.id !== id));
+        toast.success("Listing deleted successfully");
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Failed to delete listing:", error);
+      toast.error("Failed to delete listing");
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Buy a property
+  const buyProperty = async (listingId: string): Promise<boolean> => {
+    setIsSubmitting(true);
+    try {
+      const response = await apiConfig.post(
+        `/marketplace/listings/${listingId}/purchase`,
+        {},
+        {
+          withCredentials: true,
+        }
+      );
+
+      if (response.status === 200) {
+        // Update the listing status in the local state
+        setListings((prev) =>
+          prev.map((listing) => {
+            if (listing.id === listingId) {
+              const updatedQuantity = listing.quantity - 1;
+              return {
                 ...listing,
-                ...data,
+                quantity: updatedQuantity,
+                status: updatedQuantity <= 0 ? "out_of_stock" : listing.status,
                 updatedAt: new Date().toISOString(),
-              }
-            : listing,
-        ),
-      )
-      successToast("Listing updated successfully")
-    } catch (error) {
-      console.error("Failed to update listing:", error)
-      errorToast("Failed to update listing")
-      throw error
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const deleteListing = async (id: string) => {
-    setIsSubmitting(true)
-    try {
-      // In a real app, this would be an API call
-      setListings((prev) => prev.filter((listing) => listing.id !== id))
-      successToast("Listing deleted successfully")
-    } catch (error) {
-      console.error("Failed to delete listing:", error)
-      errorToast("Failed to delete listing")
-      throw error
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  // Buyer operations
-  const buyProperty = async (listingId: string, buyerId: string) => {
-    setIsSubmitting(true)
-    try {
-      // In a real app, this would be an API call to process purchase
-      // For now, we'll just update the listing status
-      setListings((prev) =>
-        prev.map((listing) =>
-          listing.id === listingId
-            ? {
-                ...listing,
-                status: "sold",
-                updatedAt: new Date().toISOString(),
-              }
-            : listing,
-        ),
-      )
-      successToast("Property purchased successfully")
-    } catch (error) {
-      console.error("Failed to buy property:", error)
-      errorToast("Failed to complete purchase")
-      throw error
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const investInProperty = async (listingId: string, investorId: string, amount: number) => {
-    setIsSubmitting(true)
-    try {
-      // In a real app, this would be an API call to process investment
-      // For now, we'll just update the listing's investment details
-      setListings((prev) =>
-        prev.map((listing) => {
-          if (listing.id === listingId && listing.investmentDetails) {
-            const currentInvestors = (listing.investmentDetails.currentInvestors || 0) + 1
-            const totalInvested = (listing.investmentDetails.totalInvested || 0) + amount
-
-            return {
-              ...listing,
-              investmentDetails: {
-                ...listing.investmentDetails,
-                currentInvestors,
-                totalInvested,
-              },
-              updatedAt: new Date().toISOString(),
+              };
             }
-          }
-          return listing
-        }),
-      )
-      successToast("Investment processed successfully")
+            return listing;
+          })
+        );
+        toast.success("Item purchased successfully");
+        return true;
+      }
+      return false;
     } catch (error) {
-      console.error("Failed to process investment:", error)
-      errorToast("Failed to process investment")
-      throw error
+      console.error("Failed to purchase item:", error);
+      toast.error("Failed to complete purchase");
+      return false;
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
-  // Agent operations
-  const getAgentListings = (agentId: string) => {
-    return listings.filter((listing) => listing.seller.id === agentId)
-  }
+  // Update quantity
+  const updateQuantity = async (
+    listingId: string,
+    quantity: number
+  ): Promise<boolean> => {
+    setIsSubmitting(true);
+    try {
+      const response = await apiConfig.patch(
+        `/marketplace/listings/${listingId}/quantity`,
+        { quantity },
+        {
+          withCredentials: true,
+        }
+      );
 
-  const featureListing = async (id: string, featured: boolean) => {
-    return updateListing(id, { featured })
-  }
+      if (response.status === 200) {
+        setListings((prev) =>
+          prev.map((listing) => {
+            if (listing.id === listingId) {
+              return {
+                ...listing,
+                quantity,
+                status: quantity <= 0 ? "out_of_stock" : "available",
+                updatedAt: new Date().toISOString(),
+              };
+            }
+            return listing;
+          })
+        );
+        toast.success("Inventory updated successfully");
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Failed to update inventory:", error);
+      toast.error("Failed to update inventory");
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-  // Admin operations
-  const approveListing = async (id: string) => {
-    return updateListing(id, { status: "available" })
-  }
+  // Get listings for the current agent
+  const getAgentListings = async (): Promise<MarketplaceListingType[]> => {
+    setIsLoading(true);
+    try {
+      const response = await apiConfig.get("/marketplace/listings/agent", {
+        withCredentials: true,
+      });
 
-  const rejectListing = async (id: string, reason: string) => {
-    // In a real app, you might store the rejection reason
-    return deleteListing(id)
-  }
+      if (response.status === 200) {
+        return response.data.data || [];
+      }
+      return [];
+    } catch (error) {
+      console.error("Failed to fetch agent listings:", error);
+      toast.error("Failed to load your listings");
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Feature or unfeature a listing
+  const featureListing = async (
+    id: string,
+    featured: boolean
+  ): Promise<boolean> => {
+    setIsSubmitting(true);
+    try {
+      const response = await apiConfig.patch(
+        `/marketplace/listings/${id}/feature`,
+        { featured },
+        {
+          withCredentials: true,
+        }
+      );
+
+      if (response.status === 200) {
+        setListings((prev) =>
+          prev.map((listing) =>
+            listing.id === id
+              ? { ...listing, featured, updatedAt: new Date().toISOString() }
+              : listing
+          )
+        );
+        toast.success(
+          featured
+            ? "Listing featured successfully"
+            : "Listing unfeatured successfully"
+        );
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Failed to update listing feature status:", error);
+      toast.error("Failed to update listing");
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Get companies
+  const getCompanies = async (): Promise<any[]> => {
+    try {
+      const response = await apiConfig.get("/companies", {
+        withCredentials: true,
+      });
+
+      if (response.status === 200) {
+        return response.data.data || [];
+      }
+      return [];
+    } catch (error: any) {
+      console.error("Error fetching companies:", error);
+      return [];
+    }
+  };
+
+  // Approve a listing (admin only)
+  const approveListing = async (id: string): Promise<boolean> => {
+    setIsSubmitting(true);
+    try {
+      const response = await apiConfig.patch(
+        `/marketplace/listings/${id}/approve`,
+        {},
+        {
+          withCredentials: true,
+        }
+      );
+
+      if (response.status === 200) {
+        setListings((prev) =>
+          prev.map((listing) =>
+            listing.id === id
+              ? {
+                  ...listing,
+                  status: "available",
+                  updatedAt: new Date().toISOString(),
+                }
+              : listing
+          )
+        );
+        toast.success("Listing approved successfully");
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Failed to approve listing:", error);
+      toast.error("Failed to approve listing");
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Reject a listing (admin only)
+  const rejectListing = async (
+    id: string,
+    reason: string
+  ): Promise<boolean> => {
+    setIsSubmitting(true);
+    try {
+      const response = await apiConfig.patch(
+        `/marketplace/listings/${id}/reject`,
+        { reason },
+        {
+          withCredentials: true,
+        }
+      );
+
+      if (response.status === 200) {
+        setListings((prev) => prev.filter((listing) => listing.id !== id));
+        toast.success("Listing rejected successfully");
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Failed to reject listing:", error);
+      toast.error("Failed to reject listing");
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const value = {
     // Listings
@@ -556,12 +608,12 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
 
     // Buyer operations
     buyProperty,
-    investInProperty,
+    updateQuantity,
 
     // Agent operations
     getAgentListings,
     featureListing,
-
+    getCompanies,
     // Admin operations
     approveListing,
     rejectListing,
@@ -569,16 +621,20 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     // Loading states
     isLoading,
     isSubmitting,
-  }
+  };
 
-  return <MarketplaceContext.Provider value={value}>{children}</MarketplaceContext.Provider>
+  return (
+    <MarketplaceContext.Provider value={value}>
+      {children}
+    </MarketplaceContext.Provider>
+  );
 }
 
 // Custom hook to use the context
 export function useMarketplace() {
-  const context = useContext(MarketplaceContext)
+  const context = useContext(MarketplaceContext);
   if (context === undefined) {
-    throw new Error("useMarketplace must be used within a MarketplaceProvider")
+    throw new Error("useMarketplace must be used within a MarketplaceProvider");
   }
-  return context
+  return context;
 }

@@ -28,3 +28,22 @@ export function compose(...hocs: Function[]) {
       return hoc(acc, options)
     }, Component)
 }
+
+/**
+ * Format a date string into a human-readable format
+ * @param dateString - The date string to format
+ * @param options - Intl.DateTimeFormat options
+ * @returns Formatted date string
+ */
+export function formatDate(
+  dateString: string | Date,
+  options: Intl.DateTimeFormatOptions = {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }
+): string {
+  const date = typeof dateString === "string" ? new Date(dateString) : dateString
+  
+  return new Intl.DateTimeFormat("en-NG", options).format(date)
+}

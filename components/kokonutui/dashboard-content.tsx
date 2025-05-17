@@ -501,6 +501,7 @@ export default function DashboardContent() {
               </CardContent>
             </AnimatedCard>
           </FadeIn>
+          
         </div>
       </div>
     </FadeIn>

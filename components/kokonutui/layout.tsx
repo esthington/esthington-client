@@ -1,9 +1,10 @@
 "use client";
 
 import type { ReactNode } from "react";
-import TopNav from "./top-nav";
+import { useEffect } from "react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/auth-context";
+import { LoadingSpinner } from "../ui/loading-spinner";
 
 // Import role-specific sidebars
 import BuyerSidebar from "./sidebars/buyer-sidebar";
@@ -14,26 +15,41 @@ import AdminSidebar from "./sidebars/admin-sidebar";
 import BuyerBottomNav from "./bottom-navs/buyer-bottom-nav";
 import AgentBottomNav from "./bottom-navs/agent-bottom-nav";
 import AdminBottomNav from "./bottom-navs/admin-bottom-nav";
-import { useAuth } from "@/contexts/auth-context";
-import { LoadingSpinner } from "../ui/loading-spinner";
+import TopNav from "./top-nav";
+import { withAuth } from "@/hocs";
+
+// Define valid user roles for better type safety
+type UserRole = "buyer" | "agent" | "admin" | "super_admin";
 
 interface LayoutProps {
   children: ReactNode;
 }
 
-export default function Layout({ children }: LayoutProps) {
-  const { user, isLoading, isAuthenticated } = useAuth();
+function DashboardLayout({ children }: LayoutProps) {
+  const { user } = useAuth();
   const { theme } = useTheme();
-  const [userRole, setUserRole] = useState<string>("");
 
-  // Update userRole when user changes
+  // Debug user role
   useEffect(() => {
-    if (user && user.role) {
-      setUserRole(user.role);
+    console.log("Current user role:", user?.role);
+  }, [user?.role]);
+
+  // Normalize role to handle case sensitivity or formatting issues
+  const normalizeRole = (role?: string): UserRole => {
+    if (!role) return "buyer"; // Default to buyer if no role
+
+    const normalizedRole = role.toLowerCase().trim();
+
+    if (normalizedRole === "admin" || normalizedRole === "super_admin") {
+      return normalizedRole as UserRole;
+    } else if (normalizedRole === "agent") {
+      return "agent";
     } else {
-      setUserRole("buyer"); // Default role if no user or role is undefined
+      return "buyer";
     }
-  }, [user]);
+  };
+
+  const userRole = normalizeRole(user?.role);
 
   // Render the appropriate sidebar based on user role
   const renderSidebar = () => {
@@ -61,14 +77,6 @@ export default function Layout({ children }: LayoutProps) {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
   return (
     <div className={`flex h-screen ${theme === "dark" ? "dark" : "light"}`}>
       {renderSidebar()}
@@ -76,7 +84,7 @@ export default function Layout({ children }: LayoutProps) {
         <header className="h-16 border-b border-border">
           <TopNav />
         </header>
-        <main className="flex-1 overflow-auto p-6 bg-background pb-20 lg:pb-6">
+        <main className="flex-1 overflow-auto p-6 bg-background pb-20 lg:pb-6 lg:px-20">
           {children}
         </main>
         {renderBottomNav()}
@@ -84,3 +92,13 @@ export default function Layout({ children }: LayoutProps) {
     </div>
   );
 }
+
+// Wrap the layout with withAuth to protect it
+export default withAuth(DashboardLayout, {
+  redirectTo: "/login",
+  loadingComponent: (
+    <div className="flex h-screen w-full items-center justify-center bg-background">
+      <LoadingSpinner />
+    </div>
+  ),
+});
