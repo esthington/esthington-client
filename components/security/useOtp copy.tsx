@@ -20,7 +20,7 @@ interface UseOTPOptions {
 }
 
 export const useOTP = ({
-  autoTrigger = false, // Changed default to false
+  autoTrigger = true,
   customRequestOTP,
   customVerifyOTP,
 }: UseOTPOptions = {}) => {
@@ -28,45 +28,13 @@ export const useOTP = ({
   const [isVerified, setIsVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [expiresAt, setExpiresAt] = useState<Date | undefined>(undefined);
-  // Add state to track if the code has been requested
-  const [codeRequested, setCodeRequested] = useState(false);
-  // Add state to track validity period
-  const [isWithinValidityPeriod, setIsWithinValidityPeriod] = useState(false);
 
-  // Check validity period on mount
+  // Auto-trigger OTP request on mount if enabled
   useEffect(() => {
     if (autoTrigger) {
-      checkValidityPeriod();
+      handleRequestOTP();
     }
   }, [autoTrigger]);
-
-  // Function to check if user is within OTP validity period
-  const checkValidityPeriod = async () => {
-    try {
-      const response = await apiConfig.get("/security/check-validity-period", {
-        withCredentials: true,
-      });
-
-      const isValid = response.data.isValid;
-      setIsWithinValidityPeriod(isValid);
-
-      if (isValid) {
-        // If within validity period, user is considered verified
-        setIsVerified(true);
-        setIsOTPActive(false);
-      } else {
-        // If not within validity period, activate OTP but don't request yet
-        setIsOTPActive(true);
-      }
-
-      return isValid;
-    } catch (error) {
-      console.error("Failed to check validity period:", error);
-      setIsWithinValidityPeriod(false);
-      setIsOTPActive(true);
-      return false;
-    }
-  };
 
   const handleRequestOTP = async () => {
     setIsLoading(true);
@@ -86,7 +54,6 @@ export const useOTP = ({
       }
 
       setIsOTPActive(true);
-      setCodeRequested(true); // Set code as requested
 
       // Set expiration time if available
       if (response && response.expiresAt) {
@@ -115,6 +82,7 @@ export const useOTP = ({
         isValid = await customVerifyOTP(otp);
       } else {
         // Use the real API endpoint
+
         console.log("Verifying OTP:", otp);
         // Send the OTP to the server for verification
         const response = await apiConfig.post(
@@ -128,8 +96,6 @@ export const useOTP = ({
 
       if (isValid) {
         setIsVerified(true);
-
-        
         return true;
       }
       return false;
@@ -141,29 +107,23 @@ export const useOTP = ({
     }
   };
 
-  // Change the onSuccess function to not require a parameter
   const handleSuccess = () => {
     setIsOTPActive(false);
   };
 
-  // Update the return object
   return {
     isOTPActive,
     isVerified,
     isLoading,
     expiresAt,
-    isWithinValidityPeriod,
-    codeRequested,
     showOTP: () => setIsOTPActive(true),
     hideOTP: () => setIsOTPActive(false),
     resetOTP: () => {
       setIsVerified(false);
       setIsOTPActive(autoTrigger);
-      setCodeRequested(false);
     },
     requestOTP: handleRequestOTP,
     verifyOTP: handleVerifyOTP,
-    onSuccess: handleSuccess, // This now matches the expected type
-    checkValidityPeriod,
+    onSuccess: handleSuccess,
   };
 };

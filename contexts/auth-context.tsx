@@ -17,6 +17,7 @@ import { apiConfig } from "@/lib/api";
 // Types for authentication
 export type UserRole = "buyer" | "agent" | "admin" | "super_admin";
 export type AgentRank = "Bronze" | "Silver" | "Gold" | "Platinum";
+export type Gender = "male" | "female" | "other";
 
 export type UserProfile = {
   id: string;
@@ -38,13 +39,16 @@ export type UserProfile = {
   referralCode?: string;
   businessName?: string;
   licenseNumber?: string;
-  location?: {
-    city?: string;
-    state?: string;
-    country?: string;
-  };
-  specializations?: string[];
   permissions?: string[];
+  // New fields added to match updated User model
+  gender?: Gender;
+  country?: string;
+  stateOfOrigin?: string;
+  city?: string;
+  validID?: string;
+  nextOfKinName?: string;
+  nextOfKinAddress?: string;
+  nextOfKinPhone?: string;
 };
 
 export type LoginCredentials = {
@@ -62,6 +66,10 @@ export type RegisterData = {
   role?: UserRole;
   referralCode?: string;
   licenseNumber?: string; // For agents
+  // New optional fields for registration
+  gender?: Gender;
+  country?: string;
+  stateOfOrigin?: string;
 };
 
 export type ResetPasswordData = {
@@ -89,6 +97,9 @@ export type AdminData = {
   phone?: string;
   role: "admin" | "super_admin";
   permissions?: string[];
+  // New optional fields for admin
+  gender?: Gender;
+  country?: string;
 };
 
 // Context type

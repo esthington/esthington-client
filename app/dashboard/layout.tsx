@@ -11,6 +11,7 @@ import { WalletProvider } from "@/contexts/wallet-context"
 // Add UIProvider import
 import { UIProvider } from "@/contexts/ui-context"
 import { InvestmentProvider } from "@/contexts/investments-context"
+import { ProfileCompletionProvider } from "@/components/profile/profile-completion-provider"
 
 export default function DashboardLayout({
   children,
@@ -29,7 +30,9 @@ export default function DashboardLayout({
                     <InvestmentProvider>
                       <WalletProvider>
                         <UIProvider>
+                        <ProfileCompletionProvider>
                           <Layout>{children}</Layout>
+                          </ProfileCompletionProvider>
                         </UIProvider>
                       </WalletProvider>
                     </InvestmentProvider>

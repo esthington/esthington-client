@@ -63,6 +63,8 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  // Add state to track if code has been requested
+  const [codeRequested, setCodeRequested] = useState(false);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -118,17 +120,18 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
       setOtpValues(Array(length).fill(""));
       setIsSuccess(false);
       setError(null);
+      // Don't reset codeRequested here to maintain the state
     }
   }, [isActive, length]);
 
-  // Focus first input when modal opens
+  // Focus first input when modal opens and code is requested
   useEffect(() => {
-    if (isActive && inputRefs.current[0]) {
+    if (isActive && codeRequested && inputRefs.current[0]) {
       setTimeout(() => {
         inputRefs.current[0]?.focus();
       }, 100);
     }
-  }, [isActive]);
+  }, [isActive, codeRequested]);
 
   const handleChange = (index: number, value: string) => {
     // Only allow numbers
@@ -250,14 +253,15 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
 
     try {
       await onResend();
-      toast.success("Verification code resent successfully");
+      setCodeRequested(true); // Set code as requested
+      toast.success("Verification code sent successfully");
       setCooldown(60); // 60 seconds cooldown
 
       // Clear the inputs
       setOtpValues(Array(length).fill(""));
       inputRefs.current[0]?.focus();
     } catch (err) {
-      setError("Failed to resend verification code");
+      setError("Failed to send verification code");
     } finally {
       setIsResending(false);
     }
@@ -334,91 +338,142 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
                   {description}
                 </p>
 
-                {timeRemaining !== null && timeRemaining > 0 && (
-                  <div className="mt-2 text-sm font-medium">
-                    <span className="text-amber-600 dark:text-amber-400">
-                      Expires in: {formatTimeRemaining(timeRemaining)}
-                    </span>
-                  </div>
-                )}
+                {timeRemaining !== null &&
+                  timeRemaining > 0 &&
+                  codeRequested && (
+                    <div className="mt-2 text-sm font-medium">
+                      <span className="text-amber-600 dark:text-amber-400">
+                        Expires in: {formatTimeRemaining(timeRemaining)}
+                      </span>
+                    </div>
+                  )}
               </div>
 
               <div className="flex flex-col items-center space-y-6">
-                <div className="flex justify-center gap-2">
-                  {otpValues.map((value, index) => (
-                    <Input
-                      key={index}
-                      ref={(el) => {
-                        inputRefs.current[index] = el;
-                      }}
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={1}
-                      value={value}
-                      onChange={(e) => handleChange(index, e.target.value)}
-                      onKeyDown={(e) => handleKeyDown(index, e)}
-                      onPaste={index === 0 ? handlePaste : undefined}
-                      className="w-12 h-14 text-center text-xl font-bold rounded-xl border-slate-200 dark:border-slate-700 focus:border-violet-300 focus:ring-violet-300 dark:focus:border-violet-600 dark:focus:ring-violet-600 shadow-sm"
-                    />
-                  ))}
-                </div>
+                {codeRequested ? (
+                  <>
+                    <div className="flex justify-center gap-2">
+                      {otpValues.map((value, index) => (
+                        <Input
+                          key={index}
+                          ref={(el) => {
+                            inputRefs.current[index] = el;
+                          }}
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={1}
+                          value={value}
+                          onChange={(e) => handleChange(index, e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(index, e)}
+                          onPaste={index === 0 ? handlePaste : undefined}
+                          className="w-12 h-14 text-center text-xl font-bold rounded-xl border-slate-200 dark:border-slate-700 focus:border-violet-300 focus:ring-violet-300 dark:focus:border-violet-600 dark:focus:ring-violet-600 shadow-sm"
+                        />
+                      ))}
+                    </div>
 
-                {error && (
-                  <div className="flex items-center text-red-500 text-sm">
-                    <AlertCircle className="h-4 w-4 mr-1" />
-                    {error}
+                    {error && (
+                      <div className="flex items-center text-red-500 text-sm">
+                        <AlertCircle className="h-4 w-4 mr-1" />
+                        {error}
+                      </div>
+                    )}
+
+                    <div className="w-full space-y-4">
+                      <Button
+                        onClick={handleVerify}
+                        disabled={
+                          isVerifying || otpValues.some((val) => val === "")
+                        }
+                        className="w-full h-12 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-md"
+                      >
+                        {isVerifying ? (
+                          <>
+                            <svg
+                              className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              ></circle>
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              ></path>
+                            </svg>
+                            Verifying...
+                          </>
+                        ) : (
+                          "Verify"
+                        )}
+                      </Button>
+
+                      <div className="flex justify-center">
+                        <Button
+                          variant="ghost"
+                          onClick={handleResend}
+                          disabled={isResending || cooldown > 0}
+                          className="text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/20"
+                        >
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          {cooldown > 0
+                            ? `Resend in ${cooldown}s`
+                            : "Resend Code"}
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="w-full">
+                    <Button
+                      onClick={handleResend}
+                      disabled={isResending}
+                      className="w-full h-12 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-md"
+                    >
+                      {isResending ? (
+                        <>
+                          <svg
+                            className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          Sending...
+                        </>
+                      ) : (
+                        "Request Verification Code"
+                      )}
+                    </Button>
+
+                    {error && (
+                      <div className="flex items-center text-red-500 text-sm mt-4">
+                        <AlertCircle className="h-4 w-4 mr-1" />
+                        {error}
+                      </div>
+                    )}
                   </div>
                 )}
-
-                <div className="w-full space-y-4">
-                  <Button
-                    onClick={handleVerify}
-                    disabled={
-                      isVerifying || otpValues.some((val) => val === "")
-                    }
-                    className="w-full h-12 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-md"
-                  >
-                    {isVerifying ? (
-                      <>
-                        <svg
-                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        Verifying...
-                      </>
-                    ) : (
-                      "Verify"
-                    )}
-                  </Button>
-
-                  <div className="flex justify-center">
-                    <Button
-                      variant="ghost"
-                      onClick={handleResend}
-                      disabled={isResending || cooldown > 0}
-                      className="text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/20"
-                    >
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend Code"}
-                    </Button>
-                  </div>
-                </div>
               </div>
             </motion.div>
           )}

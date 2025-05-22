@@ -1,18 +1,16 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { OTPVerification } from "@/components/security/otp-verification";
 import { useOTP } from "@/components/security/useOtp";
-import { apiConfig } from "@/lib/api";
 import MyBankAccountPage from "@/components/wallet/my-bank-account-page";
 
 export default function MyBankAccount() {
   const router = useRouter();
   const [pageLoaded, setPageLoaded] = useState(false);
 
-  // Use the OTP hook with real API calls
+  // Use the OTP hook with autoTrigger set to false
   const {
     isOTPActive,
     isVerified,
@@ -20,8 +18,10 @@ export default function MyBankAccount() {
     requestOTP,
     verifyOTP,
     onSuccess,
+    isWithinValidityPeriod,
+    checkValidityPeriod,
   } = useOTP({
-    autoTrigger: true,
+    autoTrigger: false, // Don't auto-trigger OTP request
   });
 
   // Set page as loaded after a small delay to ensure smooth animations
@@ -32,10 +32,17 @@ export default function MyBankAccount() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Prevent navigation if not verified
+  // Check validity period when component mounts
+  useEffect(() => {
+    if (pageLoaded) {
+      checkValidityPeriod();
+    }
+  }, [pageLoaded, checkValidityPeriod]);
+
+  // Prevent navigation if not verified and not within validity period
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!isVerified) {
+      if (!isVerified && !isWithinValidityPeriod) {
         e.preventDefault();
         e.returnValue = "";
         return "";
@@ -46,20 +53,23 @@ export default function MyBankAccount() {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [isVerified]);
+  }, [isVerified, isWithinValidityPeriod]);
 
   return (
     <>
-      <OTPVerification
-        title="Security Verification Required"
-        description="For your security, please enter the verification code sent to your registered email address."
-        length={6}
-        isActive={pageLoaded && isOTPActive && !isVerified}
-        onVerify={verifyOTP}
-        onResend={requestOTP}
-        onSuccess={onSuccess}
-        expiresAt={expiresAt}
-      />
+      {/* Only show OTP verification if not within validity period */}
+      {!isWithinValidityPeriod && (
+        <OTPVerification
+          title="Security Verification Required"
+          description="For your security, please enter the verification code sent to your registered email address."
+          length={6}
+          isActive={pageLoaded && isOTPActive && !isVerified}
+          onVerify={verifyOTP}
+          onResend={requestOTP}
+          onSuccess={onSuccess}
+          expiresAt={expiresAt}
+        />
+      )}
 
       <MyBankAccountPage />
     </>

@@ -2,16 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import  {OTPVerification}  from "@/components/security/otp-verification";
+import { OTPVerification } from "@/components/security/otp-verification";
 import { useOTP } from "@/components/security/useOtp";
+import { apiConfig } from "@/lib/api";
 import TransferMoneyPage from "@/components/wallet/transfer-money-page";
 
-// Update the TransferMoney component to handle the type mismatch
 export default function TransferMoney() {
   const router = useRouter();
   const [pageLoaded, setPageLoaded] = useState(false);
 
-  // Use the OTP hook with autoTrigger set to false
+  // Use the OTP hook with real API calls
   const {
     isOTPActive,
     isVerified,
@@ -19,10 +19,8 @@ export default function TransferMoney() {
     requestOTP,
     verifyOTP,
     onSuccess,
-    isWithinValidityPeriod,
-    checkValidityPeriod,
   } = useOTP({
-    autoTrigger: false, // Don't auto-trigger OTP request
+    autoTrigger: true,
   });
 
   // Set page as loaded after a small delay to ensure smooth animations
@@ -33,17 +31,10 @@ export default function TransferMoney() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Check validity period when component mounts
-  useEffect(() => {
-    if (pageLoaded) {
-      checkValidityPeriod();
-    }
-  }, [pageLoaded, checkValidityPeriod]);
-
   // Prevent navigation if not verified
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!isVerified && !isWithinValidityPeriod) {
+      if (!isVerified) {
         e.preventDefault();
         e.returnValue = "";
         return "";
@@ -54,23 +45,20 @@ export default function TransferMoney() {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [isVerified, isWithinValidityPeriod]);
+  }, [isVerified]);
 
   return (
     <>
-      {/* Only show OTP verification if not within validity period */}
-      {!isWithinValidityPeriod && (
-        <OTPVerification
-          title="Security Verification Required"
-          description="For your security, please enter the verification code sent to your registered email address."
-          length={6}
-          isActive={pageLoaded && isOTPActive && !isVerified}
-          onVerify={verifyOTP}
-          onResend={requestOTP}
-          onSuccess={onSuccess}
-          expiresAt={expiresAt}
-        />
-      )}
+      <OTPVerification
+        title="Security Verification Required"
+        description="For your security, please enter the verification code sent to your registered email address."
+        length={6}
+        isActive={pageLoaded && isOTPActive && !isVerified}
+        onVerify={verifyOTP}
+        onResend={requestOTP}
+        onSuccess={onSuccess}
+        expiresAt={expiresAt}
+      />
 
       <TransferMoneyPage />
     </>
