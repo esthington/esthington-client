@@ -55,6 +55,7 @@ import {
 import { useAuth } from "@/contexts/auth-context";
 import type { UserProfile } from "@/contexts/auth-context";
 
+import { UserStatus } from "@/contexts/auth-context";
 // Form schema for adding/editing users
 const userFormSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
@@ -140,10 +141,9 @@ export default function UserManagementPage() {
     if (isAdmin) {
       getUsers();
     }
-  }, [isAdmin, getUsers]);
+  }, [isAdmin]);
 
-  // Update filter when search term or active tab changes
-  useEffect(() => {
+useEffect(() => {
     const newFilter = { ...userFilter };
 
     if (searchTerm) {
@@ -197,7 +197,7 @@ export default function UserManagementPage() {
     if (!selectedUser) return;
 
     try {
-      await updateUser(selectedUser.id, { ...values, role: values.role as UserProfile["role"] });
+      await updateUser(selectedUser._id, { ...values, role: values.role as UserProfile["role"] });
       toast({
         title: "Success",
         description: "User updated successfully.",
@@ -219,7 +219,7 @@ export default function UserManagementPage() {
     if (!selectedUser) return;
 
     try {
-      await deleteUser(selectedUser.id);
+      await deleteUser(selectedUser._id);
       toast({
         title: "Success",
         description: "User deleted successfully.",
@@ -240,13 +240,13 @@ export default function UserManagementPage() {
   const handleToggleUserStatus = async (user: UserProfile) => {
     try {
       if (user.isActive) {
-        await blacklistUser(user.id);
+        await blacklistUser(user._id);
         toast({
           title: "Success",
           description: "User blacklisted successfully.",
-        });
+        }); 
       } else {
-        await unblacklistUser(user.id);
+        await unblacklistUser(user._id);
         toast({
           title: "Success",
           description: "User unblacklisted successfully.",
@@ -268,7 +268,7 @@ export default function UserManagementPage() {
     if (!selectedUser) return;
 
     try {
-      const response = await resetUserPassword(selectedUser.id);
+      const response = await resetUserPassword(selectedUser._id);
       setTempPassword(response.tempPassword);
       toast({
         title: "Success",
@@ -373,7 +373,7 @@ export default function UserManagementPage() {
             </TableHeader>
             <TableBody>
               {users.map((user) => (
-                <TableRow key={user.id}>
+                <TableRow key={user._id}>
                   <TableCell>
                     <div className="font-medium">
                       {user.firstName} {user.lastName}
@@ -386,19 +386,33 @@ export default function UserManagementPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {user.isActive ? (
+                    {user.status === UserStatus.ACTIVE ? (
                       <Badge
                         variant="outline"
                         className="bg-green-50 text-green-700 border-green-200"
                       >
                         Active
                       </Badge>
-                    ) : (
+                    ) : user.status === UserStatus.BLACKLISTED ? (
                       <Badge
                         variant="outline"
                         className="bg-red-50 text-red-700 border-red-200"
                       >
                         Blacklisted
+                      </Badge>
+                    ) : user.status === UserStatus.INACTIVE ? (
+                      <Badge
+                        variant="outline"
+                        className="bg-red-50 text-red-700 border-red-200"
+                      >
+                        Inactive
+                      </Badge>
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className="bg-gray-50 text-gray-700 border-gray-200"
+                      >
+                         not specified
                       </Badge>
                     )}
                   </TableCell>

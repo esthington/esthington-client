@@ -19,7 +19,7 @@ export type UserRole = "buyer" | "agent" | "admin" | "super_admin";
 export type AgentRank = "Bronze" | "Silver" | "Gold" | "Platinum";
 
 export type UserProfile = {
-  id: string;
+  _id: string;
   firstName: string;
   lastName: string;
   userName: string;
@@ -30,6 +30,7 @@ export type UserProfile = {
   role: UserRole;
   isEmailVerified: boolean;
   hasSeenSplash: boolean;
+  status: UserStatus,
   onboardingCompleted: boolean;
   isActive: boolean;
   createdAt: string;
@@ -90,6 +91,12 @@ export type AdminData = {
   role: "admin" | "super_admin";
   permissions?: string[];
 };
+
+export enum UserStatus {
+  ACTIVE = "active",
+  INACTIVE = "inactive",
+  BLACKLISTED = "blacklisted",
+}
 
 // Context type
 type AuthContextType = {
@@ -208,8 +215,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Filter users based on current filter
   const filteredUsers = useMemo(() => {
+    if (!users) return [];
     let filtered = [...users];
-
+    console.log("filtered", filtered);
     // Filter by search term
     if (userFilter.search) {
       const searchLower = userFilter.search.toLowerCase();
@@ -247,6 +255,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Filter admins based on current filter
   const filteredAdmins = useMemo(() => {
+        if (!users) return [];
     let filtered = [...admins];
 
     // Filter by search term
@@ -665,7 +674,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUsersError(null);
 
     try {
-      // Build query params from filter
       const params = new URLSearchParams();
       if (userFilter.search) params.append("search", userFilter.search);
       if (userFilter.role) params.append("role", userFilter.role);
@@ -677,16 +685,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (userFilter.limit) params.append("limit", userFilter.limit.toString());
 
       const response = await apiConfig.get(
-        `/admin/users?${params.toString()}`,
+        `/user-management?${params.toString()}`,
         {
           withCredentials: true,
         }
       );
 
       if (response.status === 200) {
-        setUsers(response.data.users);
-        setTotalUsers(response.data.total);
-        return response.data.users;
+        setUsers(response?.data?.data?.users);
+        setTotalUsers(response?.data?.total);
+        return response?.data?.users;
       } else {
         setUsersError("Failed to fetch users");
         return [];
@@ -761,7 +769,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.status === 200) {
         // Update local state
         setUsers((prevUsers) =>
-          prevUsers.map((u) => (u.id === id ? { ...u, ...data } : u))
+          prevUsers.map((u) => (u._id === id ? { ...u, ...data } : u))
         );
         toast.success("User updated successfully");
         return true;
@@ -789,7 +797,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (response.status === 200) {
         // Update local state
-        setUsers((prevUsers) => prevUsers.filter((u) => u.id !== id));
+        setUsers((prevUsers) => prevUsers.filter((u) => u._id !== id));
         toast.success("User deleted successfully");
         return true;
       } else {
@@ -821,7 +829,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.status === 200) {
         // Update local state
         setUsers((prevUsers) =>
-          prevUsers.map((u) => (u.id === id ? { ...u, isActive: false } : u))
+          prevUsers.map((u) => (u._id === id ? { ...u, isActive: false } : u))
         );
         toast.success("User blacklisted successfully");
         return true;
@@ -854,7 +862,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.status === 200) {
         // Update local state
         setUsers((prevUsers) =>
-          prevUsers.map((u) => (u.id === id ? { ...u, isActive: true } : u))
+          prevUsers.map((u) => (u._id === id ? { ...u, isActive: true } : u))
         );
         toast.success("User unblacklisted successfully");
         return true;
@@ -889,7 +897,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.status === 200) {
         // Update local state
         setUsers((prevUsers) =>
-          prevUsers.map((u) => (u.id === id ? { ...u, isActive: false } : u))
+          prevUsers.map((u) => (u._id === id ? { ...u, isActive: false } : u))
         );
         toast.success("User suspended successfully");
         return true;
@@ -922,7 +930,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.status === 200) {
         // Update local state
         setUsers((prevUsers) =>
-          prevUsers.map((u) => (u.id === id ? { ...u, isActive: true } : u))
+          prevUsers.map((u) => (u._id === id ? { ...u, isActive: true } : u))
         );
         toast.success("User activated successfully");
         return true;
@@ -961,15 +969,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         params.append("limit", adminFilter.limit.toString());
 
       const response = await apiConfig.get(
-        `/admin/admins?${params.toString()}`,
+        `/user-management?${params.toString()}`,
         {
           withCredentials: true,
         }
       );
 
       if (response.status === 200) {
-        setAdmins(response.data.admins);
-        setTotalAdmins(response.data.total);
+        setAdmins(response?.data?.data?.users);
+        setTotalAdmins(response?.data?.total);
       } else {
         setAdminsError("Failed to fetch admins");
       }
@@ -1043,7 +1051,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.status === 200) {
         // Update local state
         setAdmins((prevAdmins) =>
-          prevAdmins.map((a) => (a.id === id ? { ...a, ...data } : a))
+          prevAdmins.map((a) => (a._id === id ? { ...a, ...data } : a))
         );
         toast.success("Admin updated successfully");
         return true;
@@ -1071,7 +1079,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (response.status === 200) {
         // Update local state
-        setAdmins((prevAdmins) => prevAdmins.filter((a) => a.id !== id));
+        setAdmins((prevAdmins) => prevAdmins.filter((a) => a._id !== id));
         toast.success("Admin deleted successfully");
         return true;
       } else {
@@ -1103,7 +1111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.status === 200) {
         // Update local state
         setAdmins((prevAdmins) =>
-          prevAdmins.map((a) => (a.id === id ? { ...a, isActive: false } : a))
+          prevAdmins.map((a) => (a._id === id ? { ...a, isActive: false } : a))
         );
         toast.success("Admin suspended successfully");
         return true;
@@ -1136,7 +1144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.status === 200) {
         // Update local state
         setAdmins((prevAdmins) =>
-          prevAdmins.map((a) => (a.id === id ? { ...a, isActive: true } : a))
+          prevAdmins.map((a) => (a._id === id ? { ...a, isActive: true } : a))
         );
         toast.success("Admin activated successfully");
         return true;
