@@ -428,12 +428,12 @@ export default function AgentSidebar() {
                           exit="closed"
                           variants={sectionVariants}
                         >
-                          <NavItem
+                          {/* <NavItem
                             href="/dashboard/my-referral-link"
                             icon={LinkIcon}
                           >
                             My Referral Link
-                          </NavItem>
+                          </NavItem> */}
                           <NavItem href="/dashboard/my-referrals" icon={Users}>
                             My Referrals
                           </NavItem>
@@ -473,9 +473,9 @@ export default function AgentSidebar() {
                           <NavItem href="/dashboard/security" icon={Shield}>
                             Security
                           </NavItem>
-                          <NavItem href="/dashboard/notifications" icon={Bell}>
+                          {/* <NavItem href="/dashboard/notifications" icon={Bell}>
                             Notifications
-                          </NavItem>
+                          </NavItem> */}
                         </motion.div>
                       )}
                     </AnimatePresence>

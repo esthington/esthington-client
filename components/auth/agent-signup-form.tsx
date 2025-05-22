@@ -27,7 +27,7 @@ export default function AgentSignupForm() {
   const searchParams = useSearchParams();
 
   // Check for referral agent in query parameters
-  const referralAgent = searchParams.get("referral") || "";
+  const referralAgent = searchParams.get("ref") || "";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

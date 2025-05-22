@@ -406,13 +406,13 @@ export default function AdminSidebar() {
                           variants={sectionVariants}
                         >
                           <NavItem
-                            href="/dashboard/admin/referrals"
+                            href="/dashboard/referrals"
                             icon={Users}
                           >
                             Manage Referrals
                           </NavItem>
                           <NavItem
-                            href="/dashboard/admin/referrals/settings"
+                            href="/dashboard/referrals/settings"
                             icon={Settings}
                           >
                             Program Settings
@@ -447,9 +447,9 @@ export default function AdminSidebar() {
                           <NavItem href="/dashboard/security" icon={Shield}>
                             Security
                           </NavItem>
-                          <NavItem href="/dashboard/notifications" icon={Bell}>
+                          {/* <NavItem href="/dashboard/notifications" icon={Bell}>
                             Notifications
-                          </NavItem>
+                          </NavItem> */}
                         </motion.div>
                       )}
                     </AnimatePresence>

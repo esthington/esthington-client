@@ -46,16 +46,6 @@ import StaggerItem from "@/components/animations/stagger-item";
 import Image from "next/image";
 import { useInvestment } from "@/contexts/investments-context";
 import { useAuth } from "@/contexts/auth-context";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { AlertTriangle, Loader2 } from "lucide-react";
-import { toast } from "sonner";
 
 export default function InvestmentsPage() {
   const router = useRouter();
@@ -64,19 +54,14 @@ export default function InvestmentsPage() {
     filteredInvestments,
     isLoading,
     filters,
+    // sortOption,
     setFilters,
+    // setSortOption,
     fetchInvestments,
-    deleteInvestment, // Get the deleteInvestment function from context
   } = useInvestment();
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [investmentToDelete, setInvestmentToDelete] = useState<{
-    id: string;
-    title: string;
-  } | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
@@ -116,32 +101,10 @@ export default function InvestmentsPage() {
     router.push(`/dashboard/investments/edit/${id}`);
   };
 
-  // Open the delete dialog
-  const handleDeleteInvestment = (id: string, title: string) => {
-    setInvestmentToDelete({ id, title });
-    setIsDeleteDialogOpen(true);
-  };
-
-  // Confirm deletion using the context function
-  const confirmDelete = async () => {
-    if (!investmentToDelete) return;
-
-    setIsDeleting(true);
-    try {
-      const success = await deleteInvestment(investmentToDelete.id);
-      if (success) {
-        setIsDeleteDialogOpen(false);
-        setInvestmentToDelete(null);
-        toast.success("Investment deleted successfully");
-        // No need to manually refresh as the context already updates the state
-      } else {
-        toast.error("Failed to delete investment");
-      }
-    } catch (error) {
-      console.error("Error deleting investment:", error);
-      toast.error("An error occurred while deleting the investment");
-    } finally {
-      setIsDeleting(false);
+  const handleDeleteInvestment = (id: string) => {
+    // Implement delete confirmation dialog here
+    if (window.confirm("Are you sure you want to delete this investment?")) {
+      // Call delete function from context
     }
   };
 
@@ -443,10 +406,7 @@ export default function InvestmentsPage() {
                             </Button>
                             <Button
                               onClick={() =>
-                                handleDeleteInvestment(
-                                  property._id,
-                                  property.title
-                                )
+                                handleDeleteInvestment(property._id)
                               }
                               variant="outline"
                               size="sm"
@@ -612,10 +572,7 @@ export default function InvestmentsPage() {
                                 </Button>
                                 <Button
                                   onClick={() =>
-                                    handleDeleteInvestment(
-                                      property._id,
-                                      property.title
-                                    )
+                                    handleDeleteInvestment(property._id)
                                   }
                                   variant="outline"
                                   size="sm"
@@ -643,57 +600,6 @@ export default function InvestmentsPage() {
           </StaggerChildren>
         )}
       </FadeIn>
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-[#0F0F12] border-[#1F1F23]">
-          <DialogHeader>
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20 mb-4">
-              <AlertTriangle className="h-6 w-6 text-red-500" />
-            </div>
-            <DialogTitle className="text-center text-lg font-semibold text-white">
-              Delete Investment
-            </DialogTitle>
-            <DialogDescription className="text-center text-gray-400">
-              Are you sure you want to delete this investment?
-              <span className="block mt-2 font-medium text-white">
-                "{investmentToDelete?.title}"
-              </span>
-              <span className="block mt-2 text-sm text-red-400">
-                This action cannot be undone.
-              </span>
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex flex-row justify-center gap-2 sm:justify-center mt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsDeleteDialogOpen(false)}
-              className="border-gray-700 hover:bg-gray-800 text-gray-300"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={confirmDelete}
-              disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              {isDeleting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                <>
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Investment
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

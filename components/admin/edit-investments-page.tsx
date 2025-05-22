@@ -259,12 +259,13 @@ export function EditInvestmentPage() {
     };
 
     fetchData();
-  }, [id]);
+  
+  }, [id, ]);
 
   // // Fetch available properties on component mount
-  // useEffect(() => {
-  //   fetchAvailableProperties();
-  // }, [fetchAvailableProperties]);
+  useEffect(() => {
+    fetchAvailableProperties();
+  }, [fetchAvailableProperties]);
 
   // Update filtered properties when availableProperties or searchQuery changes
   useEffect(() => {
@@ -619,7 +620,7 @@ export function EditInvestmentPage() {
 
       // Investment terms
       apiFormData.append("returnType", formData.returnType);
-      apiFormData.append("duration", formData.investmentPeriod);
+      apiFormData.append("investmentPeriod", formData.investmentPeriod);
       apiFormData.append("payoutFrequency", formData.payoutFrequency);
       apiFormData.append("startDate", formData.startDate);
       apiFormData.append("endDate", formData.endDate);
@@ -651,7 +652,9 @@ export function EditInvestmentPage() {
       apiFormData.append("amenities", JSON.stringify(formData.amenities));
 
       // Append documents
-      apiFormData.append("documents", JSON.stringify(formData.documents));
+      formData.documents.forEach((file, index) => {
+        apiFormData.append("documents", file);
+      });
 
       // Log the data being sent (for debugging)
       console.log("Sending investment data:", {
@@ -662,7 +665,7 @@ export function EditInvestmentPage() {
         targetAmount: formData.targetAmount,
         returnRate: formData.returnRate,
         returnType: formData.returnType,
-        duration: formData.investmentPeriod,
+        investmentPeriod: formData.investmentPeriod,
         payoutFrequency: formData.payoutFrequency,
         startDate: formData.startDate,
         endDate: formData.endDate,

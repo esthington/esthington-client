@@ -62,6 +62,7 @@ import {
 import {
   InvestmentStatus,
   InvestmentCategory,
+  InvestmentDetailsType,
   PayoutFrequency,
   ReturnType,
   useInvestment,
@@ -168,11 +169,11 @@ export function CreateInvestmentPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
   const documentFileInputRef = useRef<HTMLInputElement>(null);
+  const imageFileInputRef = useRef<HTMLInputElement>(null);
   const [isFormValid, setIsFormValid] = useState(false);
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
   >({});
-  const [showSuccess, setShowSuccess] = useState(false);
 
   // Get current date and calculate default end date (6 months from now)
   const today = new Date();
@@ -209,17 +210,15 @@ export function CreateInvestmentPage() {
   // Fetch available properties on component mount
   useEffect(() => {
     fetchAvailableProperties();
-  }, [fetchAvailableProperties]);
+  }, [fetchAvailableProperties, router]);
 
   // Update filtered properties when availableProperties or searchQuery changes
   useEffect(() => {
-    if (!availableProperties) return;
-
     if (searchQuery.trim() === "") {
       setFilteredProperties(
         availableProperties.map((property: any) => ({
           ...property,
-          thumbnail: property.thumbnail || "/diverse-property-showcase.png",
+          thumbnail: property.thumbnail || "/placeholder.svg",
         }))
       );
     } else {
@@ -233,11 +232,11 @@ export function CreateInvestmentPage() {
         )
         .map((property: any) => ({
           ...property,
-          thumbnail: property.thumbnail || "/diverse-property-showcase.png",
+          thumbnail: property.thumbnail || "/placeholder.svg",
         }));
       setFilteredProperties(filtered);
     }
-  }, [searchQuery, availableProperties]);
+  }, [searchQuery]);
 
   // Auto-fill title and location when property is selected
   useEffect(() => {
@@ -249,7 +248,7 @@ export function CreateInvestmentPage() {
         if (!formData.title) {
           setFormData((prev) => ({
             ...prev,
-            title: `Investment: ${selectedProperty.title}`,
+            title: `Investment Opportunity: ${selectedProperty.title}`,
           }));
         }
 
@@ -289,6 +288,8 @@ export function CreateInvestmentPage() {
   useEffect(() => {
     validateForm();
   }, [formData]);
+
+  // Update the useEffect hooks to sync the base values with the first plan and duration
 
   // Add this useEffect after the existing useEffects to sync base values with first plan
   useEffect(() => {
@@ -364,13 +365,22 @@ export function CreateInvestmentPage() {
     }
   }, [formData.investmentPeriod]);
 
+  // Update the handleInputChange function to validate against base values
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
+
+    // Special validation for plan values to ensure they don't go below base values
+    if (name === "returnRate" || name === "minInvestment") {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Update the handlePlanChange function to validate against base values
   const handlePlanChange = (index: number, field: string, value: string) => {
     setFormData((prev) => {
       const updatedPlans = [...prev.investmentPlans];
@@ -400,6 +410,7 @@ export function CreateInvestmentPage() {
     });
   };
 
+  // Update the handleDurationChange function to validate against base duration
   const handleDurationChange = (
     index: number,
     field: string,
@@ -425,6 +436,7 @@ export function CreateInvestmentPage() {
     });
   };
 
+  // Update the validateForm function to add additional validation
   const validateForm = () => {
     const errors: Record<string, string> = {};
 
@@ -484,30 +496,6 @@ export function CreateInvestmentPage() {
       errors.location = "Please enter a location";
     }
 
-    if (!formData.type) {
-      errors.type = "Please select an investment type";
-    }
-
-    if (!formData.riskLevel) {
-      errors.riskLevel = "Please select a risk level";
-    }
-
-    if (!formData.returnType) {
-      errors.returnType = "Please select a return type";
-    }
-
-    if (!formData.payoutFrequency) {
-      errors.payoutFrequency = "Please select a payout frequency";
-    }
-
-    if (!formData.status) {
-      errors.status = "Please select an investment status";
-    }
-
-    if (formData.documents.length === 0) {
-      errors.documents = "Please upload at least one document";
-    }
-
     // Validate that first plan values match or exceed base values
     if (formData.investmentPlans.length > 0) {
       const firstPlan = formData.investmentPlans[0];
@@ -553,8 +541,6 @@ export function CreateInvestmentPage() {
         setActiveSection("terms");
       } else if (firstErrorKey === "targetAmount") {
         setActiveSection("financial");
-      } else if (firstErrorKey === "documents") {
-        setActiveSection("documents");
       } else {
         setActiveSection("details");
       }
@@ -610,7 +596,7 @@ export function CreateInvestmentPage() {
       // Append amenities
       apiFormData.append("amenities", JSON.stringify(formData.amenities));
 
-      // Append documents
+     
       formData.documents.forEach((file, index) => {
         apiFormData.append("documents", file);
       });
@@ -619,7 +605,6 @@ export function CreateInvestmentPage() {
       const investmentId = await createInvestment(apiFormData);
 
       if (investmentId) {
-        setShowSuccess(true);
         // Redirect after showing success message
         setTimeout(() => {
           router.push("/dashboard/investments");
@@ -801,13 +786,7 @@ export function CreateInvestmentPage() {
                       activeSection === "details"
                         ? "bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300"
                         : Object.keys(validationErrors).some((key) =>
-                            [
-                              "title",
-                              "description",
-                              "location",
-                              "type",
-                              "riskLevel",
-                            ].includes(key)
+                            ["title", "description", "location"].includes(key)
                           )
                         ? "bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400"
                         : "hover:bg-slate-100 dark:hover:bg-slate-800/60"
@@ -820,13 +799,9 @@ export function CreateInvestmentPage() {
                           activeSection === "details"
                             ? "bg-cyan-100 dark:bg-cyan-800/30 text-cyan-600 dark:text-cyan-300"
                             : Object.keys(validationErrors).some((key) =>
-                                [
-                                  "title",
-                                  "description",
-                                  "location",
-                                  "type",
-                                  "riskLevel",
-                                ].includes(key)
+                                ["title", "description", "location"].includes(
+                                  key
+                                )
                               )
                             ? "bg-red-100 dark:bg-red-800/30 text-red-500 dark:text-red-400"
                             : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
@@ -842,13 +817,7 @@ export function CreateInvestmentPage() {
                       </div>
                     </div>
                     {Object.keys(validationErrors).some((key) =>
-                      [
-                        "title",
-                        "description",
-                        "location",
-                        "type",
-                        "riskLevel",
-                      ].includes(key)
+                      ["title", "description", "location"].includes(key)
                     ) ? (
                       <AlertCircle className="h-5 w-5 text-red-500" />
                     ) : activeSection === "details" ? (
@@ -921,9 +890,6 @@ export function CreateInvestmentPage() {
                               "investmentPeriod",
                               "startDate",
                               "endDate",
-                              "returnType",
-                              "payoutFrequency",
-                              "status",
                             ].includes(key)
                           )
                         ? "bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400"
@@ -941,9 +907,6 @@ export function CreateInvestmentPage() {
                                   "investmentPeriod",
                                   "startDate",
                                   "endDate",
-                                  "returnType",
-                                  "payoutFrequency",
-                                  "status",
                                 ].includes(key)
                               )
                             ? "bg-red-100 dark:bg-red-800/30 text-red-500 dark:text-red-400"
@@ -960,14 +923,7 @@ export function CreateInvestmentPage() {
                       </div>
                     </div>
                     {Object.keys(validationErrors).some((key) =>
-                      [
-                        "investmentPeriod",
-                        "startDate",
-                        "endDate",
-                        "returnType",
-                        "payoutFrequency",
-                        "status",
-                      ].includes(key)
+                      ["investmentPeriod", "startDate", "endDate"].includes(key)
                     ) ? (
                       <AlertCircle className="h-5 w-5 text-red-500" />
                     ) : activeSection === "terms" ? (
@@ -1045,8 +1001,6 @@ export function CreateInvestmentPage() {
                     className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${
                       activeSection === "documents"
                         ? "bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300"
-                        : validationErrors.documents
-                        ? "bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400"
                         : "hover:bg-slate-100 dark:hover:bg-slate-800/60"
                     }`}
                     onClick={() => toggleSection("documents")}
@@ -1056,8 +1010,6 @@ export function CreateInvestmentPage() {
                         className={`p-2 rounded-full mr-3 ${
                           activeSection === "documents"
                             ? "bg-cyan-100 dark:bg-cyan-800/30 text-cyan-600 dark:text-cyan-300"
-                            : validationErrors.documents
-                            ? "bg-red-100 dark:bg-red-800/30 text-red-500 dark:text-red-400"
                             : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
                         }`}
                       >
@@ -1070,9 +1022,7 @@ export function CreateInvestmentPage() {
                         </p>
                       </div>
                     </div>
-                    {validationErrors.documents ? (
-                      <AlertCircle className="h-5 w-5 text-red-500" />
-                    ) : activeSection === "documents" ? (
+                    {activeSection === "documents" ? (
                       <ChevronUp className="h-5 w-5" />
                     ) : (
                       <ChevronDown className="h-5 w-5" />
@@ -1114,7 +1064,7 @@ export function CreateInvestmentPage() {
                 <div className="px-6 pb-6">
                   <Button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !isFormValid}
                     className="w-full rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 shadow-md"
                   >
                     {isSubmitting ? (
@@ -1199,6 +1149,7 @@ export function CreateInvestmentPage() {
                                       src={
                                         property.thumbnail ||
                                         "/placeholder.svg?height=400&width=600&query=property" ||
+                                        "/placeholder.svg" ||
                                         "/placeholder.svg"
                                       }
                                       alt={property.title}
@@ -1244,8 +1195,7 @@ export function CreateInvestmentPage() {
                                 No properties found
                               </p>
                               <p className="text-sm mt-1">
-                                {!availableProperties ||
-                                availableProperties.length === 0
+                                {availableProperties.length === 0
                                   ? "No properties are available for investment. Please add properties first."
                                   : "Try adjusting your search criteria"}
                               </p>
@@ -1304,8 +1254,7 @@ export function CreateInvestmentPage() {
                             htmlFor="title"
                             className="text-sm font-medium text-slate-700 dark:text-slate-300"
                           >
-                            Investment Title{" "}
-                            <span className="text-red-500">*</span>
+                            Investment Title
                           </Label>
                           <Input
                             id="title"
@@ -1332,7 +1281,7 @@ export function CreateInvestmentPage() {
                             htmlFor="description"
                             className="text-sm font-medium text-slate-700 dark:text-slate-300"
                           >
-                            Description <span className="text-red-500">*</span>
+                            Description
                           </Label>
                           <Textarea
                             id="description"
@@ -1361,28 +1310,18 @@ export function CreateInvestmentPage() {
                           >
                             <div className="flex items-center">
                               <Globe className="h-4 w-4 mr-1 text-cyan-500 dark:text-cyan-400" />
-                              Location <span className="text-red-500">*</span>
+                              Location
                             </div>
                           </Label>
                           <Input
                             id="location"
                             name="location"
                             value={formData.location}
-                            // onChange={handleInputChange}
+                            onChange={handleInputChange}
                             placeholder="e.g. Lagos, Nigeria"
-                            className={`h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 focus-visible:ring-cyan-500 ${
-                              validationErrors.location
-                                ? "border-red-300 dark:border-red-700"
-                                : ""
-                            }`}
-                            readOnly
+                            className={`h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 focus-visible:ring-cyan-500 $`}
                             required
                           />
-                          {validationErrors.location && (
-                            <p className="text-sm text-red-500">
-                              {validationErrors.location}
-                            </p>
-                          )}
                         </div>
 
                         <div className="space-y-2">
@@ -1392,8 +1331,7 @@ export function CreateInvestmentPage() {
                           >
                             <div className="flex items-center">
                               <Building className="h-4 w-4 mr-1 text-cyan-500 dark:text-cyan-400" />
-                              Investment Type{" "}
-                              <span className="text-red-500">*</span>
+                              Investment Type
                             </div>
                           </Label>
                           <Select
@@ -1402,13 +1340,7 @@ export function CreateInvestmentPage() {
                               handleSelectChange("type", value)
                             }
                           >
-                            <SelectTrigger
-                              className={`h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 focus-visible:ring-cyan-500 ${
-                                validationErrors.type
-                                  ? "border-red-300 dark:border-red-700"
-                                  : ""
-                              }`}
-                            >
+                            <SelectTrigger className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 focus-visible:ring-cyan-500">
                               <SelectValue placeholder="Select investment type" />
                             </SelectTrigger>
                             <SelectContent>
@@ -1419,11 +1351,6 @@ export function CreateInvestmentPage() {
                               </SelectItem>
                             </SelectContent>
                           </Select>
-                          {validationErrors.type && (
-                            <p className="text-sm text-red-500">
-                              {validationErrors.type}
-                            </p>
-                          )}
                         </div>
 
                         <div className="space-y-2">
@@ -1433,7 +1360,7 @@ export function CreateInvestmentPage() {
                           >
                             <div className="flex items-center">
                               <Shield className="h-4 w-4 mr-1 text-cyan-500 dark:text-cyan-400" />
-                              Risk Level <span className="text-red-500">*</span>
+                              Risk Level
                             </div>
                           </Label>
                           <Select
@@ -1442,13 +1369,7 @@ export function CreateInvestmentPage() {
                               handleSelectChange("riskLevel", value)
                             }
                           >
-                            <SelectTrigger
-                              className={`h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 focus-visible:ring-cyan-500 ${
-                                validationErrors.riskLevel
-                                  ? "border-red-300 dark:border-red-700"
-                                  : ""
-                              }`}
-                            >
+                            <SelectTrigger className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 focus-visible:ring-cyan-500">
                               <SelectValue placeholder="Select risk level" />
                             </SelectTrigger>
                             <SelectContent>
@@ -1459,11 +1380,6 @@ export function CreateInvestmentPage() {
                               <SelectItem value="high">High Risk</SelectItem>
                             </SelectContent>
                           </Select>
-                          {validationErrors.riskLevel && (
-                            <p className="text-sm text-red-500">
-                              {validationErrors.riskLevel}
-                            </p>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -1504,8 +1420,7 @@ export function CreateInvestmentPage() {
                             >
                               <div className="flex items-center">
                                 <DollarSign className="h-4 w-4 mr-1 text-cyan-500 dark:text-cyan-400" />
-                                Minimum Investment (₦){" "}
-                                <span className="text-red-500">*</span>
+                                Minimum Investment (₦)
                               </div>
                             </Label>
                             <Input
@@ -1535,8 +1450,7 @@ export function CreateInvestmentPage() {
                             >
                               <div className="flex items-center">
                                 <DollarSign className="h-4 w-4 mr-1 text-cyan-500 dark:text-cyan-400" />
-                                Target Amount (₦){" "}
-                                <span className="text-red-500">*</span>
+                                Target Amount (₦)
                               </div>
                             </Label>
                             <Input
@@ -1569,8 +1483,7 @@ export function CreateInvestmentPage() {
                             >
                               <div className="flex items-center">
                                 <Percent className="h-4 w-4 mr-1 text-cyan-500 dark:text-cyan-400" />
-                                Base Return Rate (%){" "}
-                                <span className="text-red-500">*</span>
+                                Base Return Rate (%)
                               </div>
                             </Label>
                             <Input
@@ -1600,8 +1513,7 @@ export function CreateInvestmentPage() {
                             >
                               <div className="flex items-center">
                                 <Percent className="h-4 w-4 mr-1 text-cyan-500 dark:text-cyan-400" />
-                                Return Type{" "}
-                                <span className="text-red-500">*</span>
+                                Return Type
                               </div>
                             </Label>
                             <Select
@@ -1610,13 +1522,7 @@ export function CreateInvestmentPage() {
                                 handleSelectChange("returnType", value)
                               }
                             >
-                              <SelectTrigger
-                                className={`h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 focus-visible:ring-cyan-500 ${
-                                  validationErrors.returnType
-                                    ? "border-red-300 dark:border-red-700"
-                                    : ""
-                                }`}
-                              >
+                              <SelectTrigger className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 focus-visible:ring-cyan-500">
                                 <SelectValue placeholder="Select return type" />
                               </SelectTrigger>
                               <SelectContent>
@@ -1631,11 +1537,6 @@ export function CreateInvestmentPage() {
                                 </SelectItem>
                               </SelectContent>
                             </Select>
-                            {validationErrors.returnType && (
-                              <p className="text-sm text-red-500">
-                                {validationErrors.returnType}
-                              </p>
-                            )}
                           </div>
                         </div>
 
@@ -1699,8 +1600,7 @@ export function CreateInvestmentPage() {
                             >
                               <div className="flex items-center">
                                 <Calendar className="h-4 w-4 mr-1 text-cyan-500 dark:text-cyan-400" />
-                                Investment Period (months){" "}
-                                <span className="text-red-500">*</span>
+                                Investment Period (months)
                               </div>
                             </Label>
                             <Input
@@ -1730,8 +1630,7 @@ export function CreateInvestmentPage() {
                             >
                               <div className="flex items-center">
                                 <Clock className="h-4 w-4 mr-1 text-cyan-500 dark:text-cyan-400" />
-                                Payout Frequency{" "}
-                                <span className="text-red-500">*</span>
+                                Payout Frequency
                               </div>
                             </Label>
                             <Select
@@ -1740,13 +1639,7 @@ export function CreateInvestmentPage() {
                                 handleSelectChange("payoutFrequency", value)
                               }
                             >
-                              <SelectTrigger
-                                className={`h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 focus-visible:ring-cyan-500 ${
-                                  validationErrors.payoutFrequency
-                                    ? "border-red-300 dark:border-red-700"
-                                    : ""
-                                }`}
-                              >
+                              <SelectTrigger className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 focus-visible:ring-cyan-500">
                                 <SelectValue placeholder="Select payout frequency" />
                               </SelectTrigger>
                               <SelectContent>
@@ -1769,11 +1662,6 @@ export function CreateInvestmentPage() {
                                 </SelectItem>
                               </SelectContent>
                             </Select>
-                            {validationErrors.payoutFrequency && (
-                              <p className="text-sm text-red-500">
-                                {validationErrors.payoutFrequency}
-                              </p>
-                            )}
                           </div>
                         </div>
 
@@ -1785,8 +1673,7 @@ export function CreateInvestmentPage() {
                             >
                               <div className="flex items-center">
                                 <Calendar className="h-4 w-4 mr-1 text-cyan-500 dark:text-cyan-400" />
-                                Start Date{" "}
-                                <span className="text-red-500">*</span>
+                                Start Date
                               </div>
                             </Label>
                             <Input
@@ -1815,7 +1702,7 @@ export function CreateInvestmentPage() {
                             >
                               <div className="flex items-center">
                                 <Calendar className="h-4 w-4 mr-1 text-cyan-500 dark:text-cyan-400" />
-                                End Date <span className="text-red-500">*</span>
+                                End Date
                               </div>
                             </Label>
                             <Input
@@ -1846,8 +1733,7 @@ export function CreateInvestmentPage() {
                           >
                             <div className="flex items-center">
                               <Info className="h-4 w-4 mr-1 text-cyan-500 dark:text-cyan-400" />
-                              Investment Status{" "}
-                              <span className="text-red-500">*</span>
+                              Investment Status
                             </div>
                           </Label>
                           <Select
@@ -1856,13 +1742,7 @@ export function CreateInvestmentPage() {
                               handleSelectChange("status", value)
                             }
                           >
-                            <SelectTrigger
-                              className={`h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 focus-visible:ring-cyan-500 ${
-                                validationErrors.status
-                                  ? "border-red-300 dark:border-red-700"
-                                  : ""
-                              }`}
-                            >
+                            <SelectTrigger className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 focus-visible:ring-cyan-500">
                               <SelectValue placeholder="Select investment status" />
                             </SelectTrigger>
                             <SelectContent>
@@ -1877,11 +1757,6 @@ export function CreateInvestmentPage() {
                               </SelectItem>
                             </SelectContent>
                           </Select>
-                          {validationErrors.status && (
-                            <p className="text-sm text-red-500">
-                              {validationErrors.status}
-                            </p>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -1946,154 +1821,112 @@ export function CreateInvestmentPage() {
                         </div>
 
                         <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
-                          {formData.investmentPlans.length === 0 ? (
-                            <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-8 text-center">
-                              <div className="relative mx-auto w-16 h-16 mb-4">
-                                <div className="absolute inset-0 bg-cyan-400 rounded-full opacity-20 blur-[2px]"></div>
-                                <div className="relative bg-gradient-to-br from-cyan-400/30 to-blue-500/30 p-4 rounded-full flex items-center justify-center">
-                                  <Percent className="h-8 w-8 text-cyan-500 dark:text-cyan-400" />
+                          {formData.investmentPlans.map((plan, index) => (
+                            <Card
+                              key={index}
+                              className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/30 overflow-hidden"
+                            >
+                              <div className="absolute top-0 left-0 h-full w-1 bg-gradient-to-b from-cyan-500 to-blue-600"></div>
+                              <CardHeader className="py-3 px-4">
+                                <div className="flex justify-between items-center">
+                                  <CardTitle className="text-base font-medium">
+                                    {plan.name}
+                                  </CardTitle>
+                                  {index > 0 && (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-red-400 hover:text-red-300 hover:bg-red-900/20 p-1 h-auto"
+                                      onClick={() => {
+                                        setFormData((prev) => ({
+                                          ...prev,
+                                          investmentPlans:
+                                            prev.investmentPlans.filter(
+                                              (_, i) => i !== index
+                                            ),
+                                        }));
+                                      }}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  )}
                                 </div>
-                              </div>
-                              <p className="text-slate-700 dark:text-slate-300 font-medium mb-1">
-                                No investment plans yet
-                              </p>
-                              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                                Add investment plans to offer different tiers to
-                                investors
-                              </p>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => {
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    investmentPlans: [
-                                      {
-                                        name: "Plan 1",
-                                        minAmount:
-                                          prev.minInvestment || "100000",
-                                        returnRate: prev.returnRate || "10",
-                                      },
-                                    ],
-                                  }));
-                                }}
-                                className="rounded-xl border-slate-200 dark:border-slate-700 hover:border-cyan-200 dark:hover:border-cyan-800 hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
-                              >
-                                <Plus className="mr-2 h-4 w-4 text-cyan-500 dark:text-cyan-400" />{" "}
-                                Add First Plan
-                              </Button>
-                            </div>
-                          ) : (
-                            formData.investmentPlans.map((plan, index) => (
-                              <Card
-                                key={index}
-                                className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/30 overflow-hidden"
-                              >
-                                <div className="absolute top-0 left-0 h-full w-1 bg-gradient-to-b from-cyan-500 to-blue-600"></div>
-                                <CardHeader className="py-3 px-4">
-                                  <div className="flex justify-between items-center">
-                                    <CardTitle className="text-base font-medium">
-                                      {plan.name}
-                                    </CardTitle>
-                                    {index > 0 && (
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-red-400 hover:text-red-300 hover:bg-red-900/20 p-1 h-auto"
-                                        onClick={() => {
-                                          setFormData((prev) => ({
-                                            ...prev,
-                                            investmentPlans:
-                                              prev.investmentPlans.filter(
-                                                (_, i) => i !== index
-                                              ),
-                                          }));
-                                        }}
-                                      >
-                                        <X className="h-4 w-4" />
-                                      </Button>
-                                    )}
+                              </CardHeader>
+                              <CardContent className="py-3 px-4">
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className="space-y-1.5">
+                                    <Label
+                                      htmlFor={`plan-name-${index}`}
+                                      className="text-xs"
+                                    >
+                                      Plan Name
+                                    </Label>
+                                    <Input
+                                      id={`plan-name-${index}`}
+                                      value={plan.name}
+                                      onChange={(e) =>
+                                        handlePlanChange(
+                                          index,
+                                          "name",
+                                          e.target.value
+                                        )
+                                      }
+                                      className="h-9 text-sm"
+                                    />
                                   </div>
-                                </CardHeader>
-                                <CardContent className="py-3 px-4">
-                                  <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1.5">
-                                      <Label
-                                        htmlFor={`plan-name-${index}`}
-                                        className="text-xs"
-                                      >
-                                        Plan Name
-                                      </Label>
+                                  <div className="space-y-1.5">
+                                    <Label
+                                      htmlFor={`plan-min-${index}`}
+                                      className="text-xs"
+                                    >
+                                      Minimum Amount (₦)
+                                    </Label>
+                                    <div className="relative">
+                                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
                                       <Input
-                                        id={`plan-name-${index}`}
-                                        value={plan.name}
+                                        id={`plan-min-${index}`}
+                                        type="number"
+                                        value={plan.minAmount}
                                         onChange={(e) =>
                                           handlePlanChange(
                                             index,
-                                            "name",
+                                            "minAmount",
                                             e.target.value
                                           )
                                         }
-                                        className="h-9 text-sm"
-                                        required
+                                        className="pl-9 h-9 text-sm"
                                       />
                                     </div>
-                                    <div className="space-y-1.5">
-                                      <Label
-                                        htmlFor={`plan-min-${index}`}
-                                        className="text-xs"
-                                      >
-                                        Minimum Amount (₦)
-                                      </Label>
-                                      <div className="relative">
-                                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                                        <Input
-                                          id={`plan-min-${index}`}
-                                          type="number"
-                                          value={plan.minAmount}
-                                          onChange={(e) =>
-                                            handlePlanChange(
-                                              index,
-                                              "minAmount",
-                                              e.target.value
-                                            )
-                                          }
-                                          className="pl-9 h-9 text-sm"
-                                          required
-                                        />
-                                      </div>
-                                    </div>
-                                    <div className="space-y-1.5 col-span-2">
-                                      <Label
-                                        htmlFor={`plan-rate-${index}`}
-                                        className="text-xs"
-                                      >
-                                        Return Rate (%)
-                                      </Label>
-                                      <div className="relative">
-                                        <Percent className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                                        <Input
-                                          id={`plan-rate-${index}`}
-                                          type="number"
-                                          value={plan.returnRate}
-                                          onChange={(e) =>
-                                            handlePlanChange(
-                                              index,
-                                              "returnRate",
-                                              e.target.value
-                                            )
-                                          }
-                                          className="pl-9 h-9 text-sm"
-                                          required
-                                        />
-                                      </div>
+                                  </div>
+                                  <div className="space-y-1.5 col-span-2">
+                                    <Label
+                                      htmlFor={`plan-rate-${index}`}
+                                      className="text-xs"
+                                    >
+                                      Return Rate (%)
+                                    </Label>
+                                    <div className="relative">
+                                      <Percent className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                                      <Input
+                                        id={`plan-rate-${index}`}
+                                        type="number"
+                                        value={plan.returnRate}
+                                        onChange={(e) =>
+                                          handlePlanChange(
+                                            index,
+                                            "returnRate",
+                                            e.target.value
+                                          )
+                                        }
+                                        className="pl-9 h-9 text-sm"
+                                      />
                                     </div>
                                   </div>
-                                </CardContent>
-                              </Card>
-                            ))
-                          )}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -2157,154 +1990,111 @@ export function CreateInvestmentPage() {
                         </div>
 
                         <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
-                          {formData.durations.length === 0 ? (
-                            <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-8 text-center">
-                              <div className="relative mx-auto w-16 h-16 mb-4">
-                                <div className="absolute inset-0 bg-cyan-400 rounded-full opacity-20 blur-[2px]"></div>
-                                <div className="relative bg-gradient-to-br from-cyan-400/30 to-blue-500/30 p-4 rounded-full flex items-center justify-center">
-                                  <Clock className="h-8 w-8 text-cyan-500 dark:text-cyan-400" />
+                          {formData.durations.map((duration, index) => (
+                            <Card
+                              key={index}
+                              className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/30 overflow-hidden"
+                            >
+                              <div className="absolute top-0 left-0 h-full w-1 bg-gradient-to-b from-emerald-500 to-cyan-600"></div>
+                              <CardHeader className="py-3 px-4">
+                                <div className="flex justify-between items-center">
+                                  <CardTitle className="text-base font-medium">
+                                    {duration.name}
+                                  </CardTitle>
+                                  {index > 0 && (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-red-400 hover:text-red-300 hover:bg-red-900/20 p-1 h-auto"
+                                      onClick={() => {
+                                        setFormData((prev) => ({
+                                          ...prev,
+                                          durations: prev.durations.filter(
+                                            (_, i) => i !== index
+                                          ),
+                                        }));
+                                      }}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  )}
                                 </div>
-                              </div>
-                              <p className="text-slate-700 dark:text-slate-300 font-medium mb-1">
-                                No investment durations yet
-                              </p>
-                              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                                Add investment durations to offer different time
-                                periods
-                              </p>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => {
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    durations: [
-                                      {
-                                        name: `${
-                                          prev.investmentPeriod || "6"
-                                        } Months`,
-                                        months: prev.investmentPeriod || "6",
-                                        bonusRate: "0",
-                                      },
-                                    ],
-                                  }));
-                                }}
-                                className="rounded-xl border-slate-200 dark:border-slate-700 hover:border-cyan-200 dark:hover:border-cyan-800 hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
-                              >
-                                <Plus className="mr-2 h-4 w-4 text-cyan-500 dark:text-cyan-400" />{" "}
-                                Add First Duration
-                              </Button>
-                            </div>
-                          ) : (
-                            formData.durations.map((duration, index) => (
-                              <Card
-                                key={index}
-                                className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/30 overflow-hidden"
-                              >
-                                <div className="absolute top-0 left-0 h-full w-1 bg-gradient-to-b from-emerald-500 to-cyan-600"></div>
-                                <CardHeader className="py-3 px-4">
-                                  <div className="flex justify-between items-center">
-                                    <CardTitle className="text-base font-medium">
-                                      {duration.name}
-                                    </CardTitle>
-                                    {index > 0 && (
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-red-400 hover:text-red-300 hover:bg-red-900/20 p-1 h-auto"
-                                        onClick={() => {
-                                          setFormData((prev) => ({
-                                            ...prev,
-                                            durations: prev.durations.filter(
-                                              (_, i) => i !== index
-                                            ),
-                                          }));
-                                        }}
-                                      >
-                                        <X className="h-4 w-4" />
-                                      </Button>
-                                    )}
+                              </CardHeader>
+                              <CardContent className="py-3 px-4">
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className="space-y-1.5">
+                                    <Label
+                                      htmlFor={`duration-name-${index}`}
+                                      className="text-xs"
+                                    >
+                                      Duration Name
+                                    </Label>
+                                    <Input
+                                      id={`duration-name-${index}`}
+                                      value={duration.name}
+                                      onChange={(e) =>
+                                        handleDurationChange(
+                                          index,
+                                          "name",
+                                          e.target.value
+                                        )
+                                      }
+                                      className="h-9 text-sm"
+                                    />
                                   </div>
-                                </CardHeader>
-                                <CardContent className="py-3 px-4">
-                                  <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1.5">
-                                      <Label
-                                        htmlFor={`duration-name-${index}`}
-                                        className="text-xs"
-                                      >
-                                        Duration Name
-                                      </Label>
+                                  <div className="space-y-1.5">
+                                    <Label
+                                      htmlFor={`duration-months-${index}`}
+                                      className="text-xs"
+                                    >
+                                      Months
+                                    </Label>
+                                    <div className="relative">
+                                      <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
                                       <Input
-                                        id={`duration-name-${index}`}
-                                        value={duration.name}
+                                        id={`duration-months-${index}`}
+                                        type="number"
+                                        value={duration.months}
                                         onChange={(e) =>
                                           handleDurationChange(
                                             index,
-                                            "name",
+                                            "months",
                                             e.target.value
                                           )
                                         }
-                                        className="h-9 text-sm"
-                                        required
+                                        className="pl-9 h-9 text-sm"
                                       />
                                     </div>
-                                    <div className="space-y-1.5">
-                                      <Label
-                                        htmlFor={`duration-months-${index}`}
-                                        className="text-xs"
-                                      >
-                                        Months
-                                      </Label>
-                                      <div className="relative">
-                                        <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                                        <Input
-                                          id={`duration-months-${index}`}
-                                          type="number"
-                                          value={duration.months}
-                                          onChange={(e) =>
-                                            handleDurationChange(
-                                              index,
-                                              "months",
-                                              e.target.value
-                                            )
-                                          }
-                                          className="pl-9 h-9 text-sm"
-                                          required
-                                        />
-                                      </div>
-                                    </div>
-                                    <div className="space-y-1.5 col-span-2">
-                                      <Label
-                                        htmlFor={`duration-bonus-${index}`}
-                                        className="text-xs"
-                                      >
-                                        Bonus Rate (%)
-                                      </Label>
-                                      <div className="relative">
-                                        <Percent className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                                        <Input
-                                          id={`duration-bonus-${index}`}
-                                          type="number"
-                                          value={duration.bonusRate}
-                                          onChange={(e) =>
-                                            handleDurationChange(
-                                              index,
-                                              "bonusRate",
-                                              e.target.value
-                                            )
-                                          }
-                                          className="pl-9 h-9 text-sm"
-                                          required
-                                        />
-                                      </div>
+                                  </div>
+                                  <div className="space-y-1.5 col-span-2">
+                                    <Label
+                                      htmlFor={`duration-bonus-${index}`}
+                                      className="text-xs"
+                                    >
+                                      Bonus Rate (%)
+                                    </Label>
+                                    <div className="relative">
+                                      <Percent className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                                      <Input
+                                        id={`duration-bonus-${index}`}
+                                        type="number"
+                                        value={duration.bonusRate}
+                                        onChange={(e) =>
+                                          handleDurationChange(
+                                            index,
+                                            "bonusRate",
+                                            e.target.value
+                                          )
+                                        }
+                                        className="pl-9 h-9 text-sm"
+                                      />
                                     </div>
                                   </div>
-                                </CardContent>
-                              </Card>
-                            ))
-                          )}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -2328,8 +2118,7 @@ export function CreateInvestmentPage() {
                         </div>
                         <div>
                           <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-                            Documents & Media{" "}
-                            <span className="text-red-500">*</span>
+                            Documents & Media
                           </h2>
                           <p className="text-sm text-slate-500 dark:text-slate-400">
                             Upload supporting documents and images for the
@@ -2339,15 +2128,6 @@ export function CreateInvestmentPage() {
                       </div>
 
                       <div className="space-y-6">
-                        {validationErrors.documents && (
-                          <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg p-3 flex items-start">
-                            <AlertCircle className="h-5 w-5 text-red-500 mr-2 flex-shrink-0 mt-0.5" />
-                            <p className="text-sm text-red-600 dark:text-red-400">
-                              {validationErrors.documents}
-                            </p>
-                          </div>
-                        )}
-
                         <div className="flex justify-end">
                           <Button
                             type="button"
@@ -2369,13 +2149,7 @@ export function CreateInvestmentPage() {
                         </div>
 
                         {formData.documents.length === 0 ? (
-                          <div
-                            className={`border-2 border-dashed ${
-                              validationErrors.documents
-                                ? "border-red-300 dark:border-red-700"
-                                : "border-slate-200 dark:border-slate-700"
-                            } rounded-xl p-8 text-center`}
-                          >
+                          <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-8 text-center">
                             <div className="relative mx-auto w-16 h-16 mb-4">
                               <div className="absolute inset-0 bg-cyan-400 rounded-full opacity-20 blur-[2px]"></div>
                               <div className="relative bg-gradient-to-br from-cyan-400/30 to-blue-500/30 p-4 rounded-full flex items-center justify-center">
@@ -2518,27 +2292,6 @@ export function CreateInvestmentPage() {
           </div>
         </div>
       </form>
-
-      <AnimatePresence>
-        {showSuccess && (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-6 right-6 bg-gradient-to-r from-emerald-500 to-cyan-600 text-white p-4 rounded-lg shadow-xl backdrop-blur-sm max-w-md z-50"
-          >
-            <div className="flex items-center">
-              <div className="bg-white/20 rounded-full p-2 mr-3">
-                <Check className="h-6 w-6" />
-              </div>
-              <div>
-                <h4 className="font-medium text-lg">Success!</h4>
-                <p>Investment created successfully! Redirecting...</p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

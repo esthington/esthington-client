@@ -353,8 +353,8 @@ export default function MarketplacePage() {
                 <div className="bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300 p-3 rounded-md flex items-start gap-2">
                   <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-medium">Insufficient funds</p>
-                    <p className="text-sm">
+                    <p className="font-medium text-sm">Insufficient funds</p>
+                    <p className="text-xs">
                       Please top up your wallet to complete this purchase.
                     </p>
                   </div>
@@ -511,23 +511,18 @@ export default function MarketplacePage() {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="">
       <style dangerouslySetInnerHTML={{ __html: descriptionStyles }} />
       <PaymentUI />
       <DeleteConfirmationDialog />
       <FadeIn>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-              Land Marketplace
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+              Marketplace
             </h1>
             <p className="text-muted-foreground mt-1">
               Browse and purchase premium land properties
-            </p>
-            {/* Debug info - remove in production */}
-            <p className="text-xs text-muted-foreground mt-1">
-              User role: {user?.role || "Not logged in"} (Admin:{" "}
-              {isAdmin ? "Yes" : "No"})
             </p>
           </div>
 
@@ -549,7 +544,6 @@ export default function MarketplacePage() {
               <BreadcrumbItem>
                 <BreadcrumbLink
                   href="/dashboard"
-                  className="text-primary hover:text-primary/80"
                 >
                   Dashboard
                 </BreadcrumbLink>
@@ -944,7 +938,7 @@ export default function MarketplacePage() {
                     </div>
                   </div>
                   <div className="p-5">
-                    <h3 className="text-lg font-semibold text-foreground mb-1.5 line-clamp-1 group-hover:text-primary transition-colors duration-300">
+                    <h3 className="text-lg font-semibold text-foreground mb-1.5 line-clamp-1 transition-colors duration-300">
                       {land.title}
                     </h3>
                     <div
@@ -1052,7 +1046,7 @@ export default function MarketplacePage() {
                     <div className="p-5 flex-1 flex flex-col">
                       <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                         <div>
-                          <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors duration-300">
+                          <h3 className="text-xl font-semibold text-foreground transition-colors duration-300">
                             {land.title}
                           </h3>
                           <div className="flex items-center text-sm text-muted-foreground mt-1">

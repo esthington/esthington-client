@@ -1,6 +1,5 @@
 "use client";
 
-import type React from "react";
 import {
   createContext,
   useContext,
@@ -11,13 +10,27 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { apiConfig } from "@/lib/api";
 
 // Types based on the MongoDB schema
+export enum ReferralStatus {
+  PENDING = "pending",
+  ACTIVE = "active",
+  INACTIVE = "inactive",
+}
+
+export enum AgentRank {
+  BRONZE = "Bronze",
+  SILVER = "Silver",
+  GOLD = "Gold",
+  PLATINUM = "Platinum",
+}
+
 export interface Referral {
   _id: string;
   referrer: User;
   referred: User;
-  status: "pending" | "active" | "inactive";
+  status: ReferralStatus;
   earnings: number;
   createdAt: string;
   updatedAt: string;
@@ -28,8 +41,12 @@ export interface User {
   firstName: string;
   lastName: string;
   email: string;
+  avatar: string;
+  phone?: string;
+  profileImage?: string;
   referralCode?: string;
-  agentRank?: "Bronze" | "Silver" | "Gold" | "Platinum";
+  userName?: string;
+  agentRank?: AgentRank;
 }
 
 export interface Transaction {
@@ -42,7 +59,6 @@ export interface Transaction {
   createdAt: string;
 }
 
-// Update the ReferralStats interface to support role-specific referral links
 export interface ReferralStats {
   totalReferrals: number;
   activeReferrals: number;
@@ -50,8 +66,6 @@ export interface ReferralStats {
   pendingEarnings: number;
   conversionRate: number;
   referralLink: string | null;
-  buyerReferralLink: string | null;
-  agentReferralLink: string | null;
 }
 
 export interface CommissionRates {
@@ -62,11 +76,32 @@ export interface CommissionRates {
 }
 
 export interface AgentRankInfo {
-  currentRank: "Bronze" | "Silver" | "Gold" | "Platinum";
-  nextRank: "Bronze" | "Silver" | "Gold" | "Platinum";
+  currentRank: AgentRank;
+  nextRank: AgentRank;
   progress: number;
   requiredReferrals: number;
   currentReferrals: number;
+}
+
+// Activity log entry type
+export interface ActivityLogEntry {
+  _id: string;
+  referralId: string;
+  date: string;
+  title: string;
+  description: string;
+  type: string;
+}
+
+// Commission history entry type
+export interface CommissionHistoryEntry {
+  _id: string;
+  referralId: string;
+  amount: number;
+  date: string;
+  description: string;
+  details: string;
+  status: "pending" | "completed" | "failed";
 }
 
 interface ReferralsContextType {
@@ -82,7 +117,7 @@ interface ReferralsContextType {
   // Actions
   getUserReferrals: () => Promise<void>;
   getReferralStats: () => Promise<void>;
-  generateReferralLink: (role?: "buyer" | "agent") => Promise<string | null>;
+  generateReferralLink: () => Promise<string | null>;
   getReferralEarnings: (startDate?: string, endDate?: string) => Promise<void>;
   getReferralCommissionRates: () => Promise<void>;
   getAgentRankInfo: () => Promise<void>;
@@ -91,7 +126,28 @@ interface ReferralsContextType {
     transactionType: string,
     amount: number
   ) => Promise<void>;
-  copyReferralLink: (role?: "buyer" | "agent") => void;
+  copyReferralLink: () => void;
+  verifyReferralCode: (
+    code: string
+  ) => Promise<{ referrerId: string; referrerName: string } | null>;
+
+  // Admin functions
+  getReferralById: (id: string) => Promise<Referral | null>;
+  getRefereesByReferrerId: (referrerId: string) => Promise<Referral[]>;
+  getReferralCommissionHistory: (
+    referralId: string
+  ) => Promise<CommissionHistoryEntry[]>;
+  getReferralActivityLog: (referralId: string) => Promise<ActivityLogEntry[]>;
+  updateReferralStatus: (
+    referralId: string,
+    status: ReferralStatus
+  ) => Promise<void>;
+  deleteReferral: (referralId: string) => Promise<void>;
+  getAllReferrals: (
+    page?: number,
+    limit?: number,
+    filters?: Record<string, any>
+  ) => Promise<{ referrals: Referral[]; total: number; pages: number }>;
 }
 
 const ReferralsContext = createContext<ReferralsContextType | undefined>(
@@ -110,9 +166,7 @@ interface ReferralsProviderProps {
   children: ReactNode;
 }
 
-export const ReferralsProvider: React.FC<ReferralsProviderProps> = ({
-  children,
-}) => {
+export const ReferralsProvider = ({ children }: ReferralsProviderProps) => {
   const router = useRouter();
 
   // State
@@ -127,57 +181,23 @@ export const ReferralsProvider: React.FC<ReferralsProviderProps> = ({
     null
   );
 
-  // Mock API calls - in a real app, these would call your backend API
+  // Get user's referrals
   const getUserReferrals = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // In a real app: const response = await fetch('/api/referrals')
-      // Mock data based on the controller
-      const mockReferrals: Referral[] = [
-        {
-          _id: "ref1",
-          referrer: {
-            _id: "user1",
-            firstName: "John",
-            lastName: "Doe",
-            email: "john@example.com",
-          },
-          referred: {
-            _id: "user2",
-            firstName: "Jane",
-            lastName: "Smith",
-            email: "jane@example.com",
-          },
-          status: "active",
-          earnings: 250,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-        {
-          _id: "ref2",
-          referrer: {
-            _id: "user1",
-            firstName: "John",
-            lastName: "Doe",
-            email: "john@example.com",
-          },
-          referred: {
-            _id: "user3",
-            firstName: "Bob",
-            lastName: "Johnson",
-            email: "bob@example.com",
-          },
-          status: "pending",
-          earnings: 0,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ];
+      const response = await apiConfig.get("/referrals", {
+        withCredentials: true,
+      });
 
-      setReferrals(mockReferrals);
+      if (response.status === 200) {
+        setReferrals(response.data.data);
+      } else {
+        throw new Error("Failed to fetch referrals");
+      }
     } catch (err) {
+      console.error("Error fetching referrals:", err);
       setError("Failed to fetch referrals");
       toast.error("Failed to fetch referrals");
     } finally {
@@ -185,27 +205,23 @@ export const ReferralsProvider: React.FC<ReferralsProviderProps> = ({
     }
   }, []);
 
-  // Update the getReferralStats function to include role-specific links
+  // Get referral stats
   const getReferralStats = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // In a real app: const response = await fetch('/api/referrals/stats')
-      // Mock data based on the controller
-      const mockStats: ReferralStats = {
-        totalReferrals: 24,
-        activeReferrals: 18,
-        totalEarnings: 2450,
-        pendingEarnings: 350,
-        conversionRate: 75,
-        referralLink: `${process.env.NEXT_PUBLIC_FRONTEND_URL}/register?ref=abc123`,
-        buyerReferralLink: `${process.env.NEXT_PUBLIC_FRONTEND_URL}/buyer/signup?ref=buyer123`,
-        agentReferralLink: `${process.env.NEXT_PUBLIC_FRONTEND_URL}/agent/signup?ref=agent456`,
-      };
+      const response = await apiConfig.get("/referrals/stats", {
+        withCredentials: true,
+      });
 
-      setStats(mockStats);
+      if (response.status === 200) {
+        setStats(response.data.data);
+      } else {
+        throw new Error("Failed to fetch referral stats");
+      }
     } catch (err) {
+      console.error("Error fetching referral stats:", err);
       setError("Failed to fetch referral stats");
       toast.error("Failed to fetch referral stats");
     } finally {
@@ -213,93 +229,65 @@ export const ReferralsProvider: React.FC<ReferralsProviderProps> = ({
     }
   }, []);
 
-  // Update the generateReferralLink function to support role-specific links
-  const generateReferralLink = useCallback(
-    async (role: "buyer" | "agent" = "agent") => {
-      setIsLoading(true);
-      setError(null);
+  // Generate referral link
+  const generateReferralLink = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
 
-      try {
-        // In a real app: const response = await fetch('/api/referrals/generate-link', { method: 'POST', body: JSON.stringify({ role }) })
-        // Mock data based on the controller
-        const referralCode = `${role}${Math.random()
-          .toString(36)
-          .substring(2, 8)}`;
-        const referralLink = `${process.env.NEXT_PUBLIC_FRONTEND_URL}/${role}/signup?ref=${referralCode}`;
+    try {
+      const response = await apiConfig.post(
+        "/referrals/generate-link",
+        {},
+        { withCredentials: true }
+      );
+
+      if (response.status === 200) {
+        const { referralLink } = response.data.data;
 
         // Update stats with new referral link
         if (stats) {
           setStats({
             ...stats,
-            referralLink, // Keep this for backward compatibility
-            ...(role === "buyer" ? { buyerReferralLink: referralLink } : {}),
-            ...(role === "agent" ? { agentReferralLink: referralLink } : {}),
+            referralLink,
           });
         }
 
-        toast.success(
-          `${
-            role.charAt(0).toUpperCase() + role.slice(1)
-          } referral link generated successfully`
-        );
+        toast.success("Referral link generated successfully");
         return referralLink;
-      } catch (err) {
-        setError(`Failed to generate ${role} referral link`);
-        toast.error(`Failed to generate ${role} referral link`);
-        return null;
-      } finally {
-        setIsLoading(false);
+      } else {
+        throw new Error("Failed to generate referral link");
       }
-    },
-    [stats]
-  );
+    } catch (err) {
+      console.error("Error generating referral link:", err);
+      setError("Failed to generate referral link");
+      toast.error("Failed to generate referral link");
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [stats]);
 
+  // Get referral earnings
   const getReferralEarnings = useCallback(
     async (startDate?: string, endDate?: string) => {
       setIsLoading(true);
       setError(null);
 
       try {
-        // In a real app:
-        // let url = '/api/referrals/earnings'
-        // if (startDate && endDate) {
-        //   url += `?startDate=${startDate}&endDate=${endDate}`
-        // }
-        // const response = await fetch(url)
+        let url = "/referrals/earnings";
+        if (startDate && endDate) {
+          url += `?startDate=${startDate}&endDate=${endDate}`;
+        }
 
-        // Mock data based on the controller
-        const mockEarnings: Transaction[] = [
-          {
-            _id: "trans1",
-            user: "user1",
-            type: "referral",
-            amount: 150,
-            status: "completed",
-            description: "Referral commission for investment purchase by user2",
-            createdAt: new Date().toISOString(),
-          },
-          {
-            _id: "trans2",
-            user: "user1",
-            type: "referral",
-            amount: 100,
-            status: "completed",
-            description: "Referral commission for property purchase by user3",
-            createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-          },
-          {
-            _id: "trans3",
-            user: "user1",
-            type: "referral",
-            amount: 75,
-            status: "pending",
-            description: "Referral commission for investment purchase by user4",
-            createdAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-          },
-        ];
+        const response = await apiConfig.get(url, { withCredentials: true });
 
-        setEarnings(mockEarnings);
+        if (response.status === 200) {
+          setEarnings(response.data.data);
+        } else {
+          throw new Error("Failed to fetch referral earnings");
+        }
       } catch (err) {
+        console.error("Error fetching referral earnings:", err);
         setError("Failed to fetch referral earnings");
         toast.error("Failed to fetch referral earnings");
       } finally {
@@ -309,34 +297,23 @@ export const ReferralsProvider: React.FC<ReferralsProviderProps> = ({
     []
   );
 
+  // Get referral commission rates
   const getReferralCommissionRates = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // In a real app: const response = await fetch('/api/referrals/commission-rates')
-      // Mock data based on the controller
-      const mockCommissionRates: CommissionRates = {
-        Bronze: {
-          investment: 2.5, // 2.5% commission on investments
-          property: 1.0, // 1% commission on property purchases
-        },
-        Silver: {
-          investment: 3.5,
-          property: 1.5,
-        },
-        Gold: {
-          investment: 5.0,
-          property: 2.0,
-        },
-        Platinum: {
-          investment: 7.5,
-          property: 3.0,
-        },
-      };
+      const response = await apiConfig.get("/referrals/commission-rates", {
+        withCredentials: true,
+      });
 
-      setCommissionRates(mockCommissionRates);
+      if (response.status === 200) {
+        setCommissionRates(response.data.data);
+      } else {
+        throw new Error("Failed to fetch commission rates");
+      }
     } catch (err) {
+      console.error("Error fetching commission rates:", err);
       setError("Failed to fetch commission rates");
       toast.error("Failed to fetch commission rates");
     } finally {
@@ -344,23 +321,23 @@ export const ReferralsProvider: React.FC<ReferralsProviderProps> = ({
     }
   }, []);
 
+  // Get agent rank info
   const getAgentRankInfo = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // In a real app: const response = await fetch('/api/referrals/agent-rank')
-      // Mock data based on the controller
-      const mockAgentRankInfo: AgentRankInfo = {
-        currentRank: "Silver",
-        nextRank: "Gold",
-        progress: 60,
-        requiredReferrals: 25,
-        currentReferrals: 15,
-      };
+      const response = await apiConfig.get("/referrals/agent-rank", {
+        withCredentials: true,
+      });
 
-      setAgentRankInfo(mockAgentRankInfo);
+      if (response.status === 200) {
+        setAgentRankInfo(response.data.data);
+      } else {
+        throw new Error("Failed to fetch agent rank information");
+      }
     } catch (err) {
+      console.error("Error fetching agent rank info:", err);
       setError("Failed to fetch agent rank information");
       toast.error("Failed to fetch agent rank information");
     } finally {
@@ -368,53 +345,106 @@ export const ReferralsProvider: React.FC<ReferralsProviderProps> = ({
     }
   }, []);
 
+  // Process referral
   const processReferral = useCallback(
     async (referredUserId: string, transactionType: string, amount: number) => {
       setIsLoading(true);
       setError(null);
 
       try {
-        // In a real app:
-        // const response = await fetch('/api/referrals/process', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({ referredUserId, transactionType, amount })
-        // })
-
-        // Mock processing
-        const commission =
-          transactionType === "investment"
-            ? amount * 0.05 // 5% for investment
-            : amount * 0.02; // 2% for property
-
-        // Update referrals to set status to active
-        setReferrals((prevReferrals) =>
-          prevReferrals.map((ref) =>
-            ref.referred._id === referredUserId
-              ? { ...ref, status: "active" }
-              : ref
-          )
+        const response = await apiConfig.post(
+          "/referrals/process",
+          { referredUserId, transactionType, amount },
+          { withCredentials: true }
         );
 
-        // Add new transaction to earnings
-        const newTransaction: Transaction = {
-          _id: `trans${Date.now()}`,
-          user: "user1",
-          type: "referral",
-          amount: commission,
-          status: "completed",
-          description: `Referral commission for ${transactionType} purchase by ${referredUserId}`,
-          createdAt: new Date().toISOString(),
-        };
+        if (response.status === 200) {
+          // Refresh referrals and earnings after processing
+          await getUserReferrals();
+          await getReferralEarnings();
 
-        setEarnings((prevEarnings) => [newTransaction, ...prevEarnings]);
-
-        toast.success(
-          `Referral processed successfully. Commission: $${commission}`
-        );
+          const { commission } = response.data.data;
+          toast.success(
+            `Referral processed successfully. Commission: ${commission}`
+          );
+        } else {
+          throw new Error("Failed to process referral");
+        }
       } catch (err) {
+        console.error("Error processing referral:", err);
         setError("Failed to process referral");
         toast.error("Failed to process referral");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [getUserReferrals, getReferralEarnings]
+  );
+
+  // Copy referral link to clipboard
+  const copyReferralLink = useCallback(() => {
+    if (!stats?.referralLink) {
+      toast.error("No referral link available");
+      return;
+    }
+
+    navigator.clipboard.writeText(stats.referralLink);
+    toast.success("Referral link copied to clipboard");
+  }, [stats]);
+
+  // Verify referral code
+  const verifyReferralCode = useCallback(async (code: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await apiConfig.get(`/referrals/verify/${code}`);
+
+      if (response.status === 200) {
+        return response.data.data;
+      } else {
+        throw new Error("Invalid referral code");
+      }
+    } catch (err) {
+      console.error("Error verifying referral code:", err);
+      setError("Invalid referral code");
+      toast.error("Invalid referral code");
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Admin functions
+
+  // Get all referrals (admin)
+  const getAllReferrals = useCallback(
+    async (page = 1, limit = 10, filters = {}) => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const queryParams = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+          ...filters,
+        });
+
+        const response = await apiConfig.get(
+          `/admin/referrals?${queryParams}`,
+          { withCredentials: true }
+        );
+
+        if (response.status === 200) {
+          return response.data.data;
+        } else {
+          throw new Error("Failed to fetch all referrals");
+        }
+      } catch (err) {
+        console.error("Error fetching all referrals:", err);
+        setError("Failed to fetch all referrals");
+        toast.error("Failed to fetch all referrals");
+        return { referrals: [], total: 0, pages: 0 };
       } finally {
         setIsLoading(false);
       }
@@ -422,35 +452,162 @@ export const ReferralsProvider: React.FC<ReferralsProviderProps> = ({
     []
   );
 
-  // Update the copyReferralLink function to support role-specific links
-  const copyReferralLink = useCallback(
-    (role?: "buyer" | "agent") => {
-      if (!stats) {
-        toast.error("No referral link available");
-        return;
-      }
+  // Get referral by ID
+  const getReferralById = useCallback(async (id: string) => {
+    setIsLoading(true);
+    setError(null);
 
-      let linkToCopy = stats.referralLink;
+    try {
+      const response = await apiConfig.get(`/referrals/${id}`, {
+        withCredentials: true,
+      });
 
-      if (role === "buyer" && stats.buyerReferralLink) {
-        linkToCopy = stats.buyerReferralLink;
-      } else if (role === "agent" && stats.agentReferralLink) {
-        linkToCopy = stats.agentReferralLink;
-      }
-
-      if (linkToCopy) {
-        navigator.clipboard.writeText(linkToCopy);
-        toast.success(
-          `${
-            role ? role.charAt(0).toUpperCase() + role.slice(1) : "Referral"
-          } link copied to clipboard`
-        );
+      if (response.status === 200) {
+        return response.data.data;
       } else {
-        toast.error("No referral link available");
+        throw new Error("Failed to fetch referral");
+      }
+    } catch (err) {
+      console.error("Error fetching referral:", err);
+      setError("Failed to fetch referral");
+      toast.error("Failed to fetch referral");
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Get referees by referrer ID
+  const getRefereesByReferrerId = useCallback(async (referrerId: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await apiConfig.get(
+        `/referrals/referrer/${referrerId}/referees`,
+        { withCredentials: true }
+      );
+
+      if (response.status === 200) {
+        return response.data.data;
+      } else {
+        throw new Error("Failed to fetch referees");
+      }
+    } catch (err) {
+      console.error("Error fetching referees:", err);
+      setError("Failed to fetch referees");
+      toast.error("Failed to fetch referees");
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Get referral commission history
+  const getReferralCommissionHistory = useCallback(
+    async (referralId: string) => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await apiConfig.get(
+          `/referrals/${referralId}/commissions`,
+          { withCredentials: true }
+        );
+
+        if (response.status === 200) {
+          return response.data.data;
+        } else {
+          throw new Error("Failed to fetch commission history");
+        }
+      } catch (err) {
+        console.error("Error fetching commission history:", err);
+        setError("Failed to fetch commission history");
+        toast.error("Failed to fetch commission history");
+        return [];
+      } finally {
+        setIsLoading(false);
       }
     },
-    [stats]
+    []
   );
+
+  // Get referral activity log
+  const getReferralActivityLog = useCallback(async (referralId: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await apiConfig.get(
+        `/referrals/${referralId}/activity`,
+        { withCredentials: true }
+      );
+
+      if (response.status === 200) {
+        return response.data.data;
+      } else {
+        throw new Error("Failed to fetch activity log");
+      }
+    } catch (err) {
+      console.error("Error fetching activity log:", err);
+      setError("Failed to fetch activity log");
+      toast.error("Failed to fetch activity log");
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Update referral status
+  const updateReferralStatus = useCallback(
+    async (referralId: string, status: ReferralStatus) => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await apiConfig.patch(
+          `/referrals/${referralId}/status`,
+          { status },
+          { withCredentials: true }
+        );
+
+        if (response.status !== 200) {
+          throw new Error("Failed to update referral status");
+        }
+      } catch (err) {
+        console.error("Error updating referral status:", err);
+        setError("Failed to update referral status");
+        toast.error("Failed to update referral status");
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
+
+  // Delete referral
+  const deleteReferral = useCallback(async (referralId: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await apiConfig.delete(`/referrals/${referralId}`, {
+        withCredentials: true,
+      });
+
+      if (response.status !== 200) {
+        throw new Error("Failed to delete referral");
+      }
+    } catch (err) {
+      console.error("Error deleting referral:", err);
+      setError("Failed to delete referral");
+      toast.error("Failed to delete referral");
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   // Load initial data
   useEffect(() => {
@@ -458,7 +615,14 @@ export const ReferralsProvider: React.FC<ReferralsProviderProps> = ({
       await getUserReferrals();
       await getReferralStats();
       await getReferralCommissionRates();
-      await getAgentRankInfo();
+
+      // Only fetch agent rank info if needed (could check user role here)
+      try {
+        await getAgentRankInfo();
+      } catch (err) {
+        // Silently fail as this might not be available for all users
+        console.log("Agent rank info not available for this user");
+      }
     };
 
     loadInitialData();
@@ -488,6 +652,16 @@ export const ReferralsProvider: React.FC<ReferralsProviderProps> = ({
     getAgentRankInfo,
     processReferral,
     copyReferralLink,
+    verifyReferralCode,
+
+    // Admin functions
+    getReferralById,
+    getRefereesByReferrerId,
+    getReferralCommissionHistory,
+    getReferralActivityLog,
+    updateReferralStatus,
+    deleteReferral,
+    getAllReferrals,
   };
 
   return (

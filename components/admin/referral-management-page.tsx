@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState, useEffect } from "react";
 import {
   Users,
   Settings,
@@ -13,16 +13,32 @@ import {
   Eye,
   Award,
   MoreHorizontal,
-} from "lucide-react"
-import { format } from "date-fns"
-import PageTransition from "@/components/animations/page-transition"
-import StaggerChildren from "@/components/animations/stagger-children"
-import StaggerItem from "@/components/animations/stagger-item"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
+  Copy,
+  LinkIcon,
+  TrendingUp,
+  Filter,
+  Share2,
+  ArrowUpRight,
+  Sparkles,
+  UserPlus,
+  BarChart3,
+  Wallet,
+} from "lucide-react";
+import PageTransition from "@/components/animations/page-transition";
+import StaggerChildren from "@/components/animations/stagger-children";
+import StaggerItem from "@/components/animations/stagger-item";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -30,20 +46,15 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerFooter,
-  DrawerTrigger,
-} from "@/components/ui/drawer"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,8 +62,15 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+} from "@/components/ui/dropdown-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -60,237 +78,245 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
+} from "@/components/ui/breadcrumb";
+import { useReferrals } from "@/contexts/referrals-context";
+import { toast } from "sonner";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 
-// Add the following import
-import Link from "next/link"
+export function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState<boolean>(false);
 
-// Mock data for referrals
-const mockReferrals = [
-  {
-    id: "REF-001",
-    referrer: {
-      id: "USR-123",
-      name: "John Smith",
-      email: "john@example.com",
-      avatar:
-        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fG1hbnxlbnwwfHwwfHx8MA%3D%3D",
-    },
-    referee: {
-      id: "USR-456",
-      name: "Sarah Johnson",
-      email: "sarah@example.com",
-      avatar:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8d29tYW58ZW58MHx8MHx8fDA%3D",
-    },
-    date: new Date("2023-11-15"),
-    status: "completed",
-    commission: 250,
-    commissionPaid: true,
-    type: "signup",
-  },
-  {
-    id: "REF-002",
-    referrer: {
-      id: "USR-789",
-      name: "Michael Brown",
-      email: "michael@example.com",
-      avatar:
-        "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8bWFufGVufDB8fDB8fHww",
-    },
-    referee: {
-      id: "USR-101",
-      name: "Emily Davis",
-      email: "emily@example.com",
-      avatar:
-        "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8N3x8d29tYW58ZW58MHx8MHx8fDA%3D",
-    },
-    date: new Date("2023-11-20"),
-    status: "pending",
-    commission: 500,
-    commissionPaid: false,
-    type: "investment",
-  },
-  {
-    id: "REF-003",
-    referrer: {
-      id: "USR-202",
-      name: "David Wilson",
-      email: "david@example.com",
-      avatar:
-        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fG1hbnxlbnwwfHwwfHx8MA%3D%3D",
-    },
-    referee: {
-      id: "USR-303",
-      name: "Jessica Taylor",
-      email: "jessica@example.com",
-      avatar:
-        "https://images.unsplash.com/photo-1534751516642-a1af1ef26a56?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fHdvbWFufGVufDB8fDB8fHww",
-    },
-    date: new Date("2023-11-25"),
-    status: "completed",
-    commission: 750,
-    commissionPaid: true,
-    type: "purchase",
-  },
-  {
-    id: "REF-004",
-    referrer: {
-      id: "USR-404",
-      name: "Robert Martinez",
-      email: "robert@example.com",
-      avatar:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTR8fG1hbnxlbnwwfHwwfHx8MA%3D%3D",
-    },
-    referee: {
-      id: "USR-505",
-      name: "Amanda Clark",
-      email: "amanda@example.com",
-      avatar:
-        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjB8fHdvbWFufGVufDB8fDB8fHww",
-    },
-    date: new Date("2023-11-30"),
-    status: "rejected",
-    commission: 0,
-    commissionPaid: false,
-    type: "signup",
-  },
-  {
-    id: "REF-005",
-    referrer: {
-      id: "USR-606",
-      name: "Thomas Anderson",
-      email: "thomas@example.com",
-      avatar:
-        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTZ8fG1hbnxlbnwwfHwwfHx8MA%3D%3D",
-    },
-    referee: {
-      id: "USR-707",
-      name: "Jennifer White",
-      email: "jennifer@example.com",
-      avatar:
-        "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjR8fHdvbWFufGVufDB8fDB8fHww",
-    },
-    date: new Date("2023-12-05"),
-    status: "pending",
-    commission: 1000,
-    commissionPaid: false,
-    type: "investment",
-  },
-]
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    setMatches(media.matches);
+    const listener = (event: MediaQueryListEvent) => {
+      setMatches(event.matches);
+    };
+    media.addEventListener("change", listener);
+    return () => {
+      media.removeEventListener("change", listener);
+    };
+  }, [query]);
 
-// Mock data for referral statistics
-const referralStats = {
-  totalReferrals: 127,
-  activeReferrers: 42,
-  pendingCommissions: 15,
-  totalCommissionsPaid: 25000,
-  conversionRate: 68,
-  topReferrers: [
-    { name: "John Smith", count: 15, commission: 3750 },
-    { name: "Michael Brown", count: 12, commission: 3000 },
-    { name: "David Wilson", count: 10, commission: 2500 },
-  ],
-  monthlyReferrals: [
-    { month: "Jan", count: 8 },
-    { month: "Feb", count: 10 },
-    { month: "Mar", count: 12 },
-    { month: "Apr", count: 15 },
-    { month: "May", count: 18 },
-    { month: "Jun", count: 14 },
-    { month: "Jul", count: 16 },
-    { month: "Aug", count: 20 },
-    { month: "Sep", count: 22 },
-    { month: "Oct", count: 25 },
-    { month: "Nov", count: 28 },
-    { month: "Dec", count: 24 },
-  ],
+  return matches;
 }
 
-// Mock data for referral settings
-const referralSettings = {
-  signupCommission: 250,
-  investmentCommissionPercentage: 5,
-  purchaseCommissionPercentage: 2.5,
-  minimumPayoutAmount: 1000,
-  payoutFrequency: "monthly",
-  referralLinkExpiry: 30, // days
-  multiTierReferral: false,
-  autoApproval: true,
-}
+// Define the ReferralStatus enum directly in this file to avoid import issues
+const ReferralStatus = {
+  ACTIVE: "active",
+  PENDING: "pending",
+  INACTIVE: "inactive",
+};
 
-export function ReferralManagementPage() {
-  const [activeTab, setActiveTab] = useState("all")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [typeFilter, setTypeFilter] = useState("all")
-  const [showSettingsDialog, setShowSettingsDialog] = useState(false)
-  const [showCommissionDialog, setShowCommissionDialog] = useState(false)
-  const [selectedReferral, setSelectedReferral] = useState<any>(null)
-  const [currentSettings, setCurrentSettings] = useState(referralSettings)
-  const isMobile = false
+export default function ReferralManagementPage() {
+  const {
+    referrals,
+    isLoading,
+    stats,
+    earnings,
+    commissionRates,
+    agentRankInfo,
+    getUserReferrals,
+    getReferralStats,
+    generateReferralLink,
+    getReferralEarnings,
+    getReferralCommissionRates,
+    getAgentRankInfo,
+    processReferral,
+    copyReferralLink,
+  } = useReferrals();
+
+  const isMobile = useMediaQuery("(max-width: 640px)");
+  const router = useRouter();
+
+  const [activeTab, setActiveTab] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+  const [showCommissionDialog, setShowCommissionDialog] = useState(false);
+  const [selectedReferral, setSelectedReferral] = useState<any>(null);
+  const [showReferralLinkDialog, setShowReferralLinkDialog] = useState(false);
+
+  // Settings state (in a real app, this would be fetched from the API)
+  const [currentSettings, setCurrentSettings] = useState({
+    signupCommission: 250,
+    investmentCommissionPercentage: 5,
+    purchaseCommissionPercentage: 2.5,
+    minimumPayoutAmount: 1000,
+    payoutFrequency: "monthly",
+    referralLinkExpiry: 30, // days
+    multiTierReferral: false,
+    autoApproval: true,
+  });
+
+  // Load data on component mount
+  useEffect(() => {
+    getUserReferrals();
+    getReferralStats();
+    getReferralEarnings();
+    getReferralCommissionRates();
+    getAgentRankInfo();
+  }, [
+    getUserReferrals,
+    getReferralStats,
+    getReferralEarnings,
+    getReferralCommissionRates,
+    getAgentRankInfo,
+  ]);
 
   // Filter referrals based on search query, status, and type
-  const filteredReferrals = mockReferrals.filter((referral) => {
+  const filteredReferrals = referrals.filter((referral) => {
     const matchesSearch =
       searchQuery === "" ||
-      referral.referrer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      referral.referee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      referral.id.toLowerCase().includes(searchQuery.toLowerCase())
+      (referral.referrer.firstName + " " + referral.referrer.lastName)
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      (referral.referred.firstName + " " + referral.referred.lastName)
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      referral._id.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesStatus = statusFilter === "all" || referral.status === statusFilter
-    const matchesType = typeFilter === "all" || referral.type === typeFilter
+    const matchesStatus =
+      statusFilter === "all" || referral.status === statusFilter;
 
-    return matchesSearch && matchesStatus && matchesType
-  })
+    // In a real app, you would have a type field in your referral model
+    // For now, we'll just return true for type filtering
+    const matchesType = true;
+
+    return matchesSearch && matchesStatus && matchesType;
+  });
 
   // Handle approving a commission
-  const handleApproveCommission = () => {
-    // In a real app, this would make an API call to approve the commission
-    console.log(`Approving commission for referral ${selectedReferral?.id}`)
-    setShowCommissionDialog(false)
-  }
+  const handleApproveCommission = async () => {
+    if (!selectedReferral) return;
+
+    try {
+      await processReferral(
+        selectedReferral.referred._id,
+        "investment", // You would determine the actual type based on the referral
+        1000 // You would determine the actual amount based on the referral
+      );
+
+      toast.success(
+        "Commission approved. The commission has been approved and paid."
+      );
+
+      setShowCommissionDialog(false);
+      getUserReferrals(); // Refresh the referrals list
+    } catch (error) {
+      toast.error("Failed to process commission");
+    }
+  };
 
   // Handle rejecting a commission
   const handleRejectCommission = () => {
     // In a real app, this would make an API call to reject the commission
-    console.log(`Rejecting commission for referral ${selectedReferral?.id}`)
-    setShowCommissionDialog(false)
-  }
+    toast.success("Commission rejected. The commission has been rejected.");
+    setShowCommissionDialog(false);
+  };
 
   // Handle saving settings
   const handleSaveSettings = () => {
     // In a real app, this would make an API call to update the settings
-    console.log("Saving settings:", currentSettings)
-    setShowSettingsDialog(false)
-  }
+    toast.success(
+      "Settings saved. Your referral program settings have been updated."
+    );
+    setShowSettingsDialog(false);
+  };
+
+  // Handle generating a new referral link
+  const handleGenerateReferralLink = async () => {
+    try {
+      await generateReferralLink();
+      setShowReferralLinkDialog(true);
+    } catch (error) {
+      toast.error("Failed to generate referral link");
+    }
+  };
+
+  // Handle copying the referral link
+  const handleCopyReferralLink = () => {
+    copyReferralLink();
+  };
+
+  // Handle exporting data
+  const handleExportData = () => {
+    toast.success("Export started. Your data export has been initiated.");
+  };
 
   // Render status badge
   const renderStatusBadge = (status: string) => {
     switch (status) {
-      case "completed":
-        return <Badge className="bg-green-500 hover:bg-green-600">Completed</Badge>
-      case "pending":
-        return <Badge className="bg-yellow-500 hover:bg-yellow-600">Pending</Badge>
-      case "rejected":
-        return <Badge className="bg-red-500 hover:bg-red-600">Rejected</Badge>
+      case ReferralStatus.ACTIVE:
+        return (
+          <Badge className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20">
+            Active
+          </Badge>
+        );
+      case ReferralStatus.PENDING:
+        return (
+          <Badge className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-amber-500/20">
+            Pending
+          </Badge>
+        );
+      case ReferralStatus.INACTIVE:
+        return (
+          <Badge className="bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 border-rose-500/20">
+            Inactive
+          </Badge>
+        );
       default:
-        return <Badge>{status}</Badge>
+        return <Badge>{status}</Badge>;
     }
-  }
+  };
 
   // Render commission status badge
   const renderCommissionBadge = (paid: boolean) => {
     return paid ? (
-      <Badge className="bg-green-500 hover:bg-green-600">Paid</Badge>
+      <Badge className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20">
+        Paid
+      </Badge>
     ) : (
       <Badge variant="outline">Unpaid</Badge>
-    )
+    );
+  };
+
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-NG", {
+      style: "currency",
+      currency: "NGN",
+    }).format(amount);
+  };
+
+  if (isLoading && !referrals.length) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
   }
 
   return (
     <PageTransition>
-      <div className="container mx-auto p-4 space-y-6">
+      <div className="container mx-auto p-4 space-y-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <Breadcrumb className="mb-2">
@@ -304,71 +330,146 @@ export function ReferralManagementPage() {
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
-            <h1 className="text-3xl font-bold tracking-tight">Referral Management</h1>
-            <p className="text-muted-foreground">Manage referrals, commissions, and program settings</p>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Referral Management
+            </h1>
+            <p className="text-muted-foreground">
+              Manage referrals, commissions, and program settings
+            </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
-            <Button variant="outline" onClick={() => setShowSettingsDialog(true)}>
+            <Button
+              variant="outline"
+              onClick={handleGenerateReferralLink}
+              className="border-dashed"
+            >
+              <Share2 className="h-4 w-4 mr-2" />
+              Share Referral Link
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => router.push("/dashboard/referrals/settings")}
+              className="bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600"
+            >
               <Settings className="h-4 w-4 mr-2" />
               Program Settings
-            </Button>
-            <Button>
-              <Download className="h-4 w-4 mr-2" />
-              Export Data
             </Button>
           </div>
         </div>
 
         <StaggerChildren>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StaggerItem>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Referrals</CardTitle>
+              <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
+                <CardHeader className="pb-2 pt-6">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
+                    <Users className="h-4 w-4 mr-2 text-violet-500" />
+                    Total Referrals
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center">
-                    <Users className="h-5 w-5 text-primary mr-2" />
-                    <div className="text-2xl font-bold">{referralStats.totalReferrals}</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-3xl font-bold">
+                      {stats?.totalReferrals || 0}
+                    </div>
+                    <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-full">
+                      <UserPlus className="h-5 w-5 text-violet-500" />
+                    </div>
+                  </div>
+                  <div className="mt-2 text-xs text-muted-foreground flex items-center">
+                    <TrendingUp className="h-3 w-3 mr-1 text-emerald-500" />
+                    <span className="text-emerald-500 font-medium">+12%</span>
+                    <span className="ml-1">from last month</span>
                   </div>
                 </CardContent>
               </Card>
             </StaggerItem>
+
             <StaggerItem>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Active Referrers</CardTitle>
+              <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
+                <CardHeader className="pb-2 pt-6">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
+                    <Award className="h-4 w-4 mr-2 text-emerald-500" />
+                    Active Referrals
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center">
-                    <Award className="h-5 w-5 text-primary mr-2" />
-                    <div className="text-2xl font-bold">{referralStats.activeReferrers}</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-3xl font-bold">
+                      {stats?.activeReferrals || 0}
+                    </div>
+                    <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-full">
+                      <CheckCircle className="h-5 w-5 text-emerald-500" />
+                    </div>
+                  </div>
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    <div className="flex justify-between items-center mb-1">
+                      <span>Conversion Rate</span>
+                      <span className="font-medium">
+                        {stats?.conversionRate || 0}%
+                      </span>
+                    </div>
+                    <Progress
+                      value={stats?.conversionRate || 0}
+                      className="h-1"
+                    />
                   </div>
                 </CardContent>
               </Card>
             </StaggerItem>
+
             <StaggerItem>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Pending Commissions</CardTitle>
+              <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
+                <CardHeader className="pb-2 pt-6">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
+                    <Clock className="h-4 w-4 mr-2 text-amber-500" />
+                    Pending Earnings
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center">
-                    <Clock className="h-5 w-5 text-primary mr-2" />
-                    <div className="text-2xl font-bold">{referralStats.pendingCommissions}</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-3xl font-bold">
+                      {formatCurrency(stats?.pendingEarnings || 0)}
+                    </div>
+                    <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-full">
+                      <Wallet className="h-5 w-5 text-amber-500" />
+                    </div>
+                  </div>
+                  <div className="mt-2 text-xs text-muted-foreground flex items-center">
+                    <span>
+                      {
+                        referrals.filter(
+                          (r) => r.status === ReferralStatus.PENDING
+                        ).length
+                      }{" "}
+                      pending referrals
+                    </span>
                   </div>
                 </CardContent>
               </Card>
             </StaggerItem>
+
             <StaggerItem>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Commissions Paid</CardTitle>
+              <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
+                <CardHeader className="pb-2 pt-6">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
+                    <DollarSign className="h-4 w-4 mr-2 text-indigo-500" />
+                    Total Earnings
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center">
-                    <DollarSign className="h-5 w-5 text-primary mr-2" />
-                    <div className="text-2xl font-bold">${referralStats.totalCommissionsPaid.toLocaleString()}</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-3xl font-bold">
+                      {formatCurrency(stats?.totalEarnings || 0)}
+                    </div>
+                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-full">
+                      <BarChart3 className="h-5 w-5 text-indigo-500" />
+                    </div>
+                  </div>
+                  <div className="mt-2 text-xs text-muted-foreground flex items-center">
+                    <TrendingUp className="h-3 w-3 mr-1 text-emerald-500" />
+                    <span className="text-emerald-500 font-medium">+8.5%</span>
+                    <span className="ml-1">from last month</span>
                   </div>
                 </CardContent>
               </Card>
@@ -376,158 +477,354 @@ export function ReferralManagementPage() {
           </div>
         </StaggerChildren>
 
-        <Tabs defaultValue="all" onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 md:w-auto md:inline-flex">
-            <TabsTrigger value="all">All Referrals</TabsTrigger>
-            <TabsTrigger value="pending">Pending Commissions</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          </TabsList>
+        <Tabs
+          defaultValue="all"
+          onValueChange={setActiveTab}
+          className="w-full"
+        >
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+            <TabsList className="mb-4 md:mb-0 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-lg">
+              <TabsTrigger
+                value="all"
+                className="rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm"
+              >
+                All Referrals
+              </TabsTrigger>
+              <TabsTrigger
+                value="pending"
+                className="rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm"
+              >
+                Pending Referrals
+              </TabsTrigger>
+              <TabsTrigger
+                value="analytics"
+                className="rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm"
+              >
+                Analytics
+              </TabsTrigger>
+            </TabsList>
 
-          <div className="mt-4 flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search referrals..."
-                className="pl-8"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+            <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+              <div className="relative flex-1 md:w-[280px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search referrals..."
+                  className="pl-9 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full md:w-[180px] bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center">
+                    <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <SelectValue placeholder="Filter by status" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value={ReferralStatus.ACTIVE}>Active</SelectItem>
+                  <SelectItem value={ReferralStatus.PENDING}>
+                    Pending
+                  </SelectItem>
+                  <SelectItem value={ReferralStatus.INACTIVE}>
+                    Inactive
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Filter by type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="signup">Signup</SelectItem>
-                <SelectItem value="investment">Investment</SelectItem>
-                <SelectItem value="purchase">Purchase</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
-          <TabsContent value="all" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>All Referrals</CardTitle>
-                <CardDescription>View and manage all referrals in the system</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Referrer</TableHead>
-                      <TableHead>Referee</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Commission</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredReferrals.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                          No referrals found matching your filters
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredReferrals.map((referral) => (
-                        <TableRow key={referral.id}>
-                          <TableCell className="font-medium">{referral.id}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <img
-                                src={referral.referrer.avatar || "/placeholder.svg"}
-                                alt={referral.referrer.name}
-                                className="h-8 w-8 rounded-full object-cover"
-                              />
-                              <div>
-                                <div className="font-medium">{referral.referrer.name}</div>
-                                <div className="text-xs text-muted-foreground">{referral.referrer.email}</div>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <img
-                                src={referral.referee.avatar || "/placeholder.svg"}
-                                alt={referral.referee.name}
-                                className="h-8 w-8 rounded-full object-cover"
-                              />
-                              <div>
-                                <div className="font-medium">{referral.referee.name}</div>
-                                <div className="text-xs text-muted-foreground">{referral.referee.email}</div>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{format(referral.date, "MMM d, yyyy")}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="capitalize">
-                              {referral.type}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{renderStatusBadge(referral.status)}</TableCell>
-                          <TableCell>
-                            <div className="flex flex-col">
-                              <span>${referral.commission.toLocaleString()}</span>
-                              <span>{renderCommissionBadge(referral.commissionPaid)}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-right">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Open menu</span>
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                  <DropdownMenuItem>
-                                    <Link
-                                      href={`/dashboard/admin/referrals/${referral.id}`}
-                                      className="flex items-center"
-                                    >
-                                      <Eye className="h-4 w-4 mr-2" />
-                                      View Details
-                                    </Link>
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem onClick={() => setSelectedReferral(referral)}>
-                                    <DollarSign className="h-4 w-4 mr-2" />
-                                    Process Commission
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <div className="text-sm text-muted-foreground">
-                  Showing {filteredReferrals.length} of {mockReferrals.length} referrals
+          <TabsContent value="all" className="mt-0">
+            <Card className="border-none shadow-lg bg-white dark:bg-slate-900 overflow-hidden">
+              <CardHeader className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 px-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                  <div>
+                    <CardTitle>All Referrals</CardTitle>
+                    <CardDescription>
+                      View and manage all referrals in the system
+                    </CardDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportData}
+                    className="self-start"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
                 </div>
-                <div className="flex gap-2">
+              </CardHeader>
+              <CardContent className="p-0">
+                {isLoading ? (
+                  <div className="flex justify-center py-12">
+                    <LoadingSpinner />
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader className="bg-slate-50 dark:bg-slate-800/30">
+                        <TableRow className="hover:bg-transparent">
+                          <TableHead className="w-[80px]">ID</TableHead>
+                          <TableHead>Referrer</TableHead>
+                          <TableHead>Referred</TableHead>
+                          <TableHead className="w-[120px]">Date</TableHead>
+                          <TableHead className="w-[100px]">Status</TableHead>
+                          <TableHead className="w-[120px]">Earnings</TableHead>
+                          <TableHead className="w-[80px] text-right">
+                            Actions
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredReferrals.length === 0 ? (
+                          <TableRow>
+                            <TableCell
+                              colSpan={7}
+                              className="text-center py-12 text-muted-foreground"
+                            >
+                              <div className="flex flex-col items-center justify-center">
+                                <div className="rounded-full bg-slate-100 dark:bg-slate-800 p-3 mb-3">
+                                  <Users className="h-6 w-6 text-slate-400" />
+                                </div>
+                                <p className="font-medium mb-1">
+                                  No referrals found
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  No referrals match your current filters
+                                </p>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          filteredReferrals.map((referral) => (
+                            <TableRow key={referral._id} className="group">
+                              <TableCell className="font-medium">
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="cursor-help">
+                                        {referral._id.substring(0, 8)}
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Full ID: {referral._id}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </TableCell>
+                              <TableCell>
+                                <HoverCard>
+                                  <HoverCardTrigger asChild>
+                                    <div className="flex items-center gap-3 cursor-pointer">
+                                      <Avatar className="h-9 w-9 border border-slate-200 dark:border-slate-700">
+                                        <AvatarImage
+                                          src={
+                                            referral.referrer?.avatar ||
+                                            "/placeholder.svg"
+                                          }
+                                          alt={`${referral.referrer.firstName} ${referral.referrer.lastName}`}
+                                        />
+                                        <AvatarFallback className="bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400">
+                                          {referral.referrer.firstName?.[0]}
+                                          {referral.referrer.lastName?.[0]}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <div>
+                                        <div className="font-medium">
+                                          {referral.referrer.firstName}{" "}
+                                          {referral.referrer.lastName}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                          {referral.referrer.email}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </HoverCardTrigger>
+                                  <HoverCardContent className="w-80">
+                                    <div className="flex justify-between space-x-4">
+                                      <Avatar className="h-12 w-12">
+                                        <AvatarImage
+                                          src={
+                                            referral.referrer?.avatar ||
+                                            "/placeholder.svg"
+                                          }
+                                          alt={`${referral.referrer.firstName} ${referral.referrer.lastName}`}
+                                        />
+                                        <AvatarFallback className="bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400">
+                                          {referral.referrer.firstName?.[0]}
+                                          {referral.referrer.lastName?.[0]}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <div className="space-y-1">
+                                        <h4 className="text-sm font-semibold">
+                                          {referral.referrer.firstName}{" "}
+                                          {referral.referrer.lastName}
+                                        </h4>
+                                        <p className="text-sm text-muted-foreground">
+                                          {referral.referrer.email}
+                                        </p>
+                                        <div className="flex items-center pt-1">
+                                          <span className="text-xs text-muted-foreground mr-2">
+                                            Agent Rank:
+                                          </span>
+                                          <Badge
+                                            variant="secondary"
+                                            className="text-xs"
+                                          >
+                                            {referral.referrer.agentRank ||
+                                              "Bronze"}
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </HoverCardContent>
+                                </HoverCard>
+                              </TableCell>
+                              <TableCell>
+                                <HoverCard>
+                                  <HoverCardTrigger asChild>
+                                    <div className="flex items-center gap-3 cursor-pointer">
+                                      <Avatar className="h-9 w-9 border border-slate-200 dark:border-slate-700">
+                                        <AvatarImage
+                                          src={
+                                            referral.referred?.avatar ||
+                                            "/placeholder.svg"
+                                          }
+                                          alt={`${referral.referred.firstName} ${referral.referred.lastName}`}
+                                        />
+                                        <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                          {referral.referred.firstName?.[0]}
+                                          {referral.referred.lastName?.[0]}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <div>
+                                        <div className="font-medium">
+                                          {referral.referred.firstName}{" "}
+                                          {referral.referred.lastName}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                          {referral.referred.email}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </HoverCardTrigger>
+                                  <HoverCardContent className="w-80">
+                                    <div className="flex justify-between space-x-4">
+                                      <Avatar className="h-12 w-12">
+                                        <AvatarImage
+                                          src={
+                                            referral.referred?.avatar ||
+                                            "/placeholder.svg"
+                                          }
+                                          alt={`${referral.referred.firstName} ${referral.referred.lastName}`}
+                                        />
+                                        <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                          {referral.referred.firstName?.[0]}
+                                          {referral.referred.lastName?.[0]}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <div className="space-y-1">
+                                        <h4 className="text-sm font-semibold">
+                                          {referral.referred.firstName}{" "}
+                                          {referral.referred.lastName}
+                                        </h4>
+                                        <p className="text-sm text-muted-foreground">
+                                          {referral.referred.email}
+                                        </p>
+                                        <div className="flex items-center pt-1">
+                                          <span className="text-xs text-muted-foreground mr-2">
+                                            Joined:
+                                          </span>
+                                          <span className="text-xs">
+                                            {new Date(
+                                              referral.createdAt
+                                            ).toLocaleDateString()}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </HoverCardContent>
+                                </HoverCard>
+                              </TableCell>
+                              <TableCell>
+                                {new Date(
+                                  referral.createdAt
+                                ).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell>
+                                {renderStatusBadge(referral.status)}
+                              </TableCell>
+                              <TableCell>
+                                <div className="font-medium">
+                                  {formatCurrency(referral.earnings)}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-right">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      >
+                                        <MoreHorizontal className="h-4 w-4" />
+                                        <span className="sr-only">
+                                          Open menu
+                                        </span>
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                      align="end"
+                                      className="w-[180px]"
+                                    >
+                                      <DropdownMenuLabel>
+                                        Actions
+                                      </DropdownMenuLabel>
+                                      <DropdownMenuItem asChild>
+                                        <Link
+                                          href={`/dashboard/referrals/${referral._id}`}
+                                          className="flex items-center cursor-pointer"
+                                        >
+                                          <Eye className="h-4 w-4 mr-2" />
+                                          View Details
+                                        </Link>
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                      {referral.status ===
+                                        ReferralStatus.PENDING && (
+                                        <DropdownMenuItem
+                                          onClick={() => {
+                                            setSelectedReferral(referral);
+                                            setShowCommissionDialog(true);
+                                          }}
+                                          className="cursor-pointer"
+                                        >
+                                          <DollarSign className="h-4 w-4 mr-2" />
+                                          Process Referral
+                                        </DropdownMenuItem>
+                                      )}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+              <CardFooter className="flex justify-between py-4 px-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                <div className="text-sm text-muted-foreground">
+                  Showing {filteredReferrals.length} of {referrals.length}{" "}
+                  referrals
+                </div>
+                <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" disabled>
                     Previous
                   </Button>
@@ -539,164 +836,420 @@ export function ReferralManagementPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="pending" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Pending Commissions</CardTitle>
-                <CardDescription>Review and process pending commission payouts</CardDescription>
+          <TabsContent value="pending" className="mt-0">
+            <Card className="border-none shadow-lg bg-white dark:bg-slate-900 overflow-hidden">
+              <CardHeader className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 px-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                  <div>
+                    <CardTitle>Pending Referrals</CardTitle>
+                    <CardDescription>
+                      Review and process pending referrals
+                    </CardDescription>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className="self-start bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800"
+                  >
+                    {
+                      referrals.filter(
+                        (r) => r.status === ReferralStatus.PENDING
+                      ).length
+                    }{" "}
+                    pending
+                  </Badge>
+                </div>
               </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Referrer</TableHead>
-                      <TableHead>Referee</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Commission</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {mockReferrals
-                      .filter((r) => r.status === "pending" && !r.commissionPaid)
-                      .map((referral) => (
-                        <TableRow key={referral.id}>
-                          <TableCell className="font-medium">{referral.id}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <img
-                                src={referral.referrer.avatar || "/placeholder.svg"}
-                                alt={referral.referrer.name}
-                                className="h-8 w-8 rounded-full object-cover"
-                              />
-                              <div>
-                                <div className="font-medium">{referral.referrer.name}</div>
-                                <div className="text-xs text-muted-foreground">{referral.referrer.email}</div>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <img
-                                src={referral.referee.avatar || "/placeholder.svg"}
-                                alt={referral.referee.name}
-                                className="h-8 w-8 rounded-full object-cover"
-                              />
-                              <div>
-                                <div className="font-medium">{referral.referee.name}</div>
-                                <div className="text-xs text-muted-foreground">{referral.referee.email}</div>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{format(referral.date, "MMM d, yyyy")}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="capitalize">
-                              {referral.type}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>${referral.commission.toLocaleString()}</TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-8"
-                                onClick={() => {
-                                  setSelectedReferral(referral)
-                                  setShowCommissionDialog(true)
-                                }}
-                              >
-                                Process
-                              </Button>
-                            </div>
-                          </TableCell>
+              <CardContent className="p-0">
+                {isLoading ? (
+                  <div className="flex justify-center py-12">
+                    <LoadingSpinner />
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader className="bg-slate-50 dark:bg-slate-800/30">
+                        <TableRow className="hover:bg-transparent">
+                          <TableHead className="w-[80px]">ID</TableHead>
+                          <TableHead>Referrer</TableHead>
+                          <TableHead>Referred</TableHead>
+                          <TableHead className="w-[120px]">Date</TableHead>
+                          <TableHead className="w-[120px] text-right">
+                            Actions
+                          </TableHead>
                         </TableRow>
-                      ))}
-                    {mockReferrals.filter((r) => r.status === "pending" && !r.commissionPaid).length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                          No pending commissions to process
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {referrals.filter(
+                          (r) => r.status === ReferralStatus.PENDING
+                        ).length === 0 ? (
+                          <TableRow>
+                            <TableCell
+                              colSpan={5}
+                              className="text-center py-12 text-muted-foreground"
+                            >
+                              <div className="flex flex-col items-center justify-center">
+                                <div className="rounded-full bg-slate-100 dark:bg-slate-800 p-3 mb-3">
+                                  <CheckCircle className="h-6 w-6 text-slate-400" />
+                                </div>
+                                <p className="font-medium mb-1">
+                                  All caught up!
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  No pending referrals to process
+                                </p>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          referrals
+                            .filter((r) => r.status === ReferralStatus.PENDING)
+                            .map((referral) => (
+                              <TableRow key={referral._id} className="group">
+                                <TableCell className="font-medium">
+                                  {referral._id.substring(0, 8)}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-3">
+                                    <Avatar className="h-9 w-9 border border-slate-200 dark:border-slate-700">
+                                      <AvatarImage
+                                        src={
+                                          referral.referrer?.avatar ||
+                                          "/placeholder.svg"
+                                        }
+                                        alt={`${referral.referrer.firstName} ${referral.referrer.lastName}`}
+                                      />
+                                      <AvatarFallback className="bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400">
+                                        {referral.referrer.firstName?.[0]}
+                                        {referral.referrer.lastName?.[0]}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                      <div className="font-medium">
+                                        {referral.referrer.firstName}{" "}
+                                        {referral.referrer.lastName}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground">
+                                        {referral.referrer.email}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-3">
+                                    <Avatar className="h-9 w-9 border border-slate-200 dark:border-slate-700">
+                                      <AvatarImage
+                                        src={
+                                          referral.referred?.avatar ||
+                                          "/placeholder.svg"
+                                        }
+                                        alt={`${referral.referred.firstName} ${referral.referred.lastName}`}
+                                      />
+                                      <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                        {referral.referred.firstName?.[0]}
+                                        {referral.referred.lastName?.[0]}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                      <div className="font-medium">
+                                        {referral.referred.firstName}{" "}
+                                        {referral.referred.lastName}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground">
+                                        {referral.referred.email}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  {new Date(
+                                    referral.createdAt
+                                  ).toLocaleDateString()}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex justify-end gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={() => {
+                                        setSelectedReferral(referral);
+                                        setShowCommissionDialog(true);
+                                      }}
+                                    >
+                                      Process
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="default"
+                                      className="h-8 bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={() => {
+                                        setSelectedReferral(referral);
+                                        setShowCommissionDialog(true);
+                                      }}
+                                    >
+                                      <ArrowUpRight className="h-3 w-3 mr-1" />
+                                      Approve
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="analytics" className="mt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader>
+          <TabsContent value="analytics" className="mt-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="border-none shadow-lg bg-white dark:bg-slate-900 overflow-hidden">
+                <CardHeader className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 px-6">
                   <CardTitle>Referral Performance</CardTitle>
-                  <CardDescription>Key metrics for your referral program</CardDescription>
+                  <CardDescription>
+                    Key metrics for your referral program
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Conversion Rate</span>
-                      <div className="flex items-center">
-                        <span className="text-lg font-bold">{referralStats.conversionRate}%</span>
-                        <span className="text-xs text-green-500 ml-1">+2.5%</span>
+                <CardContent className="p-6">
+                  <div className="space-y-6">
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium">
+                          Conversion Rate
+                        </span>
+                        <div className="flex items-center">
+                          <span className="text-lg font-bold">
+                            {stats?.conversionRate || 0}%
+                          </span>
+                        </div>
+                      </div>
+                      <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="bg-gradient-to-r from-violet-500 to-indigo-500 h-full rounded-full"
+                          style={{ width: `${stats?.conversionRate || 0}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                        <span>0%</span>
+                        <span>50%</span>
+                        <span>100%</span>
                       </div>
                     </div>
-                    <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
-                      <div
-                        className="bg-primary h-full rounded-full"
-                        style={{ width: `${referralStats.conversionRate}%` }}
-                      ></div>
-                    </div>
 
-                    <div className="pt-4">
-                      <h4 className="text-sm font-medium mb-2">Monthly Referrals</h4>
-                      <div className="flex items-end h-40 gap-1">
-                        {referralStats.monthlyReferrals.map((month) => (
-                          <div key={month.month} className="flex flex-col items-center">
-                            <div
-                              className="bg-primary/80 w-8 rounded-t-sm"
-                              style={{ height: `${(month.count / 30) * 100}%` }}
-                            ></div>
-                            <span className="text-xs mt-1">{month.month}</span>
+                    {agentRankInfo && (
+                      <div className="pt-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-medium">
+                            Agent Rank Progress
+                          </h4>
+                          <Badge
+                            variant="outline"
+                            className="bg-violet-50 text-violet-600 border-violet-200 dark:bg-violet-900/20 dark:text-violet-400 dark:border-violet-800"
+                          >
+                            {agentRankInfo.currentRank}
+                          </Badge>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">
+                              Current:{" "}
+                              <span className="font-medium">
+                                {agentRankInfo.currentRank}
+                              </span>
+                            </span>
+                            <span className="text-sm">
+                              Next:{" "}
+                              <span className="font-medium">
+                                {agentRankInfo.nextRank}
+                              </span>
+                            </span>
                           </div>
-                        ))}
+                          <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                            <div
+                              className="bg-gradient-to-r from-amber-500 to-orange-500 h-full rounded-full"
+                              style={{ width: `${agentRankInfo.progress}%` }}
+                            ></div>
+                          </div>
+                          <div className="text-xs text-muted-foreground flex justify-between items-center">
+                            <span>
+                              {agentRankInfo.currentReferrals} of{" "}
+                              {agentRankInfo.requiredReferrals} referrals needed
+                            </span>
+                            <span className="font-medium">
+                              {agentRankInfo.progress}% complete
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <Separator className="my-4" />
+
+                    <div>
+                      <h4 className="text-sm font-medium mb-4">
+                        Monthly Performance
+                      </h4>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
+                          <div className="text-xs text-muted-foreground mb-1">
+                            New Referrals
+                          </div>
+                          <div className="text-lg font-bold">12</div>
+                          <div className="text-xs text-emerald-500 flex items-center mt-1">
+                            <TrendingUp className="h-3 w-3 mr-1" />
+                            +20%
+                          </div>
+                        </div>
+                        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
+                          <div className="text-xs text-muted-foreground mb-1">
+                            Conversions
+                          </div>
+                          <div className="text-lg font-bold">8</div>
+                          <div className="text-xs text-emerald-500 flex items-center mt-1">
+                            <TrendingUp className="h-3 w-3 mr-1" />
+                            +15%
+                          </div>
+                        </div>
+                        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
+                          <div className="text-xs text-muted-foreground mb-1">
+                            Revenue
+                          </div>
+                          <div className="text-lg font-bold">₦24k</div>
+                          <div className="text-xs text-emerald-500 flex items-center mt-1">
+                            <TrendingUp className="h-3 w-3 mr-1" />
+                            +32%
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Top Referrers</CardTitle>
-                  <CardDescription>Users who have made the most successful referrals</CardDescription>
+              <Card className="border-none shadow-lg bg-white dark:bg-slate-900 overflow-hidden">
+                <CardHeader className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 px-6">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle>Commission Rates</CardTitle>
+                      <CardDescription>
+                        Current commission rates by agent rank
+                      </CardDescription>
+                    </div>
+                    <Badge className="bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 border-none">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      Your Rank
+                    </Badge>
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {referralStats.topReferrers.map((referrer, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold">
-                            {index + 1}
-                          </div>
-                          <span className="font-medium">{referrer.name}</span>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-medium">{referrer.count} referrals</div>
-                          <div className="text-sm text-muted-foreground">
-                            ${referrer.commission.toLocaleString()} earned
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-
-                    <Button variant="outline" className="w-full mt-4">
-                      View All Referrers
+                <CardContent className="p-0">
+                  {commissionRates ? (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader className="bg-slate-50 dark:bg-slate-800/30">
+                          <TableRow className="hover:bg-transparent">
+                            <TableHead>Rank</TableHead>
+                            <TableHead>Investment Rate</TableHead>
+                            <TableHead>Property Rate</TableHead>
+                            <TableHead className="text-right">Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {Object.entries(commissionRates).map(
+                            ([rank, rates], index) => (
+                              <TableRow
+                                key={rank}
+                                className={
+                                  agentRankInfo?.currentRank === rank
+                                    ? "bg-violet-50/50 dark:bg-violet-900/10"
+                                    : ""
+                                }
+                              >
+                                <TableCell className="font-medium">
+                                  <div className="flex items-center gap-2">
+                                    {index === 0 && (
+                                      <div className="w-5 h-5 rounded-full bg-zinc-200 flex items-center justify-center">
+                                        <Award className="h-3 w-3 text-zinc-500" />
+                                      </div>
+                                    )}
+                                    {index === 1 && (
+                                      <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center">
+                                        <Award className="h-3 w-3 text-slate-500" />
+                                      </div>
+                                    )}
+                                    {index === 2 && (
+                                      <div className="w-5 h-5 rounded-full bg-amber-200 flex items-center justify-center">
+                                        <Award className="h-3 w-3 text-amber-500" />
+                                      </div>
+                                    )}
+                                    {index === 3 && (
+                                      <div className="w-5 h-5 rounded-full bg-violet-200 flex items-center justify-center">
+                                        <Award className="h-3 w-3 text-violet-500" />
+                                      </div>
+                                    )}
+                                    {rank}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800"
+                                  >
+                                    {rates.investment}%
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800"
+                                  >
+                                    {rates.property}%
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {agentRankInfo?.currentRank === rank ? (
+                                    <Badge className="bg-violet-500">
+                                      Current
+                                    </Badge>
+                                  ) : agentRankInfo?.nextRank === rank ? (
+                                    <Badge variant="outline">Next</Badge>
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground">
+                                      -
+                                    </span>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            )
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <div className="flex justify-center py-12">
+                      <LoadingSpinner />
+                    </div>
+                  )}
+                </CardContent>
+                <CardFooter className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
+                  <div className="w-full">
+                    <h4 className="text-sm font-medium mb-2">
+                      How to increase your rank
+                    </h4>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Refer more users to increase your agent rank and earn
+                      higher commission rates.
+                    </p>
+                    <Button
+                      className="w-full bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600"
+                      onClick={handleGenerateReferralLink}
+                    >
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Share Your Referral Link
                     </Button>
                   </div>
-                </CardContent>
+                </CardFooter>
               </Card>
             </div>
           </TabsContent>
@@ -704,365 +1257,216 @@ export function ReferralManagementPage() {
       </div>
 
       {/* Commission Processing Dialog */}
-      <Dialog open={showCommissionDialog} onOpenChange={setShowCommissionDialog}>
+      <Dialog
+        open={showCommissionDialog}
+        onOpenChange={setShowCommissionDialog}
+      >
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>Process Commission</DialogTitle>
-            <DialogDescription>Review and process the commission for this referral.</DialogDescription>
+            <DialogTitle>Process Referral</DialogTitle>
+            <DialogDescription>
+              Review and process this referral.
+            </DialogDescription>
           </DialogHeader>
           {selectedReferral && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground">Referral ID</Label>
-                  <div className="font-medium">{selectedReferral.id}</div>
+            <div className="space-y-6">
+              <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-4 mb-4">
+                  <Avatar className="h-12 w-12 border-2 border-white dark:border-slate-800 shadow-sm">
+                    <AvatarImage
+                      src={
+                        selectedReferral.referred?.avatar || "/placeholder.svg"
+                      }
+                      alt={`${selectedReferral.referred.firstName} ${selectedReferral.referred.lastName}`}
+                    />
+                    <AvatarFallback className="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                      {selectedReferral.referred.firstName?.[0]}
+                      {selectedReferral.referred.lastName?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="text-lg font-semibold">
+                      {selectedReferral.referred.firstName}{" "}
+                      {selectedReferral.referred.lastName}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Referred by {selectedReferral.referrer.firstName}{" "}
+                      {selectedReferral.referrer.lastName}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-muted-foreground">Date</Label>
-                  <div className="font-medium">{format(selectedReferral.date, "MMM d, yyyy")}</div>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Referrer</Label>
-                  <div className="font-medium">{selectedReferral.referrer.name}</div>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Referee</Label>
-                  <div className="font-medium">{selectedReferral.referee.name}</div>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Type</Label>
-                  <div className="font-medium capitalize">{selectedReferral.type}</div>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Commission Amount</Label>
-                  <div className="font-medium">${selectedReferral.commission.toLocaleString()}</div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">
+                      Referral ID
+                    </Label>
+                    <div className="font-medium">
+                      {selectedReferral._id.substring(0, 8)}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">
+                      Date
+                    </Label>
+                    <div className="font-medium">
+                      {new Date(
+                        selectedReferral.createdAt
+                      ).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">
+                      Status
+                    </Label>
+                    <div className="font-medium capitalize">
+                      {renderStatusBadge(selectedReferral.status)}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">
+                      Current Earnings
+                    </Label>
+                    <div className="font-medium">
+                      {formatCurrency(selectedReferral.earnings)}
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="notes">Notes (Optional)</Label>
-                <Input id="notes" placeholder="Add notes about this commission" />
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="commission-type">Commission Type</Label>
+                  <Select defaultValue="investment">
+                    <SelectTrigger id="commission-type">
+                      <SelectValue placeholder="Select commission type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="investment">
+                        Investment Commission
+                      </SelectItem>
+                      <SelectItem value="property">
+                        Property Commission
+                      </SelectItem>
+                      <SelectItem value="signup">Signup Bonus</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="amount">Transaction Amount</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                      ₦
+                    </span>
+                    <Input
+                      id="amount"
+                      type="number"
+                      placeholder="1000"
+                      className="pl-8"
+                      defaultValue="1000"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Commission will be calculated based on the agent's rank and
+                    commission rate.
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="notes">Notes (Optional)</Label>
+                  <Input
+                    id="notes"
+                    placeholder="Add notes about this referral"
+                  />
+                </div>
               </div>
             </div>
           )}
           <DialogFooter className="flex sm:justify-between">
-            <Button variant="destructive" onClick={handleRejectCommission}>
+            <Button variant="outline" onClick={handleRejectCommission}>
               <XCircle className="h-4 w-4 mr-2" />
               Reject
             </Button>
-            <Button onClick={handleApproveCommission}>
+            <Button
+              onClick={handleApproveCommission}
+              className="bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600"
+            >
               <CheckCircle className="h-4 w-4 mr-2" />
-              Approve & Pay
+              Approve & Process
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Settings Dialog */}
-      {isMobile ? (
-        <Drawer open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
-          <DrawerTrigger asChild>
-            <Button>Open</Button>
-          </DrawerTrigger>
-          <DrawerContent className="">
-            <DrawerHeader>
-              <DrawerTitle>Referral Program Settings</DrawerTitle>
-              <DrawerDescription>Configure your referral program settings and commission structure.</DrawerDescription>
-            </DrawerHeader>
-            <div className="flex-1 overflow-y-auto p-4">
-              <div className="space-y-4 py-2">
-                <div className="space-y-2">
-                  <Label htmlFor="signupCommission">Signup Commission ($)</Label>
-                  <Input
-                    id="signupCommission"
-                    type="number"
-                    value={currentSettings.signupCommission}
-                    onChange={(e) =>
-                      setCurrentSettings({
-                        ...currentSettings,
-                        signupCommission: Number.parseFloat(e.target.value),
-                      })
-                    }
-                  />
-                  <p className="text-xs text-muted-foreground">Fixed amount paid for each successful signup referral</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="investmentCommission">Investment Commission (%)</Label>
-                  <Input
-                    id="investmentCommission"
-                    type="number"
-                    value={currentSettings.investmentCommissionPercentage}
-                    onChange={(e) =>
-                      setCurrentSettings({
-                        ...currentSettings,
-                        investmentCommissionPercentage: Number.parseFloat(e.target.value),
-                      })
-                    }
-                  />
-                  <p className="text-xs text-muted-foreground">Percentage of investment amount paid as commission</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="purchaseCommission">Purchase Commission (%)</Label>
-                  <Input
-                    id="purchaseCommission"
-                    type="number"
-                    value={currentSettings.purchaseCommissionPercentage}
-                    onChange={(e) =>
-                      setCurrentSettings({
-                        ...currentSettings,
-                        purchaseCommissionPercentage: Number.parseFloat(e.target.value),
-                      })
-                    }
-                  />
-                  <p className="text-xs text-muted-foreground">Percentage of purchase amount paid as commission</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="minimumPayout">Minimum Payout Amount ($)</Label>
-                  <Input
-                    id="minimumPayout"
-                    type="number"
-                    value={currentSettings.minimumPayoutAmount}
-                    onChange={(e) =>
-                      setCurrentSettings({
-                        ...currentSettings,
-                        minimumPayoutAmount: Number.parseFloat(e.target.value),
-                      })
-                    }
-                  />
-                  <p className="text-xs text-muted-foreground">Minimum amount required before commission is paid out</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="payoutFrequency">Payout Frequency</Label>
-                  <Select
-                    value={currentSettings.payoutFrequency}
-                    onValueChange={(value) =>
-                      setCurrentSettings({
-                        ...currentSettings,
-                        payoutFrequency: value,
-                      })
-                    }
-                  >
-                    <SelectTrigger id="payoutFrequency">
-                      <SelectValue placeholder="Select frequency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="biweekly">Bi-weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="linkExpiry">Referral Link Expiry (Days)</Label>
-                  <Input
-                    id="linkExpiry"
-                    type="number"
-                    value={currentSettings.referralLinkExpiry}
-                    onChange={(e) =>
-                      setCurrentSettings({
-                        ...currentSettings,
-                        referralLinkExpiry: Number.parseInt(e.target.value),
-                      })
-                    }
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Number of days before a referral link expires (0 for never)
-                  </p>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="autoApproval"
-                    checked={currentSettings.autoApproval}
-                    onCheckedChange={(checked) =>
-                      setCurrentSettings({
-                        ...currentSettings,
-                        autoApproval: checked as boolean,
-                      })
-                    }
-                  />
-                  <Label htmlFor="autoApproval">Auto-approve commissions</Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="multiTier"
-                    checked={currentSettings.multiTierReferral}
-                    onCheckedChange={(checked) =>
-                      setCurrentSettings({
-                        ...currentSettings,
-                        multiTierReferral: checked as boolean,
-                      })
-                    }
-                  />
-                  <Label htmlFor="multiTier">Enable multi-tier referrals</Label>
-                </div>
+      {/* Referral Link Dialog */}
+      <Dialog
+        open={showReferralLinkDialog}
+        onOpenChange={setShowReferralLinkDialog}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Your Referral Link</DialogTitle>
+            <DialogDescription>
+              Share this link with others to earn commissions.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center space-x-2">
+              <div className="grid flex-1 gap-2">
+                <Label htmlFor="referral-link" className="sr-only">
+                  Referral Link
+                </Label>
+                <Input
+                  id="referral-link"
+                  defaultValue={stats?.referralLink || ""}
+                  readOnly
+                  className="bg-white dark:bg-slate-900"
+                />
               </div>
-            </div>
-            <DrawerFooter>
-              <Button onClick={handleSaveSettings}>Save Changes</Button>
-            </DrawerFooter>
-          </DrawerContent>
-        </Drawer>
-      ) : (
-        <Dialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
-          <DialogTrigger asChild>
-            <Button>Open</Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-xl">
-            <DialogHeader>
-              <DialogTitle>Referral Program Settings</DialogTitle>
-              <DialogDescription>Configure your referral program settings and commission structure.</DialogDescription>
-            </DialogHeader>
-            <div className="flex-1 overflow-y-auto p-4">
-              <div className="space-y-4 py-2">
-                <div className="space-y-2">
-                  <Label htmlFor="signupCommission">Signup Commission ($)</Label>
-                  <Input
-                    id="signupCommission"
-                    type="number"
-                    value={currentSettings.signupCommission}
-                    onChange={(e) =>
-                      setCurrentSettings({
-                        ...currentSettings,
-                        signupCommission: Number.parseFloat(e.target.value),
-                      })
-                    }
-                  />
-                  <p className="text-xs text-muted-foreground">Fixed amount paid for each successful signup referral</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="investmentCommission">Investment Commission (%)</Label>
-                  <Input
-                    id="investmentCommission"
-                    type="number"
-                    value={currentSettings.investmentCommissionPercentage}
-                    onChange={(e) =>
-                      setCurrentSettings({
-                        ...currentSettings,
-                        investmentCommissionPercentage: Number.parseFloat(e.target.value),
-                      })
-                    }
-                  />
-                  <p className="text-xs text-muted-foreground">Percentage of investment amount paid as commission</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="purchaseCommission">Purchase Commission (%)</Label>
-                  <Input
-                    id="purchaseCommission"
-                    type="number"
-                    value={currentSettings.purchaseCommissionPercentage}
-                    onChange={(e) =>
-                      setCurrentSettings({
-                        ...currentSettings,
-                        purchaseCommissionPercentage: Number.parseFloat(e.target.value),
-                      })
-                    }
-                  />
-                  <p className="text-xs text-muted-foreground">Percentage of purchase amount paid as commission</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="minimumPayout">Minimum Payout Amount ($)</Label>
-                  <Input
-                    id="minimumPayout"
-                    type="number"
-                    value={currentSettings.minimumPayoutAmount}
-                    onChange={(e) =>
-                      setCurrentSettings({
-                        ...currentSettings,
-                        minimumPayoutAmount: Number.parseFloat(e.target.value),
-                      })
-                    }
-                  />
-                  <p className="text-xs text-muted-foreground">Minimum amount required before commission is paid out</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="payoutFrequency">Payout Frequency</Label>
-                  <Select
-                    value={currentSettings.payoutFrequency}
-                    onValueChange={(value) =>
-                      setCurrentSettings({
-                        ...currentSettings,
-                        payoutFrequency: value,
-                      })
-                    }
-                  >
-                    <SelectTrigger id="payoutFrequency">
-                      <SelectValue placeholder="Select frequency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="biweekly">Bi-weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="linkExpiry">Referral Link Expiry (Days)</Label>
-                  <Input
-                    id="linkExpiry"
-                    type="number"
-                    value={currentSettings.referralLinkExpiry}
-                    onChange={(e) =>
-                      setCurrentSettings({
-                        ...currentSettings,
-                        referralLinkExpiry: Number.parseInt(e.target.value),
-                      })
-                    }
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Number of days before a referral link expires (0 for never)
-                  </p>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="autoApproval"
-                    checked={currentSettings.autoApproval}
-                    onCheckedChange={(checked) =>
-                      setCurrentSettings({
-                        ...currentSettings,
-                        autoApproval: checked as boolean,
-                      })
-                    }
-                  />
-                  <Label htmlFor="autoApproval">Auto-approve commissions</Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="multiTier"
-                    checked={currentSettings.multiTierReferral}
-                    onCheckedChange={(checked) =>
-                      setCurrentSettings({
-                        ...currentSettings,
-                        multiTierReferral: checked as boolean,
-                      })
-                    }
-                  />
-                  <Label htmlFor="multiTier">Enable multi-tier referrals</Label>
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowSettingsDialog(false)}>
-                Cancel
+              <Button
+                size="sm"
+                className="px-3 bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600"
+                onClick={handleCopyReferralLink}
+              >
+                <span className="sr-only">Copy</span>
+                <Copy className="h-4 w-4" />
               </Button>
-              <Button onClick={handleSaveSettings}>Save Changes</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+            </div>
+            <div className="mt-4 flex justify-between">
+              <Button variant="outline" size="sm" className="w-[48%]">
+                <LinkIcon className="h-4 w-4 mr-2" />
+                Copy Link
+              </Button>
+              <Button variant="outline" size="sm" className="w-[48%]">
+                <Share2 className="h-4 w-4 mr-2" />
+                Share
+              </Button>
+            </div>
+          </div>
+          <div className="bg-violet-50 dark:bg-violet-900/10 p-4 rounded-lg border border-violet-100 dark:border-violet-800/20">
+            <h4 className="text-sm font-medium text-violet-800 dark:text-violet-300 mb-1 flex items-center">
+              <Sparkles className="h-4 w-4 mr-2 text-violet-500" />
+              Referral Rewards
+            </h4>
+            <p className="text-sm text-violet-700 dark:text-violet-400">
+              You'll earn up to{" "}
+              {commissionRates?.[agentRankInfo?.currentRank || "Bronze"]
+                ?.investment || 5}
+              % commission on investments and{" "}
+              {commissionRates?.[agentRankInfo?.currentRank || "Bronze"]
+                ?.property || 2.5}
+              % on property purchases.
+            </p>
+          </div>
+          <DialogFooter className="sm:justify-start">
+            <DialogDescription>
+              This link will be used to track referrals you bring to the
+              platform.
+            </DialogDescription>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageTransition>
-  )
+  );
 }

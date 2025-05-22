@@ -26,7 +26,7 @@ import {
   MoreHorizontal,
   Edit,
 } from "lucide-react";
-
+import parse from "html-react-parser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -73,7 +73,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-
 
 import { useProperty, type Property } from "@/contexts/property-context";
 
@@ -267,6 +266,14 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
                   <Star className="h-3 w-3 mr-1 fill-current" /> Featured
                 </Badge>
               )}
+
+              <Badge
+                variant="outline"
+                className={`flex items-center gap-2 bg-green-500 text-white border-none backdrop-blur-sm px-3 py-1 font-medium`}
+              >
+                <MapPin className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />{" "}
+                {location}
+              </Badge>
             </div>
 
             {/* Actions Menu */}
@@ -337,15 +344,9 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
             </div>
 
             {/* Property Title */}
-            <h3 className="font-semibold text-lg mt-1 line-clamp-1 group-hover:text-primary transition-colors">
+            <h3 className="font-semibold text-lg mt-1 line-clamp-1 text-foreground transition-colors">
               {title}
             </h3>
-
-            {/* Property Location */}
-            <div className="flex items-center text-muted-foreground mt-1.5">
-              <MapPin className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />
-              <span className="text-sm line-clamp-1">{location}</span>
-            </div>
 
             {/* Property Price */}
             <div className="mt-4">
@@ -522,6 +523,13 @@ const PropertyListItem: React.FC<PropertyListItemProps> = ({
                   <Star className="h-3 w-3 mr-1 fill-current" /> Featured
                 </Badge>
               )}
+              <Badge
+                variant="outline"
+                className={`flex items-center gap-2 bg-green-500 text-white border-none backdrop-blur-sm px-3 py-1 font-medium`}
+              >
+                <MapPin className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />{" "}
+                {location}
+              </Badge>
             </div>
           </div>
 
@@ -554,14 +562,10 @@ const PropertyListItem: React.FC<PropertyListItemProps> = ({
               {title}
             </h3>
 
-            <div className="flex items-center text-muted-foreground mt-1.5">
-              <MapPin className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />
-              <span className="text-sm">{location}</span>
-            </div>
-
             {description && (
               <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                {description}
+                {/* {description} */}
+                {parse(`${description}`)}
               </p>
             )}
 
