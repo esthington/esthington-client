@@ -111,10 +111,10 @@ export default function AdminManagementPage() {
 
     try {
       if (!selectedAdmin.isActive) {
-        await activateAdmin(selectedAdmin.id)
+        await activateAdmin(selectedAdmin._id)
         toast.success(`${selectedAdmin.firstName} ${selectedAdmin.lastName} has been activated`)
       } else {
-        await suspendAdmin(selectedAdmin.id)
+        await suspendAdmin(selectedAdmin._id)
         toast.success(`${selectedAdmin.firstName} ${selectedAdmin.lastName} has been suspended`)
       }
       setShowSuspendDialog(false)
@@ -129,7 +129,7 @@ export default function AdminManagementPage() {
     if (!selectedAdmin) return
 
     try {
-      await deleteAdmin(selectedAdmin.id)
+      await deleteAdmin(selectedAdmin._id)
       toast.success(`${selectedAdmin.firstName} ${selectedAdmin.lastName} has been deleted`)
       setShowDeleteDialog(false)
       getAdmins() // Refresh the admin list
