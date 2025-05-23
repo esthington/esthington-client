@@ -217,6 +217,8 @@ export function ProfileCompletionModal() {
         profileData.validID = validIDPreview || undefined;
       }
 
+      console.log("new profile data", profileData);
+
       const success = await updateProfile(profileData);
 
       if (success) {
@@ -242,10 +244,11 @@ export function ProfileCompletionModal() {
           className="relative cursor-pointer group"
           onClick={handleImageClick}
         >
-          <Avatar className="h-24 w-24 border-2 border-primary/20">
+          <Avatar className="h-24 w-24 border-2 border-primary/20 object-cover">
             <AvatarImage
               src={profileImage || undefined}
               alt={user?.userName || "User"}
+              className="object-cover"
             />
             <AvatarFallback className="bg-primary/10 text-primary">
               <User className="h-12 w-12" />
@@ -368,9 +371,9 @@ export function ProfileCompletionModal() {
                 <SelectValue placeholder="Select gender" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="male">Male</SelectItem>
-                <SelectItem value="female">Female</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
+                <SelectItem value="Male">Male</SelectItem>
+                <SelectItem value="Female">Female</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
               </SelectContent>
             </Select>
           </div>

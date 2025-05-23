@@ -12,7 +12,7 @@ import {
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import cookie from "js-cookie";
-import { apiConfig } from "@/lib/api";
+import { apiConfig, apiConfigFile } from "@/lib/api";
 
 // Types for authentication
 export type UserRole = "buyer" | "agent" | "admin" | "super_admin";
@@ -579,7 +579,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   ): Promise<boolean> => {
     setIsSubmitting(true);
     try {
-      const response = await apiConfig.put("/auth/profile", data, {
+      const response = await apiConfigFile.put("/users/profile", data, {
         withCredentials: true,
       });
 
