@@ -39,7 +39,6 @@ export default function DashboardContent() {
   useEffect(() => {
 
     if (typeof window !== "undefined") {
-      // const role = localStorage.getItem("userRole");
       setUserRole(user?.role ?? null);
     }
 
