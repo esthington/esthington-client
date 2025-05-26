@@ -84,7 +84,7 @@ function DashboardLayout({ children }: LayoutProps) {
         <header className="h-16 border-b border-border">
           <TopNav />
         </header>
-        <main className="flex-1 overflow-auto px-1 py-6 bg-background pb-20 lg:pb-6 lg:px-20">
+        <main className="flex-1 overflow-auto px-1 md:px-4 py-6 bg-background pb-20 lg:pb-6 lg:px-20">
           {children}
         </main>
         {renderBottomNav()}
