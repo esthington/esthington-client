@@ -159,10 +159,8 @@ export default function InvestmentsPage() {
       <FadeIn>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-white">
-              Estate Investments
-            </h1>
-            <p className="text-gray-400 mt-1">
+            <h1 className="text-3xl font-bold text-foreground">Investments</h1>
+            <p className="text-muted-foreground mt-1">
               Discover and invest in premium real estate opportunities
             </p>
           </div>
@@ -186,13 +184,13 @@ export default function InvestmentsPage() {
       </FadeIn>
 
       <FadeIn delay={0.2}>
-        <AnimatedCard className="p-6 bg-[#0F0F12]/80 backdrop-blur-xl border-[#1F1F23]">
+        <AnimatedCard className="p-6 bg-background/80 backdrop-blur-xl border-border">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search investments..."
-                className="pl-10 bg-[#1F1F23]/50 border-[#2B2B30]"
+                className="pl-10 bg-muted/50 border-border"
                 value={searchQuery}
                 onChange={handleSearchChange}
               />
@@ -202,11 +200,11 @@ export default function InvestmentsPage() {
                 value={filters.location}
                 onValueChange={(value) => setFilters({ location: value })}
               >
-                <SelectTrigger className="w-[140px] bg-[#1F1F23]/50 border-[#2B2B30]">
+                <SelectTrigger className="w-[140px] bg-muted/50 border-border">
                   <MapPin className="mr-2 h-4 w-4" />
                   <SelectValue placeholder="Location" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1F1F23] border-[#2B2B30]">
+                <SelectContent className="bg-popover border-border">
                   <SelectItem value="all">All Locations</SelectItem>
                   <SelectItem value="Lagos">Lagos</SelectItem>
                   <SelectItem value="Abuja">Abuja</SelectItem>
@@ -218,11 +216,11 @@ export default function InvestmentsPage() {
                 value={filters.type}
                 onValueChange={(value) => setFilters({ type: value })}
               >
-                <SelectTrigger className="w-[140px] bg-[#1F1F23]/50 border-[#2B2B30]">
+                <SelectTrigger className="w-[140px] bg-muted/50 border-border">
                   <Building className="mr-2 h-4 w-4" />
                   <SelectValue placeholder="Property Type" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1F1F23] border-[#2B2B30]">
+                <SelectContent className="bg-popover border-border">
                   <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="Residential">Residential</SelectItem>
                   <SelectItem value="Commercial">Commercial</SelectItem>
@@ -234,11 +232,11 @@ export default function InvestmentsPage() {
                 value={filters.sortBy}
                 onValueChange={(value) => setFilters({ sortBy: value })}
               >
-                <SelectTrigger className="w-[140px] bg-[#1F1F23]/50 border-[#2B2B30]">
+                <SelectTrigger className="w-[140px] bg-muted/50 border-border">
                   <ArrowUpDown className="mr-2 h-4 w-4" />
                   <SelectValue placeholder="Sort By" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1F1F23] border-[#2B2B30]">
+                <SelectContent className="bg-popover border-border">
                   <SelectItem value="trending">Trending</SelectItem>
                   <SelectItem value="featured">Featured</SelectItem>
                   <SelectItem value="returnRate-high">
@@ -258,16 +256,16 @@ export default function InvestmentsPage() {
                 defaultValue={viewMode}
                 onValueChange={(value) => setViewMode(value as "grid" | "list")}
               >
-                <TabsList className="h-10 bg-[#1F1F23]/50 border-[#2B2B30]">
+                <TabsList className="h-10 bg-muted/50 border-border">
                   <TabsTrigger
                     value="grid"
-                    className="px-3 data-[state=active]:bg-[#2B2B30]"
+                    className="px-3 data-[state=active]:bg-muted"
                   >
                     <Grid3X3 className="h-4 w-4" />
                   </TabsTrigger>
                   <TabsTrigger
                     value="list"
-                    className="px-3 data-[state=active]:bg-[#2B2B30]"
+                    className="px-3 data-[state=active]:bg-muted"
                   >
                     <List className="h-4 w-4" />
                   </TabsTrigger>
@@ -279,8 +277,10 @@ export default function InvestmentsPage() {
           <div className="mt-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-400">Return Rate:</span>
-                <span className="text-sm font-medium text-white">
+                <span className="text-sm text-muted-foreground">
+                  Return Rate:
+                </span>
+                <span className="text-sm font-medium text-foreground">
                   {filters.returnRateRange[0]}% - {filters.returnRateRange[1]}%
                 </span>
               </div>
@@ -308,11 +308,11 @@ export default function InvestmentsPage() {
           </div>
         ) : searchFilteredInvestments.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Building className="h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-white mb-2">
+            <Building className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">
               No properties found
             </h3>
-            <p className="text-gray-400 max-w-md">
+            <p className="text-muted-foreground max-w-md">
               We couldn't find any properties matching your search criteria. Try
               adjusting your filters or search query.
             </p>
@@ -321,7 +321,7 @@ export default function InvestmentsPage() {
           <StaggerChildren className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {searchFilteredInvestments.map((property) => (
               <StaggerItem key={property._id}>
-                <AnimatedCard className="overflow-hidden bg-[#0F0F12]/80 backdrop-blur-xl border-[#1F1F23] hover:border-blue-500/50 transition-all duration-300">
+                <AnimatedCard className="overflow-hidden bg-background/80 backdrop-blur-xl border-border hover:border-blue-500/50 transition-all duration-300">
                   <div className="relative">
                     <div className="relative h-48 w-full">
                       <Image
@@ -358,7 +358,7 @@ export default function InvestmentsPage() {
                       <div className="flex justify-between items-center">
                         <Badge
                           variant="outline"
-                          className="bg-black/50 backdrop-blur-md border-white/20 text-white"
+                          className="bg-background/50 backdrop-blur-md border-border text-foreground"
                         >
                           {typeof property.propertyId === "object"
                             ? property.propertyId?.type
@@ -366,7 +366,7 @@ export default function InvestmentsPage() {
                         </Badge>
                         <Badge
                           variant="outline"
-                          className="bg-blue-500/80 backdrop-blur-md border-blue-400/30 text-white"
+                          className="bg-blue-500/80 backdrop-blur-md border-blue-400/30 text-foreground"
                         >
                           <Percent className="h-3 w-3 mr-1" />{" "}
                           {property.returnRate}% ROI
@@ -375,10 +375,10 @@ export default function InvestmentsPage() {
                     </div>
                   </div>
                   <div className="p-4">
-                    <h3 className="text-lg font-semibold text-white mb-1 line-clamp-1">
+                    <h3 className="text-lg font-semibold text-foreground mb-1 line-clamp-1">
                       {property.title}
                     </h3>
-                    <div className="flex items-center text-sm text-gray-400 mb-3">
+                    <div className="flex items-center text-sm text-muted-foreground mb-3">
                       <MapPin className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
                       <span className="truncate">
                         {typeof property.propertyId === "object"
@@ -390,21 +390,21 @@ export default function InvestmentsPage() {
                     <div className="space-y-3 mb-4">
                       <div>
                         <div className="flex justify-between text-xs mb-1">
-                          <span className="text-gray-400">
+                          <span className="text-muted-foreground">
                             Funding Progress
                           </span>
-                          <span className="text-white font-medium">
+                          <span className="text-foreground font-medium">
                             {property.percentageFunded}%
                           </span>
                         </div>
-                        <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                           <div
                             className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
                             style={{ width: `${property.percentageFunded}%` }}
                           />
                         </div>
                       </div>
-                      <div className="flex justify-between text-xs text-gray-400">
+                      <div className="flex justify-between text-xs text-muted-foreground">
                         <span>
                           Target: {formatCurrency(property.targetAmount)}
                         </span>
@@ -414,10 +414,10 @@ export default function InvestmentsPage() {
 
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-xs text-gray-400">
+                        <div className="text-xs text-muted-foreground">
                           Minimum Investment
                         </div>
-                        <div className="text-white font-semibold">
+                        <div className="text-foreground font-semibold">
                           {formatCurrency(property.minimumInvestment)}
                         </div>
                       </div>
@@ -458,7 +458,7 @@ export default function InvestmentsPage() {
                         ) : (
                           <Button
                             onClick={() => handleInvestNow(property._id)}
-                            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0"
+                            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-foreground border-0"
                           >
                             Invest Now
                           </Button>
@@ -474,7 +474,7 @@ export default function InvestmentsPage() {
           <StaggerChildren className="space-y-4">
             {searchFilteredInvestments.map((property) => (
               <StaggerItem key={property._id}>
-                <AnimatedCard className="overflow-hidden bg-[#0F0F12]/80 backdrop-blur-xl border-[#1F1F23] hover:border-blue-500/50 transition-all duration-300">
+                <AnimatedCard className="overflow-hidden bg-background/80 backdrop-blur-xl border-border hover:border-blue-500/50 transition-all duration-300">
                   <div className="flex flex-col sm:flex-row">
                     <div className="relative sm:w-64 h-48 sm:h-auto flex-shrink-0">
                       <Image
@@ -510,10 +510,10 @@ export default function InvestmentsPage() {
                     <div className="p-4 flex-1">
                       <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
                         <div>
-                          <h3 className="text-lg font-semibold text-white">
+                          <h3 className="text-lg font-semibold text-foreground">
                             {property.title}
                           </h3>
-                          <div className="flex items-center text-sm text-gray-400">
+                          <div className="flex items-center text-sm text-muted-foreground">
                             <MapPin className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
                             <span>
                               {typeof property.propertyId === "object"
@@ -525,7 +525,7 @@ export default function InvestmentsPage() {
                         <div className="flex gap-2">
                           <Badge
                             variant="outline"
-                            className="bg-black/50 backdrop-blur-md border-white/20 text-white"
+                            className="bg-background/50 backdrop-blur-md border-border text-foreground"
                           >
                             {typeof property.propertyId === "object"
                               ? property.propertyId?.type
@@ -533,7 +533,7 @@ export default function InvestmentsPage() {
                           </Badge>
                           <Badge
                             variant="outline"
-                            className="bg-blue-500/80 backdrop-blur-md border-blue-400/30 text-white"
+                            className="bg-blue-500/80 backdrop-blur-md border-blue-400/30 text-foreground"
                           >
                             <Percent className="h-3 w-3 mr-1" />{" "}
                             {property.returnRate}% ROI
@@ -545,14 +545,14 @@ export default function InvestmentsPage() {
                         <div className="space-y-3">
                           <div>
                             <div className="flex justify-between text-xs mb-1">
-                              <span className="text-gray-400">
+                              <span className="text-muted-foreground">
                                 Funding Progress
                               </span>
-                              <span className="text-white font-medium">
+                              <span className="text-foreground font-medium">
                                 {property.percentageFunded}%
                               </span>
                             </div>
-                            <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                               <div
                                 className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
                                 style={{
@@ -561,7 +561,7 @@ export default function InvestmentsPage() {
                               />
                             </div>
                           </div>
-                          <div className="flex justify-between text-xs text-gray-400">
+                          <div className="flex justify-between text-xs text-muted-foreground">
                             <span>
                               Target: {formatCurrency(property.targetAmount)}
                             </span>
@@ -572,18 +572,18 @@ export default function InvestmentsPage() {
                         <div className="flex flex-col justify-between">
                           <div className="grid grid-cols-2 gap-2 text-sm">
                             <div>
-                              <div className="text-xs text-gray-400">
+                              <div className="text-xs text-muted-foreground">
                                 Min Investment
                               </div>
-                              <div className="text-white font-medium">
+                              <div className="text-foreground font-medium">
                                 {formatCurrency(property.minimumInvestment)}
                               </div>
                             </div>
                             <div>
-                              <div className="text-xs text-gray-400">
+                              <div className="text-xs text-muted-foreground">
                                 Period
                               </div>
-                              <div className="text-white font-medium">
+                              <div className="text-foreground font-medium">
                                 {property.investmentPeriod} months
                               </div>
                             </div>
@@ -627,7 +627,7 @@ export default function InvestmentsPage() {
                             ) : (
                               <Button
                                 onClick={() => handleInvestNow(property._id)}
-                                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0"
+                                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-foreground border-0"
                               >
                                 Invest Now
                               </Button>
@@ -645,17 +645,17 @@ export default function InvestmentsPage() {
       </FadeIn>
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-[#0F0F12] border-[#1F1F23]">
+        <DialogContent className="sm:max-w-[425px] bg-background border-border">
           <DialogHeader>
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20 mb-4">
               <AlertTriangle className="h-6 w-6 text-red-500" />
             </div>
-            <DialogTitle className="text-center text-lg font-semibold text-white">
+            <DialogTitle className="text-center text-lg font-semibold text-foreground">
               Delete Investment
             </DialogTitle>
-            <DialogDescription className="text-center text-gray-400">
+            <DialogDescription className="text-center text-muted-foreground">
               Are you sure you want to delete this investment?
-              <span className="block mt-2 font-medium text-white">
+              <span className="block mt-2 font-medium text-foreground">
                 "{investmentToDelete?.title}"
               </span>
               <span className="block mt-2 text-sm text-red-400">
@@ -668,7 +668,7 @@ export default function InvestmentsPage() {
               type="button"
               variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
-              className="border-gray-700 hover:bg-gray-800 text-gray-300"
+              className="border-border hover:bg-muted text-muted-foreground"
             >
               Cancel
             </Button>
@@ -677,7 +677,7 @@ export default function InvestmentsPage() {
               variant="destructive"
               onClick={confirmDelete}
               disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-red-600 hover:bg-red-700 text-foreground"
             >
               {isDeleting ? (
                 <>

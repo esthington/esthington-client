@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import Image from "next/image"
-import { User, Mail, Phone, MapPin, Save, Upload } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { AnimatedCard } from "@/components/ui/animated-card"
-import { AnimatedButton } from "@/components/ui/animated-button"
-import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { User, Mail, Phone, MapPin, Save, Upload } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { AnimatedCard } from "@/components/ui/animated-card";
+import { AnimatedButton } from "@/components/ui/animated-button";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -20,80 +20,239 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import FadeIn from "@/components/animations/fade-in"
-import { successToast, errorToast } from "@/lib/toast"
+} from "@/components/ui/breadcrumb";
+import FadeIn from "@/components/animations/fade-in";
+import { successToast, errorToast } from "@/lib/toast";
+import { ProfileCompletionModal } from "../profile/profile-completion-modal";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+} from "@/components/ui/drawer";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useAuth } from "@/contexts/auth-context";
+import { toast } from "sonner";
+import type { UserProfile } from "@/contexts/auth-context";
+import { Camera, Loader2 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useMediaQuery } from "../admin/referral-management-page";
 
 export default function AccountSettingsForm() {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    address: "",
-    bio: "",
-    avatar: "/placeholder.svg?height=200&width=200",
-  })
+  const { user, updateProfile } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Add a new ref for the validID file input
+  const validIDFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Add state for validID file and preview
+  const [validIDFile, setValidIDFile] = useState<File | null>(null);
+  const [validIDPreview, setValidIDPreview] = useState<string | null>(null);
+
+  // Update the formData state to include all required fields and handle the location object correctly
+  const [formData, setFormData] = useState<Partial<UserProfile>>({
+    firstName: user?.firstName || "",
+    lastName: user?.lastName || "",
+    gender: user?.gender || undefined,
+    country: user?.country || "",
+    stateOfOrigin: user?.stateOfOrigin || "",
+    phone: user?.phone || "",
+    // Use city from either direct property or location object
+    city: user?.city || "",
+    // Add next of kin information
+    nextOfKinName: user?.nextOfKinName || "",
+    nextOfKinAddress: user?.nextOfKinAddress || "",
+    nextOfKinPhone: user?.nextOfKinPhone || "",
+    validID: user?.validID || "",
+  });
+
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const [open, setOpen] = useState(false);
+
+  // Check if profile is incomplete
+  const isProfileIncomplete = !user?.firstName || !user?.lastName;
+
+  // Add a handler for validID file selection
+  const handleValidIDClick = () => {
+    validIDFileInputRef.current?.click();
+  };
+
+  const handleValidIDChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("ID image size should be less than 5MB");
+        return;
+      }
+
+      // Check file type
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please upload an image file for your ID");
+        return;
+      }
+
+      setValidIDFile(file);
+
+      // Create a preview URL
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setValidIDPreview(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Update the useEffect to handle both location structures
   useEffect(() => {
-    // Simulate loading user data
-    const timer = setTimeout(() => {
-      // In a real app, you would fetch user data from your API
+    // Open modal if profile is incomplete
+    if (isProfileIncomplete) {
+      setOpen(true);
+    }
+
+    // Update form data when user changes
+    if (user) {
       setFormData({
-        fullName: "Eugene An",
-        email: "eugene@example.com",
-        phone: "+234 123 456 7890",
-        address: "123 Main Street, Lagos, Nigeria",
-        bio: "Real estate investor and property enthusiast with a passion for finding the best deals.",
-        avatar: "https://ferf1mheo22r9ira.public.blob.vercel-storage.com/avatar-01-n0x8HFv8EUetf9z6ht0wScJKoTHqf8.png",
-      })
-      setIsLoading(false)
-    }, 1000)
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        gender: user.gender || undefined,
+        country: user.country || "",
+        stateOfOrigin: user.stateOfOrigin || "",
+        phone: user.phone || "",
+        // Use city from either direct property or location object
+        city: user.city || "",
+        nextOfKinName: user?.nextOfKinName || "",
+        nextOfKinAddress: user?.nextOfKinAddress || "",
+        nextOfKinPhone: user?.nextOfKinPhone || "",
+        validID: user?.validID || "",
+      });
 
-    return () => clearTimeout(timer)
-  }, [])
+      // Set profile image if available
+      if (user.avatar) {
+        setProfileImage(user.avatar);
+      } else if (user.profileImage) {
+        setProfileImage(user.profileImage);
+      }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+      // Set validID preview if available
+      if (user.validID) {
+        setValidIDPreview(user.validID);
+      }
+    }
+  }, [user, isProfileIncomplete]);
 
+  // Prevent closing the modal if profile is incomplete
+  const handleOpenChange = (newOpen: boolean) => {
+    if (isProfileIncomplete && !newOpen) {
+      // Don't allow closing if profile is incomplete
+      toast.error("Please complete your profile information");
+      return;
+    }
+    setOpen(newOpen);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image size should be less than 5MB");
+        return;
+      }
+
+      // Check file type
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please upload an image file");
+        return;
+      }
+
+      setImageFile(file);
+
+      // Create a preview URL
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setProfileImage(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Update the handleSubmit function to handle both location structures
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSaving(true)
+    e.preventDefault();
+
+    // Validate required fields
+    if (!formData.firstName || !formData.lastName) {
+      toast.error("First name and last name are required");
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
-      // Simulate API call to update user profile
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      // Create a copy of the form data
+      const profileData = { ...formData };
 
-      // Show success toast
-      successToast("Profile updated successfully")
+      // Handle profile image upload if there's a new image
+      if (imageFile) {
+        profileData.avatar = profileImage || undefined;
+      }
+
+      // Handle validID upload if there's a new file
+      if (validIDFile) {
+        // In a real implementation, you would upload the file to your server
+        // and get back a URL to store in the user profile
+        profileData.validID = validIDPreview || undefined;
+      }
+
+      console.log("new profile data", profileData);
+
+      const success = await updateProfile(profileData);
+
+      if (success) {
+        toast.success("Profile updated successfully");
+        setOpen(false);
+      } else {
+        toast.error("Failed to update profile");
+      }
     } catch (error) {
-      // Show error toast
-      errorToast("Failed to update profile. Please try again.")
+      console.error("Error updating profile:", error);
+      toast.error("An error occurred while updating your profile");
     } finally {
-      setIsSaving(false)
+      setIsSubmitting(false);
     }
-  }
-
-  const handleAvatarChange = () => {
-    // In a real app, this would open a file picker
-    // For demo purposes, we'll just set a different avatar
-    setFormData((prev) => ({
-      ...prev,
-      avatar: "https://ferf1mheo22r9ira.public.blob.vercel-storage.com/avatar-02-albo9B0tWOSLXCVZh9rX9KFxXIVWMr.png",
-    }))
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <LoadingSpinner size="lg" />
-      </div>
-    )
-  }
+  };
 
   return (
     <>
@@ -101,8 +260,12 @@ export default function AccountSettingsForm() {
         <FadeIn>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Account Settings</h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your account information and preferences</p>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Account Settings
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
+                Manage your account information and preferences
+              </p>
             </div>
           </div>
         </FadeIn>
@@ -116,7 +279,9 @@ export default function AccountSettingsForm() {
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
-                  <BreadcrumbLink href="/dashboard/settings">Settings</BreadcrumbLink>
+                  <BreadcrumbLink href="/dashboard/settings">
+                    Settings
+                  </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
@@ -137,125 +302,308 @@ export default function AccountSettingsForm() {
             <TabsContent value="profile">
               <AnimatedCard className="p-6">
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="flex flex-col md:flex-row gap-6">
-                    <div className="md:w-1/3 flex flex-col items-center">
-                      <div className="relative group">
-                        <div className="relative h-32 w-32 rounded-full overflow-hidden border-4 border-white dark:border-gray-800 shadow-md">
-                          <Image
-                            src={formData.avatar || "/placeholder.svg"}
-                            alt="Profile avatar"
-                            fill
-                            className="object-cover"
+                  {/* Profile Image Section */}
+                  <div className="flex flex-col items-center space-y-4">
+                    <div
+                      className="relative cursor-pointer group"
+                      onClick={handleImageClick}
+                    >
+                      <Avatar className="h-24 w-24 border-2 border-primary/20 object-cover">
+                        <AvatarImage
+                          src={profileImage || undefined}
+                          alt={user?.userName || "User"}
+                          className="object-cover"
+                        />
+                        <AvatarFallback className="bg-primary/10 text-primary">
+                          <User className="h-12 w-12" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Camera className="h-8 w-8 text-white" />
+                      </div>
+                    </div>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Click to upload profile picture
+                    </p>
+                  </div>
+
+                  {/* User Information (Read-only) */}
+                  <div className="space-y-4 p-4 rounded-lg bg-muted/50">
+                    <h3 className="text-sm font-medium text-muted-foreground">
+                      Account Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="username"
+                          className="text-muted-foreground"
+                        >
+                          Username
+                        </Label>
+                        <Input
+                          id="username"
+                          value={user?.userName || ""}
+                          readOnly
+                          className="bg-background/50 cursor-not-allowed"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="email"
+                          className="text-muted-foreground"
+                        >
+                          Email
+                        </Label>
+                        <Input
+                          id="email"
+                          value={user?.email || ""}
+                          readOnly
+                          className="bg-background/50 cursor-not-allowed"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="role" className="text-muted-foreground">
+                          Role
+                        </Label>
+                        <Input
+                          id="role"
+                          value={user?.role || ""}
+                          readOnly
+                          className="bg-background/50 cursor-not-allowed capitalize"
+                        />
+                      </div>
+                      {user?.role === "agent" && (
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="agentRank"
+                            className="text-muted-foreground"
+                          >
+                            Agent Rank
+                          </Label>
+                          <Input
+                            id="agentRank"
+                            value={user?.agentRank || ""}
+                            readOnly
+                            className="bg-background/50 cursor-not-allowed"
                           />
                         </div>
-                        <button
-                          type="button"
-                          onClick={handleAvatarChange}
-                          className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
-                        >
-                          <Upload className="h-4 w-4" />
-                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Personal Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">
+                      Personal Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="firstName">
+                          First Name <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="firstName"
+                          name="firstName"
+                          placeholder="Enter your first name"
+                          value={formData.firstName}
+                          onChange={handleInputChange}
+                          required
+                        />
                       </div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-4 text-center">
-                        Click the upload button to change your profile picture
-                      </p>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="lastName">
+                          Last Name <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="lastName"
+                          name="lastName"
+                          placeholder="Enter your last name"
+                          value={formData.lastName}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
                     </div>
 
-                    <div className="md:w-2/3 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="fullName">Full Name</Label>
-                        <div className="relative">
-                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
-                          <Input
-                            id="fullName"
-                            name="fullName"
-                            value={formData.fullName}
-                            onChange={handleInputChange}
-                            placeholder="Your full name"
-                            className="pl-10"
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email Address</Label>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
-                          <Input
-                            id="email"
-                            name="email"
-                            type="email"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            placeholder="Your email address"
-                            className="pl-10"
-                            required
-                          />
-                        </div>
+                        <Label htmlFor="gender">Gender</Label>
+                        <Select
+                          value={formData.gender}
+                          onValueChange={(value) =>
+                            handleSelectChange("gender", value)
+                          }
+                        >
+                          <SelectTrigger id="gender">
+                            <SelectValue placeholder="Select gender" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Male">Male</SelectItem>
+                            <SelectItem value="Female">Female</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="phone">Phone Number</Label>
-                        <div className="relative">
-                          <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
-                          <Input
-                            id="phone"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleInputChange}
-                            placeholder="Your phone number"
-                            className="pl-10"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="address">Address</Label>
-                        <div className="relative">
-                          <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-500 dark:text-gray-400" />
-                          <Textarea
-                            id="address"
-                            name="address"
-                            value={formData.address}
-                            onChange={handleInputChange}
-                            placeholder="Your address"
-                            className="pl-10 min-h-[80px]"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="bio">Bio</Label>
-                        <Textarea
-                          id="bio"
-                          name="bio"
-                          value={formData.bio}
+                        <Input
+                          id="phone"
+                          name="phone"
+                          placeholder="Enter your phone number"
+                          value={formData.phone}
                           onChange={handleInputChange}
-                          placeholder="Tell us about yourself"
-                          className="min-h-[120px]"
                         />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="country">Country</Label>
+                        <Input
+                          id="country"
+                          name="country"
+                          placeholder="Enter your country"
+                          value={formData.country}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="stateOfOrigin">State of Origin</Label>
+                        <Input
+                          id="stateOfOrigin"
+                          name="stateOfOrigin"
+                          placeholder="Enter your state of origin"
+                          value={formData.stateOfOrigin}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="city">City</Label>
+                        <Input
+                          id="city"
+                          name="city"
+                          placeholder="Enter your city"
+                          value={formData.city}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="validID">Valid ID</Label>
+                        <div className="mt-1 flex flex-col items-center space-y-2">
+                          <div
+                            onClick={handleValidIDClick}
+                            className="relative flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg cursor-pointer hover:border-primary/50 transition-colors"
+                          >
+                            {validIDPreview ? (
+                              <div className="relative w-full h-full">
+                                <img
+                                  src={validIDPreview || "/placeholder.svg"}
+                                  alt="ID Preview"
+                                  className="w-full h-full object-contain rounded-lg"
+                                />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity rounded-lg">
+                                  <Camera className="h-8 w-8 text-white" />
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-center">
+                                <Camera className="mx-auto h-8 w-8 text-muted-foreground" />
+                                <span className="mt-2 block text-sm text-muted-foreground">
+                                  Click to upload your ID
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <input
+                            type="file"
+                            ref={validIDFileInputRef}
+                            className="hidden"
+                            accept="image/*"
+                            onChange={handleValidIDChange}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Upload a clear image of your government-issued ID
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex justify-end">
-                    <AnimatedButton
-                      type="submit"
-                      disabled={isSaving}
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                      {isSaving ? (
-                        <>
-                          <LoadingSpinner size="sm" className="mr-2" /> Saving Changes...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="mr-2 h-4 w-4" /> Save Changes
-                        </>
-                      )}
-                    </AnimatedButton>
+                  {/* Next of Kin Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">
+                      Next of Kin Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="nextOfKinName">Next of Kin Name</Label>
+                        <Input
+                          id="nextOfKinName"
+                          name="nextOfKinName"
+                          placeholder="Enter next of kin name"
+                          value={formData.nextOfKinName}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="nextOfKinPhone">
+                          Next of Kin Phone
+                        </Label>
+                        <Input
+                          id="nextOfKinPhone"
+                          name="nextOfKinPhone"
+                          placeholder="Enter next of kin phone"
+                          value={formData.nextOfKinPhone}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="nextOfKinAddress">
+                        Next of Kin Address
+                      </Label>
+                      <Input
+                        id="nextOfKinAddress"
+                        name="nextOfKinAddress"
+                        placeholder="Enter next of kin address"
+                        value={formData.nextOfKinAddress}
+                        onChange={handleInputChange}
+                      />
+                    </div>
                   </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      "Complete Profile"
+                    )}
+                  </Button>
                 </form>
               </AnimatedCard>
             </TabsContent>
@@ -263,11 +611,15 @@ export default function AccountSettingsForm() {
             <TabsContent value="preferences">
               <AnimatedCard className="p-6">
                 <div className="space-y-4">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Notification Preferences</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Notification Preferences
+                  </h2>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="text-sm font-medium text-gray-900 dark:text-white">Email Notifications</h3>
+                        <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                          Email Notifications
+                        </h3>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           Receive email notifications for important updates
                         </p>
@@ -281,9 +633,11 @@ export default function AccountSettingsForm() {
                         />
                       </div>
                     </div>
-                    <div className="flex items-center justify-between">
+                    {/* <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="text-sm font-medium text-gray-900 dark:text-white">SMS Notifications</h3>
+                        <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                          SMS Notifications
+                        </h3>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           Receive SMS notifications for important updates
                         </p>
@@ -295,12 +649,15 @@ export default function AccountSettingsForm() {
                           className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                       </div>
-                    </div>
+                    </div> */}
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="text-sm font-medium text-gray-900 dark:text-white">Marketing Emails</h3>
+                        <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                          Marketing Emails
+                        </h3>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Receive marketing emails about new properties and offers
+                          Receive marketing emails about new properties and
+                          offers
                         </p>
                       </div>
                       <div className="flex items-center">
@@ -315,7 +672,9 @@ export default function AccountSettingsForm() {
                   </div>
 
                   <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Language & Region</h2>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                      Language & Region
+                    </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="language">Language</Label>
@@ -339,15 +698,22 @@ export default function AccountSettingsForm() {
                         >
                           <option value="WAT">West Africa Time (WAT)</option>
                           <option value="GMT">Greenwich Mean Time (GMT)</option>
-                          <option value="EST">Eastern Standard Time (EST)</option>
-                          <option value="PST">Pacific Standard Time (PST)</option>
+                          <option value="EST">
+                            Eastern Standard Time (EST)
+                          </option>
+                          <option value="PST">
+                            Pacific Standard Time (PST)
+                          </option>
                         </select>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex justify-end pt-4">
-                    <AnimatedButton type="button" className="bg-blue-600 hover:bg-blue-700 text-white">
+                    <AnimatedButton
+                      type="button"
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
                       <Save className="mr-2 h-4 w-4" /> Save Preferences
                     </AnimatedButton>
                   </div>
@@ -358,5 +724,5 @@ export default function AccountSettingsForm() {
         </FadeIn>
       </div>
     </>
-  )
+  );
 }

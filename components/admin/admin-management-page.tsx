@@ -578,7 +578,7 @@ export default function AdminManagementPage() {
                   </CardContent>
                 </Card>
 
-                <Card>
+                {/* <Card>
                   <CardHeader className="p-4 pb-2">
                     <CardTitle className="text-sm font-medium">
                       Permissions
@@ -647,7 +647,7 @@ export default function AdminManagementPage() {
                       )}
                     </div>
                   </CardContent>
-                </Card>
+                </Card> */}
               </div>
 
               <Card>
@@ -976,7 +976,7 @@ export default function AdminManagementPage() {
               </Select>
             </div>
 
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <label className="text-sm font-medium">Permissions</label>
               <Card>
                 <CardContent className="p-4 grid grid-cols-2 gap-2">
@@ -1082,7 +1082,7 @@ export default function AdminManagementPage() {
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            </div> */}
           </div>
 
           <DialogFooter>

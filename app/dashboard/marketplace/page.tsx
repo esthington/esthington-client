@@ -884,7 +884,7 @@ export default function MarketplacePage() {
             </Button>
           </div>
         ) : filters.viewMode === "grid" ? (
-          <StaggerChildren className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <StaggerChildren className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
             {filteredListings.map((land) => (
               <StaggerItem key={land.id}>
                 <AnimatedCard className="group overflow-hidden bg-card/80 backdrop-blur-xl border border-border/50 rounded-xl shadow-md hover:shadow-xl transition-all duration-500 hover:border-primary/30">

@@ -29,7 +29,7 @@ export default function TopNav() {
   ];
 
   return (
-    <nav className="px-3 sm:px-6 flex items-center justify-between bg-background border-b border-border h-full">
+    <nav className="px-3 sm:px-6 flex items-center justify-between bg-background border-b border-border h-full top-0 z-50">
       {/* Add sidebar toggle button for mobile */}
       {/* {isMobileView && (
         <button onClick={toggleSidebar} className="p-1.5 sm:p-2 hover:bg-muted rounded-full transition-colors">

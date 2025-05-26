@@ -242,7 +242,10 @@ export default function AdminSidebar() {
                           <NavItem href="/dashboard" icon={Home}>
                             Overview
                           </NavItem>
-                          <NavItem href="/dashboard/companies" icon={MapPinHouse}>
+                          <NavItem
+                            href="/dashboard/companies"
+                            icon={MapPinHouse}
+                          >
                             Companies
                           </NavItem>
                           <NavItem href="/dashboard/properties" icon={Building}>
@@ -338,7 +341,6 @@ export default function AdminSidebar() {
                           >
                             Add Listing
                           </NavItem>
-                         
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -405,10 +407,7 @@ export default function AdminSidebar() {
                           exit="closed"
                           variants={sectionVariants}
                         >
-                          <NavItem
-                            href="/dashboard/referrals"
-                            icon={Users}
-                          >
+                          <NavItem href="/dashboard/referrals" icon={Users}>
                             Manage Referrals
                           </NavItem>
                           <NavItem
@@ -444,6 +443,12 @@ export default function AdminSidebar() {
                           exit="closed"
                           variants={sectionVariants}
                         >
+                          <NavItem
+                            href="/dashboard/settings/account"
+                            icon={User}
+                          >
+                            Account
+                          </NavItem>
                           <NavItem href="/dashboard/security" icon={Shield}>
                             Security
                           </NavItem>

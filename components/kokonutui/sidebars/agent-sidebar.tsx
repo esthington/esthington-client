@@ -470,9 +470,9 @@ export default function AgentSidebar() {
                           >
                             Account
                           </NavItem>
-                          <NavItem href="/dashboard/security" icon={Shield}>
+                          {/* <NavItem href="/dashboard/security" icon={Shield}>
                             Security
-                          </NavItem>
+                          </NavItem> */}
                           {/* <NavItem href="/dashboard/notifications" icon={Bell}>
                             Notifications
                           </NavItem> */}
