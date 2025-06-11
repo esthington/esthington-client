@@ -142,13 +142,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setUser(null);
             }
           } catch (error) {
-            console.error("Failed to fetch user data:", error);
+            // console.error("Failed to fetch user data:", error);
             cookie.remove("esToken");
             setUser(null);
           }
         } 
       } catch (error) {
-        console.error("Failed to initialize auth:", error);
+        // console.error("Failed to initialize auth:", error);
         cookie.remove("esToken");
         setUser(null);
       } finally {

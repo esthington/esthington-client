@@ -108,6 +108,7 @@ export default function MarketplacePage() {
     filteredListings,
     filters,
     setFilters,
+    buyProperty,
     isLoading,
     deleteListing,
   } = useMarketplace();
@@ -123,7 +124,6 @@ export default function MarketplacePage() {
     isLoading: walletLoading,
   } = useWallet();
   const balance = wallet?.balance || 0;
-
   const [selectedLand, setSelectedLand] = useState<any>(null);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -216,8 +216,7 @@ export default function MarketplacePage() {
     setError(null);
 
     try {
-      // Create a payment reference
-      const reference = `LAND-${selectedLand.id}-${Date.now()}`;
+      
       const amount = selectedLand.price;
       const hasInsufficientFunds = amount > balance;
 
@@ -226,17 +225,7 @@ export default function MarketplacePage() {
         setIsProcessing(false);
         return;
       }
-
-      // Process payment using wallet
-      const success = await fundWallet(
-        amount * -1, // Negative amount for payment
-        "marketplace_purchase",
-        {
-          reference,
-          listingId: selectedLand.id,
-          description: `Purchase of ${selectedLand.title}`,
-        }
-      );
+      const success = await buyProperty(selectedLand.id);
 
       if (success) {
         toast.success("Payment successful", {
@@ -542,11 +531,7 @@ export default function MarketplacePage() {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink
-                  href="/dashboard"
-                >
-                  Dashboard
-                </BreadcrumbLink>
+                <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>

@@ -42,14 +42,14 @@ export default function TopNav() {
       </div>
 
       <div className="hidden md:flex items-center max-w-md w-full mx-4">
-        <div className="relative w-full">
+        {/* <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
             placeholder="Search properties..."
             className="pl-10 bg-muted/30 border-input"
           />
-        </div>
+        </div> */}
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4">

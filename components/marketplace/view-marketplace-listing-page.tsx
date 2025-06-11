@@ -95,7 +95,7 @@ export default function ViewMarketplaceListingPage() {
   } = useWallet();
   const balance = wallet?.balance || 0;
 
-  const { getListing, isLoading } = useMarketplace();
+  const { getListing, isLoading, buyProperty } = useMarketplace();
   const { hasPermission } = useMarketplacePermissions();
   const [listing, setListing] = useState<any | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -164,20 +164,7 @@ export default function ViewMarketplaceListingPage() {
     setError(null);
 
     try {
-      // Create a payment reference
-      const reference = `MARKET-${listingId}-${Date.now()}`;
-
-      // Process payment using wallet
-      const success = await fundWallet(
-        totalAmount * -1, // Negative amount for payment
-        "marketplace_purchase",
-        {
-          reference,
-          listingId,
-          quantity,
-          description: `Purchase of ${quantity} ${listing.title}`,
-        }
-      );
+      const success = await buyProperty(listingId);
 
       if (success) {
         toast.success("Payment successful", {

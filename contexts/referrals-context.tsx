@@ -194,12 +194,12 @@ export const ReferralsProvider = ({ children }: ReferralsProviderProps) => {
       if (response.status === 200) {
         setReferrals(response.data.data);
       } else {
-        throw new Error("Failed to fetch referrals");
+        // throw new Error("Failed to fetch referrals");
       }
     } catch (err) {
       console.error("Error fetching referrals:", err);
-      setError("Failed to fetch referrals");
-      toast.error("Failed to fetch referrals");
+      // setError("Failed to fetch referrals");
+      // toast.error("Failed to fetch referrals");
     } finally {
       setIsLoading(false);
     }
@@ -218,12 +218,12 @@ export const ReferralsProvider = ({ children }: ReferralsProviderProps) => {
       if (response.status === 200) {
         setStats(response.data.data);
       } else {
-        throw new Error("Failed to fetch referral stats");
+        // throw new Error("Failed to fetch referral stats");
       }
     } catch (err) {
       console.error("Error fetching referral stats:", err);
       setError("Failed to fetch referral stats");
-      toast.error("Failed to fetch referral stats");
+      // toast.error("Failed to fetch referral stats");
     } finally {
       setIsLoading(false);
     }
@@ -284,12 +284,12 @@ export const ReferralsProvider = ({ children }: ReferralsProviderProps) => {
         if (response.status === 200) {
           setEarnings(response.data.data);
         } else {
-          throw new Error("Failed to fetch referral earnings");
+          // throw new Error("Failed to fetch referral earnings");
         }
       } catch (err) {
         console.error("Error fetching referral earnings:", err);
         setError("Failed to fetch referral earnings");
-        toast.error("Failed to fetch referral earnings");
+        // toast.error("Failed to fetch referral earnings");
       } finally {
         setIsLoading(false);
       }
@@ -310,12 +310,12 @@ export const ReferralsProvider = ({ children }: ReferralsProviderProps) => {
       if (response.status === 200) {
         setCommissionRates(response.data.data);
       } else {
-        throw new Error("Failed to fetch commission rates");
+        // throw new Error("Failed to fetch commission rates");
       }
     } catch (err) {
       console.error("Error fetching commission rates:", err);
       setError("Failed to fetch commission rates");
-      toast.error("Failed to fetch commission rates");
+      // toast.error("Failed to fetch commission rates");
     } finally {
       setIsLoading(false);
     }
@@ -334,12 +334,12 @@ export const ReferralsProvider = ({ children }: ReferralsProviderProps) => {
       if (response.status === 200) {
         setAgentRankInfo(response.data.data);
       } else {
-        throw new Error("Failed to fetch agent rank information");
+        // throw new Error("Failed to fetch agent rank information");
       }
     } catch (err) {
       console.error("Error fetching agent rank info:", err);
       setError("Failed to fetch agent rank information");
-      toast.error("Failed to fetch agent rank information");
+      // toast.error("Failed to fetch agent rank information");
     } finally {
       setIsLoading(false);
     }
@@ -470,7 +470,7 @@ export const ReferralsProvider = ({ children }: ReferralsProviderProps) => {
     } catch (err) {
       console.error("Error fetching referral:", err);
       setError("Failed to fetch referral");
-      toast.error("Failed to fetch referral");
+      // toast.error("Failed to fetch referral");
       return null;
     } finally {
       setIsLoading(false);
@@ -523,7 +523,7 @@ export const ReferralsProvider = ({ children }: ReferralsProviderProps) => {
       } catch (err) {
         console.error("Error fetching commission history:", err);
         setError("Failed to fetch commission history");
-        toast.error("Failed to fetch commission history");
+        // toast.error("Failed to fetch commission history");
         return [];
       } finally {
         setIsLoading(false);

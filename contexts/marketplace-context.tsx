@@ -109,7 +109,7 @@ const defaultFilters: MarketplaceFilterType = {
   searchQuery: "",
   location: "all",
   type: "all",
-  priceRange: [0, 1000000],
+  priceRange: [0, 100000000000],
   sortBy: "trending",
   viewMode: "grid",
   inStock: true,
@@ -283,7 +283,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
   const addListing = async (formData: FormData): Promise<string | null> => {
     setIsSubmitting(true);
     try {
-      console.log("FormData:", formData.get("data"),);
+      console.log("FormData:", formData.get("data"));
       const response = await apiConfigFile.post(
         "/marketplace/listings",
         formData,
@@ -366,15 +366,17 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
 
   // Buy a property
   const buyProperty = async (listingId: string): Promise<boolean> => {
-    setIsSubmitting(true);
+
     try {
       const response = await apiConfig.post(
-        `/marketplace/listings/${listingId}/purchase`,
+        `/marketplace/listings/${listingId}/purchase/initiate`,
         {},
         {
           withCredentials: true,
         }
       );
+
+      console.log("hitting purchase endpoint", response);
 
       if (response.status === 200) {
         // Update the listing status in the local state
@@ -400,8 +402,6 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
       console.error("Failed to purchase item:", error);
       toast.error("Failed to complete purchase");
       return false;
-    } finally {
-      setIsSubmitting(false);
     }
   };
 

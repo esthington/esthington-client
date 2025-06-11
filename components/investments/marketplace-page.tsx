@@ -341,7 +341,7 @@ export default function MarketplacePage() {
                   min={5}
                   max={20}
                   step={1}
-                  onValueChange={setReturnRateFilter}
+                  onValueChange={(value) => setReturnRateFilter([value[0], value[1]])}
                   className="w-full"
                 />
               </div>

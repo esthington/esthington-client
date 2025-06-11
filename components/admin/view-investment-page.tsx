@@ -50,6 +50,7 @@ import {
   ReturnType,
   useInvestment,
 } from "@/contexts/investments-context";
+import { InvestmentDialog } from "@/components/investments/investment-dialog";
 
 interface InvestmentDetailPageProps {
   id: string;
@@ -70,6 +71,7 @@ export default function InvestmentDetailPage() {
     changeInvestmentStatus,
   } = useInvestment();
   const [activeTab, setActiveTab] = useState("overview");
+  const [isInvestmentDialogOpen, setIsInvestmentDialogOpen] = useState(false);
 
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
@@ -80,7 +82,7 @@ export default function InvestmentDetailPage() {
   }, [id]);
 
   const handleInvestNow = () => {
-    router.push(`/dashboard/invest-now?propertyId=${id}`);
+    setIsInvestmentDialogOpen(true);
   };
 
   const handleEditInvestment = () => {
@@ -315,6 +317,7 @@ export default function InvestmentDetailPage() {
                   <Image
                     src={
                       selectedInvestment.propertyId.thumbnail ||
+                      "/placeholder.svg" ||
                       "/placeholder.svg"
                     }
                     alt={selectedInvestment.title}
@@ -323,7 +326,7 @@ export default function InvestmentDetailPage() {
                   />
                 ) : (
                   <Image
-                    src={`/placeholder-3w4yq.png?height=800&width=1200&query=real estate investment ${selectedInvestment.type}`}
+                    src={`/placeholder.svg?height=800&width=1200&query=real estate investment ${selectedInvestment.type}`}
                     alt={selectedInvestment.title}
                     fill
                     className="object-cover"
@@ -596,20 +599,7 @@ export default function InvestmentDetailPage() {
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-400">Status</span>
-                              <Badge
-                              // variant={
-                              //   selectedInvestment.status ===
-                              //   InvestmentStatus.ACTIVE
-                              //     ? "success"
-                              //     : selectedInvestment.status ===
-                              //       InvestmentStatus.PENDING
-                              //     ? "warning"
-                              //     : selectedInvestment.status ===
-                              //       InvestmentStatus.COMPLETED
-                              //     ? "default"
-                              //     : "destructive"
-                              // }
-                              >
+                              <Badge>
                                 {selectedInvestment.status
                                   .charAt(0)
                                   .toUpperCase() +
@@ -1205,6 +1195,13 @@ export default function InvestmentDetailPage() {
           </FadeIn>
         </div>
       </div>
+
+      {/* Investment Dialog */}
+      <InvestmentDialog
+        isOpen={isInvestmentDialogOpen}
+        onClose={() => setIsInvestmentDialogOpen(false)}
+        investment={selectedInvestment}
+      />
     </div>
   );
 }

@@ -104,10 +104,6 @@ export default function InvestmentsPage() {
     return true;
   });
 
-  const handleInvestNow = (id: string) => {
-    router.push(`/dashboard/invest-now?propertyId=${id}`);
-  };
-
   const handleViewDetails = (id: string) => {
     router.push(`/dashboard/investments/${id}`);
   };
@@ -422,14 +418,14 @@ export default function InvestmentsPage() {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <Button
+                        {/* <Button
                           onClick={() => handleViewDetails(property._id)}
                           variant="outline"
                           size="sm"
                           className="border-blue-500/30 hover:bg-blue-500/10 text-blue-400"
                         >
                           <Eye className="h-4 w-4" />
-                        </Button>
+                        </Button> */}
 
                         {isAdmin ? (
                           <>
@@ -457,10 +453,10 @@ export default function InvestmentsPage() {
                           </>
                         ) : (
                           <Button
-                            onClick={() => handleInvestNow(property._id)}
+                            onClick={() => handleViewDetails(property._id)}
                             className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-foreground border-0"
                           >
-                            Invest Now
+                            Invest
                           </Button>
                         )}
                       </div>
@@ -589,14 +585,16 @@ export default function InvestmentsPage() {
                             </div>
                           </div>
                           <div className="flex gap-2 mt-2">
-                            <Button
-                              onClick={() => handleViewDetails(property._id)}
-                              variant="outline"
-                              size="sm"
-                              className="border-blue-500/30 hover:bg-blue-500/10 text-blue-400"
-                            >
-                              <Eye className="h-4 w-4 mr-1" /> View Details
-                            </Button>
+                            {isAdmin && (
+                              <Button
+                                onClick={() => handleViewDetails(property._id)}
+                                variant="outline"
+                                size="sm"
+                                className="border-blue-500/30 hover:bg-blue-500/10 text-blue-400"
+                              >
+                                <Eye className="h-4 w-4 mr-1" /> View Details
+                              </Button>
+                            )}
 
                             {isAdmin ? (
                               <>
@@ -626,10 +624,10 @@ export default function InvestmentsPage() {
                               </>
                             ) : (
                               <Button
-                                onClick={() => handleInvestNow(property._id)}
+                                onClick={() => handleViewDetails(property._id)}
                                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-foreground border-0"
                               >
-                                Invest Now
+                                Invest
                               </Button>
                             )}
                           </div>

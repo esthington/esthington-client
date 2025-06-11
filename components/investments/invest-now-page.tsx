@@ -1,25 +1,29 @@
 "use client";
 
 import type React from "react";
-
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Check,
   AlertCircle,
-  Percent,
   Users,
   ArrowRight,
   ArrowLeft,
   Wallet,
   Info,
+  Building2,
+  MapPin,
+  Calendar,
+  TrendingUp,
+  Shield,
+  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AnimatedCard } from "@/components/ui/animated-card";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { NotificationToast } from "@/components/ui/notification-toast";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -29,56 +33,66 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import FadeIn from "@/components/animations/fade-in";
-import Image from "next/image";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { motion } from "framer-motion";
 import { useWallet } from "@/contexts/wallet-context";
-import { useInvestments } from "@/contexts/investments-context";
+import { useInvestment, PayoutFrequency } from "@/contexts/investments-context";
 
-interface InvestmentPlan {
-  id: string;
-  name: string;
-  description: string;
-  minAmount: number;
-  returnRate: number;
-}
+// Animation components
+const FadeIn = ({
+  children,
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  delay?: number;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay }}
+  >
+    {children}
+  </motion.div>
+);
 
-interface InvestmentDuration {
-  id: string;
-  name: string;
-  months: number;
-  bonusRate: number;
-}
-
-interface ROIPlan {
-  id: string;
-  name: string;
-  description: string;
-}
+const SlideIn = ({
+  children,
+  direction = "left",
+}: {
+  children: React.ReactNode;
+  direction?: "left" | "right";
+}) => (
+  <motion.div
+    initial={{ opacity: 0, x: direction === "left" ? -20 : 20 }}
+    animate={{ opacity: 1, x: 0 }}
+    transition={{ duration: 0.4 }}
+  >
+    {children}
+  </motion.div>
+);
 
 export default function InvestNowPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const propertyId = searchParams.get("propertyId");
 
-  const { balance, fundWallet } = useWallet();
+  const { wallet, refreshWalletData } = useWallet();
+  const balance = wallet?.balance ?? 0;
+
   const {
     selectedInvestment,
     getInvestmentById,
     investInProperty,
     isLoading: investmentLoading,
-  } = useInvestments();
+    isSubmitting,
+  } = useInvestment();
 
   const [isLoading, setIsLoading] = useState(true);
   const [amount, setAmount] = useState("");
@@ -86,87 +100,56 @@ export default function InvestNowPage() {
   const [selectedDuration, setSelectedDuration] = useState<string>("");
   const [selectedROIPlan, setSelectedROIPlan] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-  const [toastVariant, setToastVariant] = useState<"success" | "error">(
-    "success"
-  );
   const [showFundWalletPrompt, setShowFundWalletPrompt] = useState(false);
 
-  // Investment plans
-  const investmentPlans: InvestmentPlan[] = [
-    {
-      id: "basic",
-      name: "Basic Plan",
-      description: "Entry-level investment with standard returns",
-      minAmount: 100000,
-      returnRate: 10,
-    },
-    {
-      id: "premium",
-      name: "Premium Plan",
-      description: "Higher investment with better returns",
-      minAmount: 500000,
-      returnRate: 12,
-    },
-    {
-      id: "elite",
-      name: "Elite Plan",
-      description: "Maximum returns for serious investors",
-      minAmount: 1000000,
-      returnRate: 15,
-    },
-  ];
+  // Get dynamic data from investment context
+  type InvestmentPlan = {
+    name: string;
+    minAmount: number;
+    returnRate: number;
+    [key: string]: any;
+  };
+  type Duration = {
+    name: string;
+    months: number;
+    bonusRate: number;
+    [key: string]: any;
+  };
 
-  // Investment durations
-  const investmentDurations: InvestmentDuration[] = [
-    {
-      id: "short",
-      name: "6 Months",
-      months: 6,
-      bonusRate: 0,
-    },
-    {
-      id: "medium",
-      name: "12 Months",
-      months: 12,
-      bonusRate: 1,
-    },
-    {
-      id: "long",
-      name: "24 Months",
-      months: 24,
-      bonusRate: 2,
-    },
-    {
-      id: "extended",
-      name: "36 Months",
-      months: 36,
-      bonusRate: 3,
-    },
-  ];
+  const investmentPlans: InvestmentPlan[] = selectedInvestment?.investmentPlans || [];
+  const durations: Duration[] = selectedInvestment?.durations || [];
 
-  // ROI payment plans
-  const roiPlans: ROIPlan[] = [
+  // ROI plans based on PayoutFrequency enum
+  const roiPlans = [
     {
-      id: "monthly",
+      id: PayoutFrequency.MONTHLY,
       name: "Monthly Payout",
       description: "Receive your returns every month",
+      frequency: "Monthly",
     },
     {
-      id: "quarterly",
+      id: PayoutFrequency.QUARTERLY,
       name: "Quarterly Payout",
       description: "Receive your returns every 3 months",
+      frequency: "Quarterly",
     },
     {
-      id: "end",
+      id: PayoutFrequency.SEMI_ANNUALLY,
+      name: "Semi-Annual Payout",
+      description: "Receive your returns every 6 months",
+      frequency: "Semi-Annually",
+    },
+    {
+      id: PayoutFrequency.ANNUALLY,
+      name: "Annual Payout",
+      description: "Receive your returns once a year",
+      frequency: "Annually",
+    },
+    {
+      id: PayoutFrequency.END_OF_TERM,
       name: "End of Term",
       description: "Receive all returns at the end of investment period",
-    },
-    {
-      id: "reinvest",
-      name: "Reinvest Returns",
-      description: "Automatically reinvest returns for compound growth",
+      frequency: "End of Term",
     },
   ];
 
@@ -180,38 +163,34 @@ export default function InvestNowPage() {
     };
 
     loadInvestmentData();
-  }, [propertyId, getInvestmentById]);
+  }, [propertyId]);
 
   useEffect(() => {
     // Set default values when investment is loaded
     if (selectedInvestment) {
-      setSelectedPlan("basic");
-      setSelectedDuration("medium");
-      setSelectedROIPlan("monthly");
-      setAmount(investmentPlans[0].minAmount.toString());
+      if (investmentPlans.length > 0) {
+        setSelectedPlan("0"); // First plan index
+      }
+      if (durations.length > 0) {
+        setSelectedDuration("0"); // First duration index
+      }
+      setSelectedROIPlan(PayoutFrequency.MONTHLY);
+      if (selectedInvestment.minimumInvestment) {
+        setAmount(selectedInvestment.minimumInvestment.toString());
+      }
     }
-  }, [selectedInvestment]);
+  }, [selectedInvestment, investmentPlans, durations]);
+  const getCurrentPlan = (): InvestmentPlan | null => {
+    if (!selectedPlan || !investmentPlans.length) return null;
+    return investmentPlans[Number.parseInt(selectedPlan)];
+  };
 
-  // Check if wallet balance is sufficient whenever amount changes
-  useEffect(() => {
-    if (amount) {
-      const investAmount = Number(amount);
-      setShowFundWalletPrompt(investAmount > balance);
-    }
-  }, [amount, balance]);
-
+  const getCurrentDuration = (): Duration | null => {
+    if (!selectedDuration || !durations.length) return null;
+    return durations[Number.parseInt(selectedDuration)];
+  };
   const handleQuickAmount = (value: string) => {
     setAmount(value);
-  };
-
-  const getCurrentPlan = (): InvestmentPlan | undefined => {
-    return investmentPlans.find((plan) => plan.id === selectedPlan);
-  };
-
-  const getCurrentDuration = (): InvestmentDuration | undefined => {
-    return investmentDurations.find(
-      (duration) => duration.id === selectedDuration
-    );
   };
 
   const calculateTotalReturn = (): number => {
@@ -219,14 +198,15 @@ export default function InvestNowPage() {
     const plan = getCurrentPlan();
     const duration = getCurrentDuration();
 
-    if (!plan || !duration) return 0;
+    if (!plan || !duration || !selectedInvestment) return 0;
 
-    const baseRate = plan.returnRate;
-    const bonusRate = duration.bonusRate;
-    const totalRate = baseRate + bonusRate;
-    const months = duration.months;
+    const baseRate = selectedInvestment.returnRate;
+    const planRate = plan.returnRate || 0;
+    const bonusRate = duration.bonusRate || 0;
+    const totalRate = Math.max(baseRate, planRate) + bonusRate;
+    const months = duration.months || selectedInvestment.investmentPeriod || 12;
 
-    return (investAmount * (totalRate / 100) * months) / 12;
+    return (Number(investAmount) * (Number(totalRate) / 100) * Number(months)) / 12;
   };
 
   const handleFundWallet = () => {
@@ -244,9 +224,6 @@ export default function InvestNowPage() {
       !selectedROIPlan ||
       !amount
     ) {
-      setToastMessage("Please fill in all fields");
-      setToastVariant("error");
-      setShowToast(true);
       return;
     }
 
@@ -254,27 +231,15 @@ export default function InvestNowPage() {
     const plan = getCurrentPlan();
 
     if (!plan) {
-      setToastMessage("Invalid investment plan selected");
-      setToastVariant("error");
-      setShowToast(true);
       return;
     }
 
-    if (investAmount < plan.minAmount) {
-      setToastMessage(
-        `Minimum investment for ${plan.name} is ${formatCurrency(
-          plan.minAmount
-        )}`
-      );
-      setToastVariant("error");
-      setShowToast(true);
+    const minAmount = plan.minAmount || selectedInvestment.minimumInvestment;
+    if (investAmount < minAmount) {
       return;
     }
 
     if (investAmount > balance) {
-      setToastMessage("Insufficient funds in your wallet");
-      setToastVariant("error");
-      setShowToast(true);
       setShowFundWalletPrompt(true);
       return;
     }
@@ -282,32 +247,22 @@ export default function InvestNowPage() {
     setIsProcessing(true);
 
     try {
-      // Process the investment
       const success = await investInProperty(
-        selectedInvestment.id,
+        selectedInvestment._id,
         investAmount
       );
 
       if (success) {
-        // Show success toast
-        setToastMessage(
-          "Investment successful! You are now a property investor."
-        );
-        setToastVariant("success");
-        setShowToast(true);
+        // Refresh wallet data
+        await refreshWalletData();
 
         // Redirect to my investments page after a delay
         setTimeout(() => {
           router.push("/dashboard/my-investments");
         }, 2000);
-      } else {
-        throw new Error("Investment failed");
       }
     } catch (error) {
-      // Show error toast
-      setToastMessage("Failed to process investment. Please try again.");
-      setToastVariant("error");
-      setShowToast(true);
+      console.error("Investment failed:", error);
     } finally {
       setIsProcessing(false);
     }
@@ -322,10 +277,26 @@ export default function InvestNowPage() {
     }).format(amount);
   };
 
+  const getRiskColor = (riskLevel: string) => {
+    switch (riskLevel?.toLowerCase()) {
+      case "low":
+        return "text-green-600 bg-green-50 border-green-200";
+      case "medium":
+        return "text-yellow-600 bg-yellow-50 border-yellow-200";
+      case "high":
+        return "text-red-600 bg-red-50 border-red-200";
+      default:
+        return "text-gray-600 bg-gray-50 border-gray-200";
+    }
+  };
+
   if (isLoading || investmentLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <LoadingSpinner size="lg" />
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="text-gray-600">Loading investment details...</p>
+        </div>
       </div>
     );
   }
@@ -333,17 +304,19 @@ export default function InvestNowPage() {
   if (!selectedInvestment) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-        <h2 className="text-xl font-bold text-white mb-2">
-          Property Not Found
+        <AlertCircle className="h-16 w-16 text-red-500 mb-4" />
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          Investment Not Found
         </h2>
-        <p className="text-gray-400 mb-6 text-center max-w-md">
-          The property you're looking for doesn't exist or has been removed.
+        <p className="text-gray-600 mb-6 text-center max-w-md">
+          The investment opportunity you're looking for doesn't exist or has
+          been removed.
         </p>
         <Button
           onClick={() => router.push("/dashboard/marketplace")}
           className="bg-blue-600 hover:bg-blue-700 text-white"
         >
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Marketplace
         </Button>
       </div>
@@ -351,256 +324,271 @@ export default function InvestNowPage() {
   }
 
   return (
-    <>
-      <NotificationToast
-        open={showToast}
-        onClose={() => setShowToast(false)}
-        title={toastMessage}
-        variant={toastVariant}
-        icon={
-          toastVariant === "success" ? (
-            <Check className="h-4 w-4" />
-          ) : (
-            <AlertCircle className="h-4 w-4" />
-          )
-        }
-      />
-
-      <div className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30">
+      <div className="container mx-auto px-4 py-8 space-y-8">
+        {/* Header */}
         <FadeIn>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-white">
+              <h1 className="text-3xl font-bold text-gray-900">
                 Invest in Property
               </h1>
-              <p className="text-gray-400 mt-1">
-                Create your property investment portfolio
+              <p className="text-gray-600 mt-1">
+                Secure your financial future with real estate investment
               </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => router.push("/dashboard/marketplace")}
+                className="border-gray-200 hover:bg-gray-50"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+              </Button>
             </div>
           </div>
         </FadeIn>
 
+        {/* Breadcrumb */}
         <FadeIn delay={0.1}>
-          <div className="mb-4">
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/dashboard/marketplace">
-                    Marketplace
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Invest Now</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink
+                  href="/dashboard"
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  Dashboard
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink
+                  href="/dashboard/marketplace"
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  Marketplace
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage className="font-medium">
+                  Invest Now
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
         </FadeIn>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Investment Form */}
           <div className="lg:col-span-2">
-            <FadeIn delay={0.2}>
-              <AnimatedCard className="p-6 bg-[#0F0F12]/80 backdrop-blur-xl border-[#1F1F23]">
-                <div className="flex flex-col md:flex-row gap-6 mb-6">
-                  <div className="relative md:w-1/3 h-48 md:h-auto rounded-lg overflow-hidden">
-                    <Image
-                      src={selectedInvestment.images[0] || "/placeholder.svg"}
-                      alt={selectedInvestment.title}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  <div className="md:w-2/3">
-                    <h2 className="text-xl font-bold text-white mb-2">
-                      {selectedInvestment.title}
-                    </h2>
-                    <p className="text-gray-400 mb-4">
-                      {selectedInvestment.location}
-                    </p>
+            <SlideIn direction="left">
+              <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+                <CardHeader className="pb-6">
+                  <div className="flex items-start gap-4">
+                    <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                      <Building2 className="h-10 w-10 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <CardTitle className="text-2xl font-bold text-gray-900 mb-2">
+                        {selectedInvestment.title}
+                      </CardTitle>
+                      <div className="flex items-center text-gray-600 mb-3">
+                        <MapPin className="h-4 w-4 mr-1" />
+                        <span>{selectedInvestment.location}</span>
+                      </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-                      <div>
-                        <div className="text-xs text-gray-400">
-                          Property Type
-                        </div>
-                        <div className="text-white font-medium">
-                          {selectedInvestment.type}
-                        </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge
+                          variant="secondary"
+                          className="bg-blue-50 text-blue-700 border-blue-200"
+                        >
+                          <TrendingUp className="h-3 w-3 mr-1" />
+                          {selectedInvestment.returnRate}% Returns
+                        </Badge>
+                        <Badge
+                          variant="secondary"
+                          className={`border ${getRiskColor(
+                            selectedInvestment.riskLevel
+                          )}`}
+                        >
+                          <Shield className="h-3 w-3 mr-1" />
+                          {selectedInvestment.riskLevel} Risk
+                        </Badge>
+                        {selectedInvestment.featured && (
+                          <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
+                            Featured
+                          </Badge>
+                        )}
                       </div>
-                      <div>
-                        <div className="text-xs text-gray-400">
-                          Base Return Rate
-                        </div>
-                        <div className="text-white font-medium flex items-center">
-                          <Percent className="h-3.5 w-3.5 mr-1 text-blue-400" />
-                          {selectedInvestment.returnRate}% p.a.
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-400">
-                          Min Investment
-                        </div>
-                        <div className="text-white font-medium flex items-center">
-                          <Wallet className="h-3.5 w-3.5 mr-1 text-purple-400" />
-                          {formatCurrency(selectedInvestment.minInvestment)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-400">Investors</div>
-                        <div className="text-white font-medium flex items-center">
-                          <Users className="h-3.5 w-3.5 mr-1 text-green-400" />
+                    </div>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="space-y-8">
+                  {/* Investment Progress */}
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-semibold text-gray-900">
+                        Funding Progress
+                      </h3>
+                      <span className="text-2xl font-bold text-blue-600">
+                        {selectedInvestment.percentageFunded}%
+                      </span>
+                    </div>
+                    <Progress
+                      value={selectedInvestment.percentageFunded}
+                      className="h-3"
+                    />
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>
+                        Raised:{" "}
+                        {formatCurrency(selectedInvestment.raisedAmount || 0)}
+                      </span>
+                      <span>
+                        Target:{" "}
+                        {formatCurrency(selectedInvestment.targetAmount)}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                      <div className="text-center p-3 bg-gray-50 rounded-lg">
+                        <Users className="h-5 w-5 mx-auto mb-1 text-gray-600" />
+                        <div className="text-lg font-semibold text-gray-900">
                           {selectedInvestment.totalInvestors}
                         </div>
+                        <div className="text-xs text-gray-600">Investors</div>
+                      </div>
+                      <div className="text-center p-3 bg-gray-50 rounded-lg">
+                        <Calendar className="h-5 w-5 mx-auto mb-1 text-gray-600" />
+                        <div className="text-lg font-semibold text-gray-900">
+                          {selectedInvestment.investmentPeriod}
+                        </div>
+                        <div className="text-xs text-gray-600">Months</div>
                       </div>
                     </div>
-
-                    <div className="space-y-2 mb-4">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-gray-400">Funding Progress</span>
-                        <span className="text-white font-medium">
-                          {selectedInvestment.funded}%
-                        </span>
-                      </div>
-                      <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
-                          style={{ width: `${selectedInvestment.funded}%` }}
-                        />
-                      </div>
-                      <div className="flex justify-between text-xs text-gray-400">
-                        <span>
-                          Target: {formatCurrency(selectedInvestment.target)}
-                        </span>
-                        <span>
-                          Raised:{" "}
-                          {formatCurrency(
-                            (selectedInvestment.target *
-                              selectedInvestment.funded) /
-                              100
-                          )}
-                        </span>
-                      </div>
-                    </div>
-
-                    <p className="text-sm text-gray-300">
-                      {selectedInvestment.description}
-                    </p>
                   </div>
-                </div>
 
-                <div className="border-t border-[#1F1F23] pt-6">
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Wallet Balance Display */}
-                    <div className="bg-[#1F1F23]/50 p-4 rounded-lg flex items-center justify-between">
-                      <div className="flex items-center">
-                        <Wallet className="h-5 w-5 mr-2 text-blue-400" />
-                        <div>
-                          <div className="text-sm text-gray-400">
-                            Your Wallet Balance
-                          </div>
-                          <div className="text-white font-semibold">
-                            {formatCurrency(balance)}
-                          </div>
+                  <Separator />
+
+                  {/* Wallet Balance */}
+                  <Alert
+                    className={`border-2 ${
+                      showFundWalletPrompt
+                        ? "border-red-200 bg-red-50"
+                        : "border-blue-200 bg-blue-50"
+                    }`}
+                  >
+                    <Wallet
+                      className={`h-5 w-5 ${
+                        showFundWalletPrompt ? "text-red-600" : "text-blue-600"
+                      }`}
+                    />
+                    <AlertDescription className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium">Wallet Balance</div>
+                        <div className="text-lg font-bold">
+                          {formatCurrency(balance)}
                         </div>
                       </div>
                       {showFundWalletPrompt && (
                         <Button
-                          type="button"
                           onClick={handleFundWallet}
-                          className="bg-blue-600 hover:bg-blue-700"
+                          size="sm"
+                          className="bg-red-600 hover:bg-red-700"
                         >
                           Fund Wallet
                         </Button>
                       )}
-                    </div>
+                    </AlertDescription>
+                  </Alert>
 
-                    {/* Investment Plan Selection */}
-                    <div className="space-y-4">
-                      <Label htmlFor="plan">Select Investment Plan</Label>
-                      <Select
-                        value={selectedPlan}
-                        onValueChange={setSelectedPlan}
-                      >
-                        <SelectTrigger
-                          id="plan"
-                          className="bg-[#1F1F23]/50 border-[#2B2B30]"
+                  {/* Investment Form */}
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Investment Plans */}
+                    {investmentPlans.length > 0 && (
+                      <div className="space-y-3">
+                        <Label className="text-base font-semibold text-gray-900">
+                          Select Investment Plan
+                        </Label>
+                        <Select
+                          value={selectedPlan}
+                          onValueChange={setSelectedPlan}
                         >
-                          <SelectValue placeholder="Select Investment Plan" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-[#1F1F23] border-[#2B2B30]">
-                          {investmentPlans.map((plan) => (
-                            <SelectItem key={plan.id} value={plan.id}>
-                              <div className="flex flex-col">
-                                <span>{plan.name}</span>
-                                <span className="text-xs text-gray-400">
-                                  {plan.description} - Min:{" "}
-                                  {formatCurrency(plan.minAmount)}
-                                </span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                          <SelectTrigger className="h-12 border-gray-200">
+                            <SelectValue placeholder="Choose an investment plan" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {investmentPlans.map((plan: any, index: number) => (
+                              <SelectItem key={index} value={index.toString()}>
+                                <div className="flex flex-col py-1">
+                                  <span className="font-medium">
+                                    {plan.name}
+                                  </span>
+                                  <span className="text-sm text-gray-500">
+                                    Min: {formatCurrency(plan.minAmount)} •{" "}
+                                    {plan.returnRate}% Returns
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
 
                     {/* Investment Duration */}
-                    <div className="space-y-4">
-                      <Label htmlFor="duration">
-                        Select Investment Duration
-                      </Label>
-                      <Select
-                        value={selectedDuration}
-                        onValueChange={setSelectedDuration}
-                      >
-                        <SelectTrigger
-                          id="duration"
-                          className="bg-[#1F1F23]/50 border-[#2B2B30]"
+                    {durations.length > 0 && (
+                      <div className="space-y-3">
+                        <Label className="text-base font-semibold text-gray-900">
+                          Investment Duration
+                        </Label>
+                        <Select
+                          value={selectedDuration}
+                          onValueChange={setSelectedDuration}
                         >
-                          <SelectValue placeholder="Select Investment Duration" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-[#1F1F23] border-[#2B2B30]">
-                          {investmentDurations.map((duration) => (
-                            <SelectItem key={duration.id} value={duration.id}>
-                              <div className="flex flex-col">
-                                <span>{duration.name}</span>
-                                <span className="text-xs text-gray-400">
-                                  {duration.bonusRate > 0
-                                    ? `+${duration.bonusRate}% bonus rate`
-                                    : "Standard rate"}
-                                </span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                          <SelectTrigger className="h-12 border-gray-200">
+                            <SelectValue placeholder="Choose investment duration" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {durations.map((duration: any, index: number) => (
+                              <SelectItem key={index} value={index.toString()}>
+                                <div className="flex flex-col py-1">
+                                  <span className="font-medium">
+                                    {duration.name}
+                                  </span>
+                                  <span className="text-sm text-gray-500">
+                                    {duration.months} months
+                                    {duration.bonusRate > 0 &&
+                                      ` • +${duration.bonusRate}% bonus`}
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
 
                     {/* ROI Payment Plan */}
-                    <div className="space-y-4">
-                      <Label htmlFor="roi-plan">
-                        How do you want your ROI to be paid?
+                    <div className="space-y-3">
+                      <Label className="text-base font-semibold text-gray-900">
+                        Return Payment Schedule
                       </Label>
                       <Select
                         value={selectedROIPlan}
                         onValueChange={setSelectedROIPlan}
                       >
-                        <SelectTrigger
-                          id="roi-plan"
-                          className="bg-[#1F1F23]/50 border-[#2B2B30]"
-                        >
-                          <SelectValue placeholder="Select ROI Payment Plan" />
+                        <SelectTrigger className="h-12 border-gray-200">
+                          <SelectValue placeholder="How would you like to receive returns?" />
                         </SelectTrigger>
-                        <SelectContent className="bg-[#1F1F23] border-[#2B2B30]">
+                        <SelectContent>
                           {roiPlans.map((plan) => (
                             <SelectItem key={plan.id} value={plan.id}>
-                              <div className="flex flex-col">
-                                <span>{plan.name}</span>
-                                <span className="text-xs text-gray-400">
+                              <div className="flex flex-col py-1">
+                                <span className="font-medium">{plan.name}</span>
+                                <span className="text-sm text-gray-500">
                                   {plan.description}
                                 </span>
                               </div>
@@ -611,43 +599,49 @@ export default function InvestNowPage() {
                     </div>
 
                     {/* Investment Amount */}
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       <div className="flex justify-between items-center">
-                        <Label htmlFor="amount">Investment Amount (₦)</Label>
-                        <div className="text-xs text-gray-400">
-                          Minimum:{" "}
+                        <Label className="text-base font-semibold text-gray-900">
+                          Investment Amount
+                        </Label>
+                        <span className="text-sm text-gray-500">
+                          Min:{" "}
                           {formatCurrency(
                             getCurrentPlan()?.minAmount ||
-                              selectedInvestment.minInvestment
+                              selectedInvestment.minimumInvestment
                           )}
-                        </div>
+                        </span>
                       </div>
-                      <Input
-                        id="amount"
-                        type="text"
-                        placeholder="Enter amount"
-                        value={amount}
-                        onChange={(e) =>
-                          setAmount(e.target.value.replace(/[^0-9]/g, ""))
-                        }
-                        className="bg-[#1F1F23]/50 border-[#2B2B30]"
-                        required
-                      />
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <Input
+                          type="text"
+                          placeholder="Enter amount"
+                          value={amount}
+                          onChange={(e) =>
+                            setAmount(e.target.value.replace(/[^0-9]/g, ""))
+                          }
+                          className="pl-10 h-12 text-lg border-gray-200"
+                          required
+                        />
+                      </div>
 
+                      {/* Quick Amount Buttons */}
                       <div className="flex flex-wrap gap-2">
-                        {investmentPlans.map((plan) => (
+                        {investmentPlans.map((plan: any, index: number) => (
                           <Button
-                            key={plan.id}
+                            key={index}
                             type="button"
                             variant="outline"
+                            size="sm"
                             onClick={() =>
                               handleQuickAmount(String(plan.minAmount))
                             }
-                            className={
+                            className={`border-gray-200 hover:border-blue-300 hover:bg-blue-50 ${
                               amount === String(plan.minAmount)
-                                ? "border-blue-500 bg-blue-900/20"
-                                : "bg-[#1F1F23]/50 border-[#2B2B30]"
-                            }
+                                ? "border-blue-500 bg-blue-50"
+                                : ""
+                            }`}
                           >
                             {formatCurrency(plan.minAmount)}
                           </Button>
@@ -655,176 +649,199 @@ export default function InvestNowPage() {
                       </div>
                     </div>
 
+                    {/* Submit Button */}
                     <Button
                       type="submit"
-                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0"
                       disabled={
                         isProcessing ||
+                        isSubmitting ||
                         !amount ||
                         Number(amount) <
                           (getCurrentPlan()?.minAmount ||
-                            selectedInvestment.minInvestment) ||
+                            selectedInvestment.minimumInvestment) ||
                         Number(amount) > balance
                       }
+                      className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold text-lg shadow-lg"
                     >
-                      {isProcessing ? (
+                      {isProcessing || isSubmitting ? (
                         <>
-                          <LoadingSpinner size="sm" className="mr-2" />{" "}
-                          Processing...
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
+                          Processing Investment...
                         </>
                       ) : (
-                        <>Confirm Investment</>
+                        <>
+                          <Check className="mr-2 h-5 w-5" />
+                          Confirm Investment
+                        </>
                       )}
                     </Button>
                   </form>
-                </div>
-              </AnimatedCard>
-            </FadeIn>
+                </CardContent>
+              </Card>
+            </SlideIn>
           </div>
 
-          <div>
-            <FadeIn delay={0.3}>
-              <AnimatedCard className="p-6 bg-[#0F0F12]/80 backdrop-blur-xl border-[#1F1F23]">
-                <h2 className="text-lg font-semibold text-white mb-4">
-                  Investment Summary
-                </h2>
-                <div className="space-y-4">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Property:</span>
-                    <span className="font-medium text-white">
-                      {selectedInvestment.title}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Investment Plan:</span>
-                    <span className="font-medium text-white">
-                      {getCurrentPlan()?.name || "Not selected"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Duration:</span>
-                    <span className="font-medium text-white">
-                      {getCurrentDuration()?.name || "Not selected"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">ROI Payment:</span>
-                    <span className="font-medium text-white">
-                      {roiPlans.find((p) => p.id === selectedROIPlan)?.name ||
-                        "Not selected"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Investment Amount:</span>
-                    <span className="font-medium text-white">
-                      {formatCurrency(Number(amount) || 0)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Effective Rate:</span>
-                    <span className="font-medium text-white">
-                      {getCurrentPlan() && getCurrentDuration()
-                        ? `${
-                            getCurrentPlan()!.returnRate +
-                            getCurrentDuration()!.bonusRate
-                          }% p.a.`
-                        : "N/A"}
-                    </span>
-                  </div>
-                  <div className="border-t border-[#1F1F23] pt-4 flex justify-between">
-                    <span className="text-white font-medium">
-                      Estimated Returns:
-                    </span>
-                    <span className="text-green-400 font-bold">
-                      {formatCurrency(calculateTotalReturn())}
-                    </span>
-                  </div>
-                </div>
+          {/* Investment Summary Sidebar */}
+          <div className="lg:col-span-1">
+            <SlideIn direction="right">
+              <div className="sticky top-6 space-y-6">
+                {/* Investment Summary */}
+                <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center text-lg">
+                      <Info className="mr-2 h-5 w-5 text-blue-600" />
+                      Investment Summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Property:</span>
+                        <span className="font-medium text-gray-900 text-right max-w-[150px] truncate">
+                          {selectedInvestment.title}
+                        </span>
+                      </div>
 
-                <div className="mt-6 pt-6 border-t border-[#1F1F23]">
-                  <h3 className="text-sm font-medium text-white mb-3">
-                    Investment Benefits
-                  </h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-start gap-2">
-                      <Check className="h-4 w-4 text-green-400 mt-0.5" />
-                      <p className="text-gray-300">
-                        Ownership stake in premium real estate
-                      </p>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Check className="h-4 w-4 text-green-400 mt-0.5" />
-                      <p className="text-gray-300">
-                        Regular returns based on your selected payment plan
-                      </p>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Check className="h-4 w-4 text-green-400 mt-0.5" />
-                      <p className="text-gray-300">
-                        Capital appreciation over the investment period
-                      </p>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Check className="h-4 w-4 text-green-400 mt-0.5" />
-                      <p className="text-gray-300">
-                        Professional property management included
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                      {getCurrentPlan() && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Plan:</span>
+                          <span className="font-medium text-gray-900">
+                            {getCurrentPlan()?.name}
+                          </span>
+                        </div>
+                      )}
 
-                <div className="mt-6 pt-6 border-t border-[#1F1F23]">
-                  <h3 className="text-sm font-medium text-white mb-3 flex items-center">
-                    Important Information
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Info className="h-4 w-4 ml-1 text-gray-400" />
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-[#1F1F23] border-[#2B2B30] text-white">
-                          <p>Read our investment terms and conditions</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </h3>
-                  <div className="space-y-2 text-xs text-gray-400">
-                    <p>
-                      Returns are not guaranteed and may vary based on market
-                      conditions.
-                    </p>
-                    <p>
-                      Your investment is secured by the underlying property
-                      asset.
-                    </p>
-                    <p>
-                      Early withdrawal may be subject to fees and conditions.
-                    </p>
-                  </div>
-                </div>
-              </AnimatedCard>
-            </FadeIn>
+                      {getCurrentDuration() && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Duration:</span>
+                          <span className="font-medium text-gray-900">
+                            {getCurrentDuration()?.name}
+                          </span>
+                        </div>
+                      )}
 
-            <FadeIn delay={0.4}>
-              <div className="mt-6 flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1 bg-[#1F1F23]/50 border-[#2B2B30] hover:bg-[#2B2B30]"
-                  onClick={() => router.push("/dashboard/marketplace")}
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Back to Marketplace
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1 bg-[#1F1F23]/50 border-[#2B2B30] hover:bg-[#2B2B30]"
-                  onClick={() => router.push("/dashboard/my-investments")}
-                >
-                  My Investments <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                      {selectedROIPlan && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Payout:</span>
+                          <span className="font-medium text-gray-900">
+                            {
+                              roiPlans.find((p) => p.id === selectedROIPlan)
+                                ?.frequency
+                            }
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Amount:</span>
+                        <span className="font-medium text-gray-900">
+                          {formatCurrency(Number(amount) || 0)}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Return Rate:</span>
+                        <span className="font-medium text-gray-900">
+                          {getCurrentPlan() && getCurrentDuration()
+                            ? `${
+                                Math.max(
+                                  selectedInvestment.returnRate,
+                                  getCurrentPlan()?.returnRate || 0
+                                ) + (getCurrentDuration()?.bonusRate || 0)
+                              }% p.a.`
+                            : `${selectedInvestment.returnRate}% p.a.`}
+                        </span>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-green-800">
+                          Estimated Returns:
+                        </span>
+                        <span className="text-xl font-bold text-green-600">
+                          {formatCurrency(calculateTotalReturn())}
+                        </span>
+                      </div>
+                      <p className="text-xs text-green-700 mt-1">
+                        Based on selected plan and duration
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Investment Benefits */}
+                <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="text-lg">
+                      Investment Benefits
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {[
+                        "Ownership stake in premium real estate",
+                        "Regular returns based on your payment plan",
+                        "Capital appreciation over time",
+                        "Professional property management",
+                        "Transparent reporting and updates",
+                        "Flexible investment options",
+                      ].map((benefit, index) => (
+                        <div key={index} className="flex items-start gap-3">
+                          <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm text-gray-700">
+                            {benefit}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Risk Disclaimer */}
+                <Card className="shadow-lg border-0 bg-amber-50/80 backdrop-blur-sm border-amber-200">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center text-amber-800">
+                      <AlertCircle className="mr-2 h-5 w-5" />
+                      Important Notice
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 text-sm text-amber-700">
+                      <p>• Returns are projections and not guaranteed</p>
+                      <p>• Investment is secured by underlying property</p>
+                      <p>• Early withdrawal may incur fees</p>
+                      <p>• Please read terms and conditions</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Navigation Buttons */}
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1 border-gray-200 hover:bg-gray-50"
+                    onClick={() => router.push("/dashboard/marketplace")}
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 border-gray-200 hover:bg-gray-50"
+                    onClick={() => router.push("/dashboard/my-investments")}
+                  >
+                    My Investments
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-            </FadeIn>
+            </SlideIn>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

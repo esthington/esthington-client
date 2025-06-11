@@ -141,7 +141,6 @@ const WalletContext = createContext<WalletContextType>({
   pendingTransactions: [],
   recentRecipients: [],
   isLoading: false,
-
   fundWallet: async () => false,
   initializeWalletFunding: async () => null,
   verifyWalletFunding: async () => false,

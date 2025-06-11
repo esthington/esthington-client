@@ -17,14 +17,19 @@ import {
   FileText,
   DollarSign,
   Shield,
+  ArrowUpRight,
+  Wallet,
+  CreditCard,
+  BanknoteIcon as Bank,
+  ArrowDownCircle,
   Bell,
   Crown,
   ShoppingBag,
   Briefcase,
   ChevronDown,
   ChevronRight,
-  HousePlus,
-  MapPinHouse,
+  MapPinIcon as MapPinHouse,
+  History,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -45,6 +50,7 @@ export default function AdminSidebar() {
   const [showAccountDialog, setShowAccountDialog] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     dashboard: true,
+    wallet: true,
     management: true,
     marketplace: true,
     investments: true,
@@ -106,7 +112,7 @@ export default function AdminSidebar() {
     onClick,
   }: {
     href: string;
-    icon: any;
+    icon: React.ComponentType<{ className?: string }>;
     children: React.ReactNode;
     onClick?: () => void;
   }) {
@@ -256,6 +262,66 @@ export default function AdminSidebar() {
                             icon={PlusCircle}
                           >
                             Add Property
+                          </NavItem>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Wallet Section */}
+                  <div>
+                    <button
+                      onClick={() => toggleSection("wallet")}
+                      className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition-colors"
+                    >
+                      <span>Wallet</span>
+                      {expandedSections.wallet ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )}
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {expandedSections.wallet && (
+                        <motion.div
+                          className="space-y-1 overflow-hidden"
+                          initial="closed"
+                          animate="open"
+                          exit="closed"
+                          variants={sectionVariants}
+                        >
+                          <NavItem href="/dashboard/my-wallet" icon={Wallet}>
+                            My Wallet
+                          </NavItem>
+                          <NavItem
+                            href="/dashboard/fund-wallet"
+                            icon={CreditCard}
+                          >
+                            Fund Wallet
+                          </NavItem>
+                          <NavItem
+                            href="/dashboard/transfer-money"
+                            icon={ArrowUpRight}
+                          >
+                            Transfer Money
+                          </NavItem>
+                          <NavItem
+                            href="/dashboard/withdraw-money"
+                            icon={ArrowDownCircle}
+                          >
+                            Withdraw Money
+                          </NavItem>
+                          <NavItem
+                            href="/dashboard/my-bank-account"
+                            icon={Bank}
+                          >
+                            My Bank Account
+                          </NavItem>
+                          <NavItem
+                            href="/dashboard/my-transactions"
+                            icon={History}
+                          >
+                            My Transactions
                           </NavItem>
                         </motion.div>
                       )}
@@ -452,9 +518,9 @@ export default function AdminSidebar() {
                           <NavItem href="/dashboard/security" icon={Shield}>
                             Security
                           </NavItem>
-                          {/* <NavItem href="/dashboard/notifications" icon={Bell}>
+                          <NavItem href="/dashboard/notifications" icon={Bell}>
                             Notifications
-                          </NavItem> */}
+                          </NavItem>
                         </motion.div>
                       )}
                     </AnimatePresence>

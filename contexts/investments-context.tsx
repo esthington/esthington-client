@@ -125,6 +125,12 @@ export type InvestmentFilterType = {
   viewMode: "grid" | "list";
 };
 
+interface InvestmentPlan {
+  name: string;
+  minAmount: string;
+  returnRate: string;
+}
+
 // Context type
 type InvestmentContextType = {
   // State
@@ -160,7 +166,14 @@ type InvestmentContextType = {
   ) => Promise<boolean>;
 
   // User operations
-  investInProperty: (investmentId: string, amount: number) => Promise<boolean>;
+  investInProperty: (
+    investmentId: string,
+    amount: number,
+    note: string,
+    selectedPlan: string,
+    selectedDuration: string,
+    calculatedReturns: object
+  ) => Promise<boolean>;
 
   // Loading states
   isLoading: boolean;
@@ -208,7 +221,7 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
   // Initialize with data
   useEffect(() => {
     fetchInvestments();
-    if (user?.id) {
+    if (user?._id) {
       fetchUserInvestments();
     }
   }, [user]);
@@ -234,11 +247,11 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
 
   // Fetch user investments
   const fetchUserInvestments = async () => {
-    if (!user?.id) return;
+    if (!user?._id) return;
 
     setIsLoading(true);
     try {
-      const response = await apiConfig.get(`/users/${user.id}/investments`, {
+      const response = await apiConfig.get(`/users/${user._id}/investments`, {
         withCredentials: true,
       });
 
@@ -721,14 +734,18 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
   // Invest in property
   const investInProperty = async (
     investmentId: string,
-    amount: number
+    amount: number,
+    selectedPlan: string,
+    selectedDuration: string,
+    notes: string,
+    calculatedReturns: object
   ): Promise<boolean> => {
-    if (!user?.id) {
+    if (!user?._id) {
       toast.error("You must be logged in to invest");
       return false;
     }
 
-    setIsSubmitting(true);
+    // setIsSubmitting(true);
     try {
       // First check if the investment exists and is active
       const investment = investments.find((inv) => inv._id === investmentId);
@@ -746,44 +763,21 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
         );
       }
 
-      // Process payment using wallet
-      const reference = `INV-${investmentId}-${Date.now()}`;
-      const success = await fundWallet(
-        amount * -1, // Negative amount for payment
-        "investment",
-        {
-          reference,
-          investmentId,
-          description: `Investment in ${investment.title}`,
-        }
-      );
-
-      if (!success) {
-        throw new Error("Payment failed. Please check your wallet balance.");
-      }
-
-      // Create user investment record
+      // // Create user investment record
       const response = await apiConfig.post(
         `/investments/${investmentId}/invest`,
         {
-          userId: user.id,
+          userId: user._id,
           amount,
+          selectedPlan,
+          selectedDuration,
+          notes,
+          calculatedReturns,
         },
         {
           withCredentials: true,
         }
       );
-
-      if (response.status !== 201) {
-        // Refund the wallet if the investment record creation fails
-        await fundWallet(amount, "investment_refund", {
-          reference: `REFUND-${reference}`,
-          investmentId,
-          description: `Refund for failed investment in ${investment.title}`,
-        });
-
-        throw new Error("Failed to process investment");
-      }
 
       const userInvestment = response.data.data;
 
@@ -805,7 +799,7 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
               investors: [
                 ...inv.investors,
                 {
-                  userId: user.id,
+                  userId: user._id,
                   amount,
                   date: new Date().toISOString(),
                 },
@@ -823,7 +817,8 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
       await refreshWalletData();
 
       toast.success("Investment successful! Thank you for investing.");
-      return true;
+
+      return false;
     } catch (error: any) {
       console.error("Error investing in property:", error);
       toast.error(error.message || "Failed to process your investment");
@@ -832,6 +827,17 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
       setIsSubmitting(false);
     }
   };
+
+  // Replace your API call temporarily with this:
+  // const investInProperty = async (...args: any) => {
+  //   // setIsSubmitting(true);
+
+  //   // Simulate API call without actually making one
+  //   await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  //   // setIsSubmitting(false);
+  //   return false;
+  // };
 
   // Include getProperties in the context value
   const value = {
