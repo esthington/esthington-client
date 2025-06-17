@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 import {
@@ -118,7 +118,7 @@ export default function ViewMarketplaceListingPage() {
     const fetchListing = async () => {
       if (!listingId) {
         toast.error("Invalid listing ID");
-        router.push("/marketplace");
+        router.push("/dashboard/marketplace");
         return;
       }
 
@@ -127,8 +127,8 @@ export default function ViewMarketplaceListingPage() {
         if (data) {
           setListing(data);
         } else {
-          toast.error("Product not found");
-          router.push("/marketplace");
+          // toast.error("Product not found");
+          // router.push("/marketplace");
         }
       } catch (error) {
         console.error("Error fetching product:", error);
@@ -140,13 +140,16 @@ export default function ViewMarketplaceListingPage() {
     fetchListing();
   }, [listingId]);
 
-  const handleQuantityChange = (value: number) => {
-    if (value >= 1 && value <= (listing?.quantity || 1)) {
-      setQuantity(value);
-    }
-  };
+  const handleQuantityChange = useCallback(
+    (value: number) => {
+      if (value >= 1 && value <= (listing?.quantity || 1)) {
+        setQuantity(value);
+      }
+    },
+    [listing?.quantity]
+  );
 
-  const handleBuyNow = () => {
+  const handleBuyNow = useCallback(() => {
     if (!user) {
       toast.error("Please login to continue", {
         description: "You need to be logged in to make a purchase",
@@ -155,16 +158,16 @@ export default function ViewMarketplaceListingPage() {
     }
 
     setIsPaymentOpen(true);
-  };
+  }, [user]);
 
-  const processPayment = async () => {
+  const processPayment = useCallback(async () => {
     if (!listing) return;
 
     setIsProcessing(true);
     setError(null);
 
     try {
-      const success = await buyProperty(listingId);
+      const success = await buyProperty(listingId, quantity);
 
       if (success) {
         toast.success("Payment successful", {
@@ -191,80 +194,81 @@ export default function ViewMarketplaceListingPage() {
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, [listing, buyProperty]);
 
-  const handleShare = (platform: string) => {
-    const shareUrl = window.location.href;
-    const shareTitle = listing?.title || "Check out this product";
-    const shareDescription = listing?.description
-      ? stripHtmlTags(listing.description).substring(0, 150) + "..."
-      : "Check out this amazing product on our marketplace!";
-    const shareImage =
-      listing?.images?.[0] || "/diverse-products-still-life.png";
+  const handleShare = useCallback(
+    (platform: string) => {
+      const shareUrl = window.location.href;
+      const shareTitle = listing?.title || "Check out this product";
+      const shareDescription = listing?.description
+        ? stripHtmlTags(listing.description).substring(0, 150) + "..."
+        : "Check out this amazing product on our marketplace!";
 
-    let shareLink = "";
+      let shareLink = "";
 
-    switch (platform) {
-      case "facebook":
-        shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-          shareUrl
-        )}&quote=${encodeURIComponent(shareTitle)}`;
-        break;
-      case "twitter":
-        shareLink = `https://twitter.com/intent/tweet?url=${encodeURIComponent(
-          shareUrl
-        )}&text=${encodeURIComponent(shareTitle)}`;
-        break;
-      case "linkedin":
-        shareLink = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
-          shareUrl
-        )}`;
-        break;
-      case "whatsapp":
-        shareLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(
-          shareTitle + " " + shareUrl
-        )}`;
-        break;
-      case "email":
-        shareLink = `mailto:?subject=${encodeURIComponent(
-          shareTitle
-        )}&body=${encodeURIComponent(shareDescription + "\n\n" + shareUrl)}`;
-        break;
-      case "copy":
-        navigator.clipboard.writeText(shareUrl);
-        toast.success("Link copied to clipboard");
-        setShareDialogOpen(false);
-        return;
-      case "native":
-        if (navigator.share) {
-          navigator
-            .share({
-              title: shareTitle,
-              text: shareDescription,
-              url: shareUrl,
-            })
-            .catch((err) => {
-              console.error("Error sharing:", err);
-            })
-            .finally(() => {
-              setShareDialogOpen(false);
-            });
-          return;
-        } else {
-          // Fallback to copy if Web Share API is not available
+      switch (platform) {
+        case "facebook":
+          shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+            shareUrl
+          )}&quote=${encodeURIComponent(shareTitle)}`;
+          break;
+        case "twitter":
+          shareLink = `https://twitter.com/intent/tweet?url=${encodeURIComponent(
+            shareUrl
+          )}&text=${encodeURIComponent(shareTitle)}`;
+          break;
+        case "linkedin":
+          shareLink = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+            shareUrl
+          )}`;
+          break;
+        case "whatsapp":
+          shareLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(
+            shareTitle + " " + shareUrl
+          )}`;
+          break;
+        case "email":
+          shareLink = `mailto:?subject=${encodeURIComponent(
+            shareTitle
+          )}&body=${encodeURIComponent(shareDescription + "\n\n" + shareUrl)}`;
+          break;
+        case "copy":
           navigator.clipboard.writeText(shareUrl);
           toast.success("Link copied to clipboard");
           setShareDialogOpen(false);
           return;
-        }
-    }
+        case "native":
+          if (navigator.share) {
+            navigator
+              .share({
+                title: shareTitle,
+                text: shareDescription,
+                url: shareUrl,
+              })
+              .catch((err) => {
+                console.error("Error sharing:", err);
+              })
+              .finally(() => {
+                setShareDialogOpen(false);
+              });
+            return;
+          } else {
+            // Fallback to copy if Web Share API is not available
+            navigator.clipboard.writeText(shareUrl);
+            toast.success("Link copied to clipboard");
+            setShareDialogOpen(false);
+            return;
+          }
+      }
 
-    // Open share link in a new window
-    if (shareLink) {
-      window.open(shareLink, "_blank", "noopener,noreferrer");
-      setShareDialogOpen(false);
-    }
-  };
+      // Open share link in a new window
+      if (shareLink) {
+        window.open(shareLink, "_blank", "noopener,noreferrer");
+        setShareDialogOpen(false);
+      }
+    },
+    [listing]
+  );
 
   const stripHtmlTags = (html: string) => {
     const doc = new DOMParser().parseFromString(html, "text/html");
@@ -315,7 +319,8 @@ export default function ViewMarketplaceListingPage() {
                     <Image
                       src={
                         listing?.images?.[0] ||
-                        "/diverse-products-still-life.png"
+                        "/diverse-products-still-life.png" ||
+                        "/placeholder.svg"
                       }
                       alt={listing?.title || "Product"}
                       fill
@@ -520,7 +525,8 @@ export default function ViewMarketplaceListingPage() {
                           <Image
                             src={
                               image ||
-                              "/placeholder.svg?height=600&width=600&query=product"
+                              "/placeholder.svg?height=600&width=600&query=product" ||
+                              "/placeholder.svg"
                             }
                             alt={`${listing.title} - Image ${index + 1}`}
                             fill
@@ -581,7 +587,8 @@ export default function ViewMarketplaceListingPage() {
                         <Image
                           src={
                             image ||
-                            "/placeholder.svg?height=100&width=100&query=product"
+                            "/placeholder.svg?height=100&width=100&query=product" ||
+                            "/placeholder.svg"
                           }
                           alt={`Thumbnail ${index + 1}`}
                           fill

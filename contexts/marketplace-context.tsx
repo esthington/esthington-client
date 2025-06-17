@@ -5,10 +5,42 @@ import {
   useContext,
   useState,
   useEffect,
+  useCallback,
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
 import { apiConfig, apiConfigFile } from "@/lib/api";
+
+// Add missing types for user purchases
+export interface MarketplacePlot {
+  _id: string;
+  plotId: string;
+  price: number;
+  soldDate?: string;
+  quantity: number;
+  deliveryStatus?: string;
+  trackingNumber?: string;
+}
+
+export interface UserPurchase {
+  _id: string;
+  property: {
+    _id: string;
+    title: string;
+    description: string;
+    location: string;
+    type: string;
+    status: string;
+    thumbnail?: string;
+    planFile?: string;
+    documents?: string[];
+    plotSize: string;
+  };
+  purchasedPlots: MarketplacePlot[];
+  totalAmount: number;
+  companyName?: string;
+  companyLogo?: string;
+}
 
 // Types for marketplace listings
 export type MarketplaceListingType = {
@@ -81,6 +113,17 @@ type MarketplaceContextType = {
   setFilters: (filters: Partial<MarketplaceFilterType>) => void;
   resetFilters: () => void;
   getCompanies: () => Promise<any[]>;
+
+  // User purchases
+  userPurchases: UserPurchase[];
+  isLoading: boolean;
+  fetchUserPurchases: () => Promise<void>;
+  downloadDocument: (
+    propertyId: string,
+    docType: string,
+    docUrl: string
+  ) => Promise<void>;
+
   // CRUD operations
   getListing: (id: string) => Promise<MarketplaceListingType | null>;
   addListing: (formData: FormData) => Promise<string | null>;
@@ -88,7 +131,7 @@ type MarketplaceContextType = {
   deleteListing: (id: string) => Promise<boolean>;
 
   // Buyer operations
-  buyProperty: (listingId: string) => Promise<boolean>;
+  buyProperty: (listingId: string, quantity: number) => Promise<boolean>;
   updateQuantity: (listingId: string, quantity: number) => Promise<boolean>;
 
   // Agent operations
@@ -100,7 +143,6 @@ type MarketplaceContextType = {
   rejectListing: (id: string, reason: string) => Promise<boolean>;
 
   // Loading states
-  isLoading: boolean;
   isSubmitting: boolean;
 };
 
@@ -127,6 +169,9 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
   const [filters, setFiltersState] =
     useState<MarketplaceFilterType>(defaultFilters);
 
+  // State for user purchases
+  const [userPurchases, setUserPurchases] = useState<UserPurchase[]>([]);
+
   // Loading states
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -137,7 +182,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Fetch listings from API
-  const fetchListings = async () => {
+  const fetchListings = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await apiConfig.get("/marketplace/listings", {
@@ -153,7 +198,48 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  // Fetch user purchases
+  const fetchUserPurchases = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await apiConfig.get("/marketplace/purchases", {
+        withCredentials: true,
+      });
+
+      if (response.status === 200) {
+        setUserPurchases(response.data.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch user purchases:", error);
+      toast.error("Failed to load your purchases");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Download document
+  const downloadDocument = useCallback(
+    async (propertyId: string, docType: string, docUrl: string) => {
+      try {
+        // Create a temporary link to download the document
+        const link = document.createElement("a");
+        link.href = docUrl;
+        link.download = `${docType}-${propertyId}.pdf`;
+        link.target = "_blank";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        toast.success("Document download started");
+      } catch (error) {
+        console.error("Failed to download document:", error);
+        toast.error("Failed to download document");
+      }
+    },
+    []
+  );
 
   // Filter and sort listings based on filters
   const filteredListings = listings
@@ -247,14 +333,17 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     });
 
   // Update filters
-  const setFilters = (newFilters: Partial<MarketplaceFilterType>) => {
-    setFiltersState((prev) => ({ ...prev, ...newFilters }));
-  };
+  const setFilters = useCallback(
+    (newFilters: Partial<MarketplaceFilterType>) => {
+      setFiltersState((prev) => ({ ...prev, ...newFilters }));
+    },
+    []
+  );
 
   // Reset filters to default
-  const resetFilters = () => {
+  const resetFilters = useCallback(() => {
     setFiltersState(defaultFilters);
-  };
+  }, []);
 
   // Get a single listing by ID
   const getListing = async (
@@ -365,45 +454,48 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
   };
 
   // Buy a property
-  const buyProperty = async (listingId: string): Promise<boolean> => {
-
-    try {
-      const response = await apiConfig.post(
-        `/marketplace/listings/${listingId}/purchase/initiate`,
-        {},
-        {
-          withCredentials: true,
-        }
-      );
-
-      console.log("hitting purchase endpoint", response);
-
-      if (response.status === 200) {
-        // Update the listing status in the local state
-        setListings((prev) =>
-          prev.map((listing) => {
-            if (listing.id === listingId) {
-              const updatedQuantity = listing.quantity - 1;
-              return {
-                ...listing,
-                quantity: updatedQuantity,
-                status: updatedQuantity <= 0 ? "out_of_stock" : listing.status,
-                updatedAt: new Date().toISOString(),
-              };
-            }
-            return listing;
-          })
+  const buyProperty = useCallback(
+    async (listingId: string, quantity: number): Promise<boolean> => {
+      try {
+        const response = await apiConfig.post(
+          `/marketplace/listings/${listingId}/purchase/initiate`,
+          { quantity },
+          {
+            withCredentials: true,
+          }
         );
-        toast.success("Item purchased successfully");
-        return true;
+
+        console.log("hitting purchase endpoint", response);
+
+        if (response.status === 201) {
+          // Update the listing status in the local state
+          setListings((prev) =>
+            prev.map((listing) => {
+              if (listing.id === listingId) {
+                const updatedQuantity = listing.quantity - 1;
+                return {
+                  ...listing,
+                  quantity: updatedQuantity,
+                  status:
+                    updatedQuantity <= 0 ? "out_of_stock" : listing.status,
+                  updatedAt: new Date().toISOString(),
+                };
+              }
+              return listing;
+            })
+          );
+          toast.success("Item purchased successfully");
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Failed to purchase item:", error);
+        toast.error("Failed to complete purchase");
+        return false;
       }
-      return false;
-    } catch (error) {
-      console.error("Failed to purchase item:", error);
-      toast.error("Failed to complete purchase");
-      return false;
-    }
-  };
+    },
+    []
+  );
 
   // Update quantity
   const updateQuantity = async (
@@ -600,6 +692,11 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     setFilters,
     resetFilters,
 
+    // User purchases
+    userPurchases,
+    fetchUserPurchases,
+    downloadDocument,
+
     // CRUD operations
     getListing,
     addListing,
@@ -614,6 +711,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     getAgentListings,
     featureListing,
     getCompanies,
+
     // Admin operations
     approveListing,
     rejectListing,

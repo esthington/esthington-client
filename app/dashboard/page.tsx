@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
+
 import DashboardContent from "@/components/kokonutui/dashboard-content";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { withAuth } from "@/hocs";
@@ -14,7 +15,9 @@ function DashboardPage() {
         </div>
       }
     >
+      
       <DashboardContent />
+  
     </Suspense>
   );
 }

@@ -30,6 +30,7 @@ import {
   ChevronRight,
   MapPinIcon as MapPinHouse,
   History,
+  BadgeDollarSignIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -362,11 +363,14 @@ export default function AdminSidebar() {
                           >
                             Transactions
                           </NavItem>
-                          <NavItem href="/dashboard/reports" icon={BarChart2}>
+                          {/* <NavItem href="/dashboard/reports" icon={BarChart2}>
                             Reports
+                          </NavItem> */}
+                          <NavItem href="/dashboard/investment-due" icon={BadgeDollarSignIcon}>
+                            Investment Due
                           </NavItem>
                           <NavItem href="/dashboard/approvals" icon={FileText}>
-                            Approvals
+                            Payment Approvals
                           </NavItem>
                         </motion.div>
                       )}
@@ -452,7 +456,7 @@ export default function AdminSidebar() {
                   </div>
 
                   {/* Referrals Section */}
-                  <div>
+                  {/* <div>
                     <button
                       onClick={() => toggleSection("referrals")}
                       className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition-colors"
@@ -485,7 +489,7 @@ export default function AdminSidebar() {
                         </motion.div>
                       )}
                     </AnimatePresence>
-                  </div>
+                  </div> */}
 
                   {/* System Section */}
                   <div>

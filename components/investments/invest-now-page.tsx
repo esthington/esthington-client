@@ -244,12 +244,21 @@ export default function InvestNowPage() {
       return;
     }
 
+    if (!wallet) {
+      setShowFundWalletPrompt(true);
+      return;
+    }
+
     setIsProcessing(true);
 
     try {
       const success = await investInProperty(
         selectedInvestment._id,
-        investAmount
+        investAmount,
+        selectedPlan,
+        selectedDuration,
+        selectedROIPlan,
+        wallet // pass the wallet object, not just its _id
       );
 
       if (success) {

@@ -21,7 +21,6 @@ import {
   Info,
   User,
   ArrowUpRight,
-  Building2,
   Share2,
   Download,
   MoreHorizontal,
@@ -35,13 +34,15 @@ import {
   TrendingUp,
   Sparkles,
   Copy,
+  Crown,
+  Award,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -80,7 +81,11 @@ import PageTransition from "@/components/animations/page-transition";
 import StaggerChildren from "@/components/animations/stagger-children";
 import StaggerItem from "@/components/animations/stagger-item";
 import { cn } from "@/lib/utils";
-import { useReferrals, ReferralStatus } from "@/contexts/referrals-context";
+import {
+  useReferrals,
+  ReferralStatus,
+  AgentRank,
+} from "@/contexts/referrals-context";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -97,14 +102,9 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
-export default function ReferralDetailPageClient() {
+export default function AdminReferralDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -128,34 +128,29 @@ export default function ReferralDetailPageClient() {
     const loadReferralData = async () => {
       setIsLoading(true);
       try {
-        // Ensure id is a string
         const stringId =
           typeof id === "string" ? id : Array.isArray(id) ? id[0] : "";
         if (!stringId) {
           toast.error("Invalid referral ID");
-          router.push("/dashboard/referrals");
+          router.push("/dashboard/admin/referrals");
           return;
         }
 
-        // Fetch the referral details
         const referralData = await getReferralById(stringId);
         if (referralData) {
           setReferral(referralData);
 
-          // Fetch referees (people referred by this referrer)
           const refereesData = await getRefereesByReferrerId(stringId);
           setRefereeList(refereesData || []);
 
-          // Fetch commission history
           const commissionData = await getReferralCommissionHistory(stringId);
           setCommissionHistory(commissionData || []);
 
-          // Fetch activity log
           const activityData = await getReferralActivityLog(stringId);
           setActivityLog(activityData || []);
         } else {
           toast.error("Referral not found");
-          router.push("/dashboard/referrals");
+          router.push("/dashboard/admin/referrals");
         }
       } catch (error) {
         console.error("Error loading referral data:", error);
@@ -166,14 +161,7 @@ export default function ReferralDetailPageClient() {
     };
 
     loadReferralData();
-  }, [
-    id,
-    // getReferralById,
-    // getRefereesByReferrerId,
-    // getReferralCommissionHistory,
-    // getReferralActivityLog,
-    // router,
-  ]);
+  }, [id]);
 
   const handleStatusChange = async (newStatus: ReferralStatus) => {
     if (!referral) return;
@@ -199,9 +187,8 @@ export default function ReferralDetailPageClient() {
       setShowDeleteDialog(false);
       toast.success("Referral deleted successfully");
 
-      // Navigate back to referrals list after a short delay
       setTimeout(() => {
-        router.push("/dashboard/referrals");
+        router.push("/dashboard/admin/referrals");
       }, 1500);
     } catch (error) {
       console.error("Error deleting referral:", error);
@@ -209,7 +196,6 @@ export default function ReferralDetailPageClient() {
     }
   };
 
-  // Format currency
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-NG", {
       style: "currency",
@@ -245,10 +231,10 @@ export default function ReferralDetailPageClient() {
               The referral you're looking for doesn't exist or has been removed.
             </p>
             <Button
-              onClick={() => router.push("/dashboard/referrals")}
+              onClick={() => router.push("/dashboard/admin/referrals")}
               className="bg-purple-600 hover:bg-purple-700 text-white"
             >
-              Return to Referrals
+              Return to Admin Referrals
             </Button>
           </CardContent>
         </Card>
@@ -280,6 +266,38 @@ export default function ReferralDetailPageClient() {
     }
   };
 
+  // Render agent rank badge
+  const renderAgentRankBadge = (rank: AgentRank) => {
+    const rankConfig = {
+      [AgentRank.BRONZE]: {
+        color: "bg-amber-100 text-amber-700 border-amber-200",
+        icon: Award,
+      },
+      [AgentRank.SILVER]: {
+        color: "bg-slate-200 text-slate-700 border-slate-300",
+        icon: Shield,
+      },
+      [AgentRank.GOLD]: {
+        color: "bg-yellow-100 text-yellow-700 border-yellow-200",
+        icon: Crown,
+      },
+      [AgentRank.PLATINUM]: {
+        color: "bg-purple-100 text-purple-700 border-purple-200",
+        icon: Sparkles,
+      },
+    };
+
+    const config = rankConfig[rank] || rankConfig[AgentRank.BRONZE];
+    const IconComponent = config.icon;
+
+    return (
+      <Badge className={`${config.color} border`}>
+        <IconComponent className="h-3 w-3 mr-1" />
+        {rank}
+      </Badge>
+    );
+  };
+
   // Calculate conversion rate
   const activeReferees = refereeList.filter(
     (referee) => referee.status === ReferralStatus.ACTIVE
@@ -306,8 +324,8 @@ export default function ReferralDetailPageClient() {
                       </BreadcrumbItem>
                       <BreadcrumbSeparator />
                       <BreadcrumbItem>
-                        <BreadcrumbLink href="/dashboard/referrals">
-                          Referrals
+                        <BreadcrumbLink href="/dashboard/admin/referrals">
+                          Admin Referrals
                         </BreadcrumbLink>
                       </BreadcrumbItem>
                       <BreadcrumbSeparator />
@@ -317,10 +335,10 @@ export default function ReferralDetailPageClient() {
                     </BreadcrumbList>
                   </Breadcrumb>
                   <h1 className="text-3xl font-bold tracking-tight">
-                    Referral Details
+                    Admin Referral Details
                   </h1>
                   <p className="text-muted-foreground">
-                    View and manage referral information
+                    Administrative view and management of referral information
                   </p>
                 </div>
 
@@ -332,20 +350,26 @@ export default function ReferralDetailPageClient() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button className="bg-purple-600 hover:bg-purple-700 text-white">
-                        Actions
+                        Admin Actions
                         <ChevronRight className="ml-2 h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuLabel>Manage Referral</DropdownMenuLabel>
+                      <DropdownMenuLabel>
+                        Administrative Actions
+                      </DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={() =>
-                          router.push(`/dashboard/referrals/edit/${id}`)
+                          router.push(`/dashboard/admin/referrals/edit/${id}`)
                         }
                       >
                         <Edit className="mr-2 h-4 w-4" />
                         Edit Referral
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <Settings className="mr-2 h-4 w-4" />
+                        Manage Commission
                       </DropdownMenuItem>
                       <DropdownMenuItem>
                         <Share2 className="mr-2 h-4 w-4" />
@@ -374,7 +398,8 @@ export default function ReferralDetailPageClient() {
                             <AlertDialogTitle>Delete Referral</AlertDialogTitle>
                             <AlertDialogDescription>
                               Are you sure you want to delete this referral?
-                              This action cannot be undone.
+                              This action cannot be undone and will affect
+                              commission calculations.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <div className="flex items-center gap-3 p-4 border rounded-lg bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800">
@@ -384,6 +409,7 @@ export default function ReferralDetailPageClient() {
                                   referral.referrer?.avatar ||
                                   `/placeholder.svg?height=40&width=40&query=${
                                     referral.referrer.firstName ||
+                                    "/placeholder.svg" ||
                                     "/placeholder.svg"
                                   }+${referral.referrer.lastName}`
                                 }
@@ -422,7 +448,7 @@ export default function ReferralDetailPageClient() {
             </StaggerItem>
 
             <StaggerItem>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                 <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
                   <CardHeader className="pb-2 pt-6">
                     <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
@@ -494,6 +520,39 @@ export default function ReferralDetailPageClient() {
                     </div>
                   </CardContent>
                 </Card>
+
+                <Card className="overflow-hidden border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
+                  <CardHeader className="pb-2 pt-6">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
+                      <Award className="h-4 w-4 mr-2 text-amber-500" />
+                      Agent Rank
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="text-2xl font-bold">
+                        {renderAgentRankBadge(
+                          referral.referrer.agentRank || AgentRank.BRONZE
+                        )}
+                      </div>
+                      <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-full">
+                        <Crown className="h-5 w-5 text-amber-500" />
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs text-muted-foreground flex items-center">
+                      <span>
+                        Commission:{" "}
+                        {referral.referrer.agentRank === AgentRank.PLATINUM
+                          ? "5%"
+                          : referral.referrer.agentRank === AgentRank.GOLD
+                          ? "4%"
+                          : referral.referrer.agentRank === AgentRank.SILVER
+                          ? "3%"
+                          : "2%"}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </StaggerItem>
 
@@ -507,9 +566,9 @@ export default function ReferralDetailPageClient() {
                           <User className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                         </div>
                         <div>
-                          <CardTitle>Referrer Profile</CardTitle>
+                          <CardTitle>Agent Profile</CardTitle>
                           <CardDescription>
-                            Details about the referrer
+                            Details about the referring agent
                           </CardDescription>
                         </div>
                       </div>
@@ -523,6 +582,7 @@ export default function ReferralDetailPageClient() {
                                 referral.referrer.avatar ||
                                 `/placeholder.svg?height=80&width=80&query=${
                                   referral.referrer.firstName ||
+                                  "/placeholder.svg" ||
                                   "/placeholder.svg"
                                 }+${referral.referrer.lastName}`
                               }
@@ -555,13 +615,9 @@ export default function ReferralDetailPageClient() {
                               <Sparkles className="h-3 w-3 mr-1 text-amber-500" />
                               Agent
                             </Badge>
-                            <Badge
-                              variant="secondary"
-                              className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
-                            >
-                              <Shield className="h-3 w-3 mr-1 text-purple-500" />
-                              Bronze Tier
-                            </Badge>
+                            {renderAgentRankBadge(
+                              referral.referrer.agentRank || AgentRank.BRONZE
+                            )}
                           </div>
                         </div>
                       </div>
@@ -650,7 +706,10 @@ export default function ReferralDetailPageClient() {
                       <Separator />
 
                       <div className="p-6">
-                        <h4 className="font-medium mb-4">Change Status</h4>
+                        <h4 className="font-medium mb-4 flex items-center">
+                          <Settings className="h-4 w-4 mr-2" />
+                          Admin Controls
+                        </h4>
                         <div className="flex flex-col gap-2">
                           <Button
                             variant={
@@ -668,7 +727,7 @@ export default function ReferralDetailPageClient() {
                             }
                           >
                             <CheckCircle className="mr-1 h-4 w-4" />
-                            Active
+                            Set Active
                           </Button>
                           <Button
                             variant={
@@ -686,7 +745,7 @@ export default function ReferralDetailPageClient() {
                             }
                           >
                             <Clock className="mr-1 h-4 w-4" />
-                            Pending
+                            Set Pending
                           </Button>
                           <Button
                             variant={
@@ -704,7 +763,7 @@ export default function ReferralDetailPageClient() {
                             }
                           >
                             <XCircle className="mr-1 h-4 w-4" />
-                            Inactive
+                            Set Inactive
                           </Button>
                         </div>
                       </div>
@@ -718,8 +777,8 @@ export default function ReferralDetailPageClient() {
                           <Wallet className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                         </div>
                         <div>
-                          <CardTitle>Earnings Summary</CardTitle>
-                          <CardDescription>Financial overview</CardDescription>
+                          <CardTitle>Commission Overview</CardTitle>
+                          <CardDescription>Financial breakdown</CardDescription>
                         </div>
                       </div>
                     </CardHeader>
@@ -791,9 +850,9 @@ export default function ReferralDetailPageClient() {
                           <FileText className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                         </div>
                         <div>
-                          <CardTitle>Referral Details</CardTitle>
+                          <CardTitle>Referral Management</CardTitle>
                           <CardDescription>
-                            Manage referral information and commissions
+                            Administrative view of referral data and performance
                           </CardDescription>
                         </div>
                       </div>
@@ -807,21 +866,21 @@ export default function ReferralDetailPageClient() {
                               className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-purple-600 dark:data-[state=active]:text-purple-400 data-[state=active]:shadow-sm"
                             >
                               <Users className="h-4 w-4 mr-2" />
-                              Referees
+                              All Referees
                             </TabsTrigger>
                             <TabsTrigger
                               value="commissions"
                               className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-purple-600 dark:data-[state=active]:text-purple-400 data-[state=active]:shadow-sm"
                             >
                               <DollarSign className="h-4 w-4 mr-2" />
-                              Commissions
+                              Commission History
                             </TabsTrigger>
                             <TabsTrigger
                               value="activity"
                               className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-purple-600 dark:data-[state=active]:text-purple-400 data-[state=active]:shadow-sm"
                             >
                               <Activity className="h-4 w-4 mr-2" />
-                              Activity
+                              Activity Log
                             </TabsTrigger>
                           </TabsList>
                         </div>
@@ -866,6 +925,7 @@ export default function ReferralDetailPageClient() {
                                                     `/placeholder.svg?height=32&width=32&query=${
                                                       referee.referred
                                                         .firstName ||
+                                                      "/placeholder.svg" ||
                                                       "/placeholder.svg"
                                                     }+${
                                                       referee.referred.lastName
@@ -904,6 +964,7 @@ export default function ReferralDetailPageClient() {
                                                     `/placeholder.svg?height=48&width=48&query=${
                                                       referee.referred
                                                         .firstName ||
+                                                      "/placeholder.svg" ||
                                                       "/placeholder.svg"
                                                     }+${
                                                       referee.referred.lastName
@@ -986,14 +1047,14 @@ export default function ReferralDetailPageClient() {
                                               className="w-[180px]"
                                             >
                                               <DropdownMenuLabel>
-                                                Actions
+                                                Admin Actions
                                               </DropdownMenuLabel>
                                               <DropdownMenuItem asChild>
                                                 <button
                                                   className="flex items-center cursor-pointer w-full"
                                                   onClick={() =>
                                                     router.push(
-                                                      `/dashboard/referrals/${referee._id}`
+                                                      `/dashboard/admin/referrals/${referee._id}`
                                                     )
                                                   }
                                                 >
@@ -1006,7 +1067,7 @@ export default function ReferralDetailPageClient() {
                                                   className="flex items-center cursor-pointer w-full"
                                                   onClick={() =>
                                                     router.push(
-                                                      `/dashboard/referrals/edit/${referee._id}`
+                                                      `/dashboard/admin/referrals/edit/${referee._id}`
                                                     )
                                                   }
                                                 >
@@ -1019,7 +1080,7 @@ export default function ReferralDetailPageClient() {
                                                 className="text-red-500 focus:text-red-500"
                                                 onClick={() => {
                                                   toast.error(
-                                                    "Delete functionality not implemented"
+                                                    "Delete functionality requires confirmation"
                                                   );
                                                 }}
                                               >
@@ -1045,11 +1106,11 @@ export default function ReferralDetailPageClient() {
                                   No Referees Found
                                 </CardTitle>
                                 <p className="text-muted-foreground text-center max-w-md mb-6">
-                                  This referrer hasn't referred any users yet.
+                                  This agent hasn't referred any users yet.
                                 </p>
                                 <Button className="bg-purple-600 hover:bg-purple-700 text-white">
                                   <ArrowUpRight className="mr-2 h-4 w-4" />
-                                  View Referral Link
+                                  View Agent Performance
                                 </Button>
                               </CardContent>
                             </Card>
@@ -1170,13 +1231,14 @@ export default function ReferralDetailPageClient() {
                       <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0" />
                       <div>
                         <h4 className="text-sm font-medium text-blue-800 dark:text-blue-300">
-                          About Referral Management
+                          Administrative Controls
                         </h4>
                         <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
-                          You can manage the status of this referral, view
-                          referred users, and track commission history. Changes
-                          to the referral status will affect commission
-                          calculations and payouts.
+                          As an administrator, you have full control over this
+                          referral's status, commission calculations, and can
+                          view all agent rankings and performance metrics.
+                          Changes made here will affect the agent's earnings and
+                          system-wide statistics.
                         </p>
                       </div>
                     </div>

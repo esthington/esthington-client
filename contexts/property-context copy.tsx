@@ -55,37 +55,6 @@ export interface PropertyResponse {
   currentPage: number;
 }
 
-export interface UserPlot {
-  _id: string;
-  plotId: string;
-  size: string;
-  price: number;
-  status: "Available" | "Reserved" | "Sold";
-  soldDate?: string;
-  transactionRef?: string;
-  buyerId?: string;
-  buyerName?: string;
-  buyerEmail?: string;
-}
-
-export interface UserProperty {
-  _id: string;
-  title: string;
-  description: string;
-  location: string;
-  type: string;
-  status: string;
-  thumbnail?: string;
-  planFile?: string;
-  documents?: string[];
-  companyName?: string;
-  companyLogo?: string;
-  userPlots: UserPlot[];
-  totalInvestment: number;
-  plotsOwned: number;
-  plotSize?: string;
-}
-
 // Define the context type
 interface PropertyContextType {
   // Properties
@@ -148,27 +117,6 @@ interface PropertyContextType {
   getCompanies: () => Promise<any[]>;
   getAmenities: () => Promise<string[]>;
   refreshPropertyData: () => Promise<void>;
-
-  // User properties
-  userProperties: UserProperty[];
-  userPropertiesLoading: boolean;
-  userPropertiesError: string | null;
-  filters: {
-    searchQuery: string;
-    type: string;
-    location: string;
-  };
-  setFilters: (filters: {
-    searchQuery?: string;
-    type?: string;
-    location?: string;
-  }) => void;
-  fetchUserProperties: () => Promise<boolean>;
-  downloadPropertyDocument: (
-    propertyId: string,
-    documentType: "deed" | "plan" | "document",
-    plotId?: string
-  ) => Promise<void>;
 }
 
 // Create the context with a default value
@@ -199,22 +147,9 @@ export function PropertyProvider({ children }: PropertyProviderProps) {
   const [sortOption, setSortOption] = useState("newest");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  // State for user properties
-  const [userProperties, setUserProperties] = useState<UserProperty[]>([]);
-  const [userPropertiesLoading, setUserPropertiesLoading] = useState(true);
-  const [userPropertiesError, setUserPropertiesError] = useState<string | null>(
-    null
-  );
-  const [filters, setFilters] = useState({
-    searchQuery: "",
-    type: "all",
-    location: "all",
-  });
-
   // Load initial data
   useEffect(() => {
     refreshPropertyData();
-    fetchUserProperties();
   }, []);
 
   // Apply filters and sorting
@@ -915,95 +850,6 @@ export function PropertyProvider({ children }: PropertyProviderProps) {
     setViewMode(mode);
   }, []);
 
-  // User properties functions
-  const fetchUserProperties = useCallback(async (): Promise<boolean> => {
-    console.log("User properties hit");
-
-    setUserPropertiesLoading(true); // ✅ Set loading to true at start
-
-    try {
-      const response = await apiConfig.get(`/properties/myproperties`, {
-        withCredentials: true,
-      });
-
-      console.log("User properties response:", response);
-
-      if (response.status === 200) {
-        setUserProperties(response.data.data || []);
-        return true;
-      } else {
-        setUserPropertiesError("Failed to fetch properties");
-        return false;
-      }
-    } catch (err: unknown) {
-      console.error("Error fetching user properties:", err);
-
-      return false;
-    } finally {
-      setUserPropertiesLoading(false);
-    }
-  }, [setUserProperties, setUserPropertiesError, setUserPropertiesLoading]);
-
-  const downloadPropertyDocument = useCallback(
-    async (
-      propertyId: string,
-      documentType: "deed" | "plan" | "document",
-      plotId?: string
-    ) => {
-      try {
-        let endpoint = `/properties/myproperties/download?propertyId=${propertyId}&documentType=${documentType}`;
-        if (plotId) {
-          endpoint += `&plotId=${plotId}`;
-        }
-
-        const response = await apiConfig.get(endpoint, {
-          responseType: "blob",
-          withCredentials: true,
-        });
-
-        if (response.status === 200) {
-          // Create a blob URL and trigger download
-          const blob = new Blob([response.data]);
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.style.display = "none";
-          a.href = url;
-          a.download = `${documentType}-${propertyId}${
-            plotId ? `-${plotId}` : ""
-          }.pdf`;
-          document.body.appendChild(a);
-          a.click();
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(a);
-
-          toast.success("Document downloaded successfully");
-        } else {
-          toast.error("Failed to download document");
-        }
-      } catch (err: any) {
-        console.error("Error downloading document:", err);
-        toast.error(
-          err.response?.data?.message || "Failed to download document"
-        );
-      }
-    },
-    []
-  );
-
-  const updateFilters = useCallback(
-    (newFilters: {
-      searchQuery?: string;
-      type?: string;
-      location?: string;
-    }) => {
-      setFilters((prev) => ({
-        ...prev,
-        ...newFilters,
-      }));
-    },
-    []
-  );
-
   // Context value
   const value: PropertyContextType = {
     properties,
@@ -1048,15 +894,6 @@ export function PropertyProvider({ children }: PropertyProviderProps) {
     getCompanies,
     getAmenities,
     refreshPropertyData,
-
-    // User properties
-    userProperties,
-    userPropertiesLoading: userPropertiesLoading,
-    userPropertiesError: userPropertiesError,
-    filters,
-    setFilters: updateFilters,
-    fetchUserProperties,
-    downloadPropertyDocument,
   };
 
   return (
@@ -1073,23 +910,4 @@ export function useProperty() {
     throw new Error("useProperty must be used within a PropertyProvider");
   }
   return context;
-}
-
-// Custom hook to use the user properties context
-export function useUserProperties() {
-  const context = useContext(PropertyContext);
-  if (context === undefined) {
-    throw new Error("useUserProperties must be used within a PropertyProvider");
-  }
-
-  // Return only the user properties related parts of the context
-  return {
-    userProperties: context.userProperties,
-    isLoading: context.userPropertiesLoading,
-    error: context.userPropertiesError,
-    filters: context.filters,
-    setFilters: context.setFilters,
-    fetchUserProperties: context.fetchUserProperties,
-    downloadPropertyDocument: context.downloadPropertyDocument,
-  };
 }

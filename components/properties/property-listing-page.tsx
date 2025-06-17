@@ -759,7 +759,7 @@ export default function PropertyListingPage() {
     };
 
     loadFilterOptions();
-  }, [getPropertyLocations, getPropertyTypes]);
+  }, []);
 
   // Navigation handlers
   const handleCreateProperty = () => {

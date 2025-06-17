@@ -76,57 +76,6 @@ export interface WalletUser {
   avatar?: string;
 }
 
-// Investment Due Types to match controller
-export interface InvestmentDue {
-  _id: string;
-  user: {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    avatar?: string;
-  };
-  investment: {
-    _id: string;
-    title: string;
-    propertyId: string;
-    type?: string;
-    duration?: number;
-  };
-  amount: number;
-  nextPayoutDate: string;
-  status: "pending" | "paid" | "failed";
-  expectedReturn: number;
-  actualReturn: number;
-  isOverdue: boolean;
-  progressPercentage: number;
-  payoutId: string;
-  payouts: Array<{
-    _id: string;
-    date: string;
-    amount: number;
-    status: "pending" | "paid" | "failed";
-    transactionId?: string;
-  }>;
-  createdAt: string;
-  updatedAt: string;
-  adminNotes?: string;
-  rejectionReason?: string;
-}
-
-export interface InvestmentDueStats {
-  total: number;
-  pending: number;
-  paid: number;
-  failed: number;
-  overdue: number;
-  totalAmount: number;
-  pendingAmount: number;
-  paidAmount: number;
-  overdueAmount: number;
-  activeInvestors: number;
-}
-
 interface WalletContextType {
   // Wallet state
   wallet: Wallet | null;
@@ -194,49 +143,8 @@ interface WalletContextType {
     search?: string;
   }) => Promise<TransactionResponse>;
   getTransactionStatsAdmin: () => Promise<any>;
-  approveTransactionAdmin: (
-    transactionId: string,
-    notes?: string
-  ) => Promise<boolean>;
-  rejectTransactionAdmin: (
-    transactionId: string,
-    reason: string
-  ) => Promise<boolean>;
-
-  // Investment due functions
-  getInvestmentDues: (params?: {
-    page?: number;
-    limit?: number;
-    status?: string;
-    sortBy?: string;
-    search?: string;
-    startDate?: string;
-    endDate?: string;
-  }) => Promise<{
-    dues: InvestmentDue[];
-    totalCount: number;
-    totalPages: number;
-    currentPage: number;
-  }>;
-  getInvestmentDueStats: () => Promise<InvestmentDueStats | null>;
-  approveInvestmentDue: (payoutId: string, notes?: string) => Promise<boolean>;
-  rejectInvestmentDue: (payoutId: string, reason: string) => Promise<boolean>;
-  approveWithdrawal: (
-    transactionId: string,
-    notes?: string
-  ) => Promise<boolean>;
-  rejectWithdrawal: (transactionId: string, reason: string) => Promise<boolean>;
-  getPendingWithdrawals: (params?: {
-    page?: number;
-    limit?: number;
-    status?: string;
-    sortBy?: string;
-  }) => Promise<{
-    withdrawals: any[];
-    totalCount: number;
-    totalPages: number;
-    currentPage: number;
-  }>;
+  approveTransactionAdmin: (transactionId: string, notes?: string) => Promise<boolean>;
+  rejectTransactionAdmin: (transactionId: string, reason: string) => Promise<boolean>;
 }
 
 // Create context with default values
@@ -274,23 +182,6 @@ const WalletContext = createContext<WalletContextType>({
   getTransactionStatsAdmin: async () => null,
   approveTransactionAdmin: async () => false,
   rejectTransactionAdmin: async () => false,
-  getInvestmentDues: async () => ({
-    dues: [],
-    totalCount: 0,
-    totalPages: 0,
-    currentPage: 1,
-  }),
-  getInvestmentDueStats: async () => null,
-  approveInvestmentDue: async () => false,
-  rejectInvestmentDue: async () => false,
-  approveWithdrawal: async () => false,
-  rejectWithdrawal: async () => false,
-  getPendingWithdrawals: async () => ({
-    withdrawals: [],
-    totalCount: 0,
-    totalPages: 0,
-    currentPage: 1,
-  }),
 });
 
 export const WalletProvider: React.FC<{ children: ReactNode }> = ({
@@ -337,6 +228,18 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
       if (bankAccountsResponse.status === 200) {
         setBankAccounts(bankAccountsResponse.data.bankAccounts);
       }
+
+      // Get recent recipients
+      // const recipientsResponse = await apiConfig.get(
+      //   "/wallet/recent-recipients",
+      //   {
+      //     withCredentials: true,
+      //   }
+      // );
+
+      // if (recipientsResponse.status === 200) {
+      //   setRecentRecipients(recipientsResponse.data.recipients);
+      // }
     } catch (error: any) {
       console.error("Error fetching wallet data:", error);
       if (error.response) {
@@ -368,7 +271,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
     endDate?: string;
   }): Promise<TransactionResponse> => {
     try {
-      const response = await apiConfig.get("/transactions/user", {
+      const response = await apiConfig.get("/transactions", {
         params,
         withCredentials: true,
       });
@@ -396,11 +299,12 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  // Get transaction by ID
+  // Get transaction by ID - Updated to use the correct endpoint
   const getTransactionById = async (
     transactionId: string
   ): Promise<Transaction | null> => {
     try {
+      console.log("Transaction ID:", transactionId);
       const response = await apiConfig.get(`/transactions/${transactionId}`, {
         withCredentials: true,
       });
@@ -584,7 +488,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  // Fund wallet directly
+  // Fund wallet directly (for testing or direct deposits)
   const fundWallet = async (
     amount: number,
     paymentMethod: string,
@@ -592,7 +496,9 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
   ): Promise<boolean> => {
     setIsLoading(true);
     try {
+      // For bank transfers, create a direct deposit record
       if (paymentMethod === "bank_transfer") {
+        // Generate a reference if not provided
         const reference =
           cardDetails?.reference ||
           `manual_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
@@ -615,7 +521,9 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
           await refreshWalletData();
           return true;
         }
-      } else if (paymentMethod === "card" && cardDetails?.reference) {
+      }
+      // For Paystack payments that were already verified
+      else if (paymentMethod === "card" && cardDetails?.reference) {
         const response = await apiConfig.post(
           "/wallet/fund",
           {
@@ -667,7 +575,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
     setIsLoading(true);
     try {
       const response = await apiConfig.post(
-        "/process-withdrawal",
+        "/wallet/withdraw",
         {
           amount,
           bankAccountId,
@@ -676,7 +584,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
         { withCredentials: true }
       );
 
-      if (response.status === 201) {
+      if (response.status === 200) {
         toast({
           title: "Success",
           description: "Withdrawal request submitted successfully",
@@ -854,6 +762,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
           description: "Bank account removed successfully",
         });
 
+        // Update bank accounts list
         setBankAccounts((prev) =>
           prev.filter((account) => account._id !== bankAccountId)
         );
@@ -900,6 +809,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
           description: "Default bank account updated successfully",
         });
 
+        // Update bank accounts list
         const updatedAccounts = bankAccounts.map((account) => ({
           ...account,
           isDefault: account._id === bankAccountId,
@@ -1001,7 +911,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
   // Get transaction stats for admin
   const getTransactionStatsAdmin = async (): Promise<any> => {
     try {
-      const response = await apiConfig.get("/process-withdrawal/stats", {
+      const response = await apiConfig.get("/transactions/stats", {
         withCredentials: true,
       });
 
@@ -1083,242 +993,6 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  // Get investment dues - Updated to match controller
-  const getInvestmentDues = async (params?: {
-    page?: number;
-    limit?: number;
-    status?: string;
-    sortBy?: string;
-    search?: string;
-    startDate?: string;
-    endDate?: string;
-  }) => {
-    try {
-      const response = await apiConfig.get("/investment-dues", {
-        params: {
-          ...params,
-          sortBy: params?.sortBy || "nextPayoutDate",
-        },
-        withCredentials: true,
-      });
-
-      if (response.status === 200) {
-        return {
-          dues: response.data.data || [],
-          totalCount: response.data.total || 0,
-          totalPages: response.data.totalPages || 0,
-          currentPage: response.data.currentPage || 1,
-        };
-      }
-      return { dues: [], totalCount: 0, totalPages: 0, currentPage: 1 };
-    } catch (error: any) {
-      console.error("Error fetching investment dues:", error);
-      if (error.response) {
-        toast({
-          title: "Error",
-          description:
-            error.response.data?.message || "Failed to load investment dues",
-          variant: "destructive",
-        });
-      }
-      return { dues: [], totalCount: 0, totalPages: 0, currentPage: 1 };
-    }
-  };
-
-  // Get investment due stats
-  const getInvestmentDueStats =
-    async (): Promise<InvestmentDueStats | null> => {
-      try {
-        const response = await apiConfig.get("/investment-dues/stats", {
-          withCredentials: true,
-        });
-
-        if (response.status === 200) {
-          return response.data.data;
-        }
-        return null;
-      } catch (error: any) {
-        console.error("Error fetching investment due stats:", error);
-        return null;
-      }
-    };
-
-  // Approve investment due - Updated to use payoutId
-  const approveInvestmentDue = async (
-    payoutId: string,
-    notes?: string
-  ): Promise<boolean> => {
-    try {
-      const response = await apiConfig.patch(
-        `/investment-dues/${payoutId}/approve`,
-        { notes },
-        { withCredentials: true }
-      );
-
-      if (response.status === 200) {
-        toast({
-          title: "Success",
-          description: "Investment due approved successfully.",
-        });
-        return true;
-      }
-      return false;
-    } catch (error: any) {
-      console.error("Error approving investment due:", error);
-      if (error.response) {
-        toast({
-          title: "Error",
-          description:
-            error.response.data?.message || "Failed to approve investment due",
-          variant: "destructive",
-        });
-      }
-      return false;
-    }
-  };
-
-  // Reject investment due - Updated to use payoutId
-  const rejectInvestmentDue = async (
-    payoutId: string,
-    reason: string
-  ): Promise<boolean> => {
-    try {
-      const response = await apiConfig.patch(
-        `/investment-dues/${payoutId}/reject`,
-        { reason },
-        { withCredentials: true }
-      );
-
-      if (response.status === 200) {
-        toast({
-          title: "Success",
-          description: "Investment due rejected successfully.",
-        });
-        return true;
-      }
-      return false;
-    } catch (error: any) {
-      console.error("Error rejecting investment due:", error);
-      if (error.response) {
-        toast({
-          title: "Error",
-          description:
-            error.response.data?.message || "Failed to reject investment due",
-          variant: "destructive",
-        });
-      }
-      return false;
-    }
-  };
-
-  // Approve withdrawal
-  const approveWithdrawal = async (
-    transactionId: string,
-    notes?: string
-  ): Promise<boolean> => {
-    try {
-      const response = await apiConfig.patch(
-        `/process-withdrawal/${transactionId}/approve-withdrawal`,
-        { notes },
-        { withCredentials: true }
-      );
-
-      if (response.status === 200) {
-        toast({
-          title: "Success",
-          description: "Withdrawal approved successfully.",
-        });
-        return true;
-      }
-      return false;
-    } catch (error: any) {
-      console.error("Error approving withdrawal:", error);
-      if (error.response) {
-        toast({
-          title: "Error",
-          description:
-            error.response.data?.message || "Failed to approve withdrawal",
-          variant: "destructive",
-        });
-      }
-      return false;
-    }
-  };
-
-  // Reject withdrawal
-  const rejectWithdrawal = async (
-    transactionId: string,
-    reason: string
-  ): Promise<boolean> => {
-    try {
-      const response = await apiConfig.patch(
-        `/process-withdrawal/${transactionId}/reject-withdrawal`,
-        { reason },
-        { withCredentials: true }
-      );
-
-      if (response.status === 200) {
-        toast({
-          title: "Success",
-          description: "Withdrawal rejected successfully.",
-        });
-        return true;
-      }
-      return false;
-    } catch (error: any) {
-      console.error("Error rejecting withdrawal:", error);
-      if (error.response) {
-        toast({
-          title: "Error",
-          description:
-            error.response.data?.message || "Failed to reject withdrawal",
-          variant: "destructive",
-        });
-      }
-      return false;
-    }
-  };
-
-  // Get pending withdrawals for admin
-  const getPendingWithdrawals = async (params?: {
-    page?: number;
-    limit?: number;
-    status?: string;
-    sortBy?: string;
-  }) => {
-    try {
-      const response = await apiConfig.get("/process-withdrawal/admin", {
-        params: {
-          ...params,
-          sortBy: params?.sortBy || "createdAt",
-        },
-        withCredentials: true,
-      });
-
-      if (response.status === 200) {
-        return {
-          withdrawals: response.data.data || [],
-          totalCount: response.data.total || 0,
-          totalPages: response.data.totalPages || 0,
-          currentPage: response.data.currentPage || 1,
-        };
-      }
-      return { withdrawals: [], totalCount: 0, totalPages: 0, currentPage: 1 };
-    } catch (error: any) {
-      console.error("Error fetching pending withdrawals:", error);
-      if (error.response) {
-        toast({
-          title: "Error",
-          description:
-            error.response.data?.message ||
-            "Failed to load pending withdrawals",
-          variant: "destructive",
-        });
-      }
-      return { withdrawals: [], totalCount: 0, totalPages: 0, currentPage: 1 };
-    }
-  };
-
   const contextValue: WalletContextType = {
     wallet,
     transactions,
@@ -1343,13 +1017,6 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
     getTransactionStatsAdmin,
     approveTransactionAdmin,
     rejectTransactionAdmin,
-    getInvestmentDues,
-    getInvestmentDueStats,
-    approveInvestmentDue,
-    rejectInvestmentDue,
-    approveWithdrawal,
-    rejectWithdrawal,
-    getPendingWithdrawals,
   };
 
   return (

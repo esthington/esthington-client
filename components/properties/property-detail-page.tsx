@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   MapPin,
@@ -114,7 +114,8 @@ export default function PropertyDetailPage() {
   const params = useParams();
   const router = useRouter();
   const isMobile = useIsMobile();
-  const { getPropertyById, isLoading } = useProperty();
+  const { getPropertyById, initiatePropertyPurchase, isPurchasing } =
+    useProperty();
   const { user } = useAuth();
   const {
     wallet,
@@ -128,9 +129,9 @@ export default function PropertyDetailPage() {
   const [selectedPlots, setSelectedPlots] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("overview");
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const propertyId = params?.id as string;
   const totalAmount = selectedPlots.reduce(
@@ -146,6 +147,7 @@ export default function PropertyDetailPage() {
   useEffect(() => {
     const fetchProperty = async () => {
       try {
+        setIsLoading(true);
         const data = await getPropertyById(propertyId);
 
         if (data) {
@@ -158,64 +160,55 @@ export default function PropertyDetailPage() {
         console.error("Error fetching property:", error);
         toast.error("Failed to load property details");
         router.push("/properties");
+      } finally {
+        setIsLoading(false);
       }
     };
 
     if (propertyId) {
       fetchProperty();
     }
-  }, [propertyId]);
+  }, [propertyId, getPropertyById, router]);
 
-  // Handle plot selection
-  const handlePlotSelection = (plot: any) => {
+  // Handle plot selection - use plotId instead of _id
+  const handlePlotSelection = useCallback((plot: any) => {
     if (plot.status !== "Available") return;
 
     setSelectedPlots((prev) => {
-      const isSelected = prev.some((p) => p._id === plot._id);
+      const isSelected = prev.some((p) => p.plotId === plot.plotId);
       if (isSelected) {
-        return prev.filter((p) => p._id !== plot._id);
+        return prev.filter((p) => p.plotId !== plot.plotId);
       } else {
         return [...prev, plot];
       }
     });
-  };
+  }, []);
 
   // Handle payment
-  const handlePayment = () => {
+  const handlePayment = useCallback(() => {
     if (selectedPlots.length === 0) {
       toast.error("Please select at least one plot");
       return;
     }
 
     setIsPaymentOpen(true);
-  };
+  }, [selectedPlots.length]);
 
-  // Process payment
-  const processPropertyPayment = async () => {
+  // Process payment - use plotId instead of _id
+  const processPropertyPayment = useCallback(async () => {
     if (selectedPlots.length === 0) return;
 
-    setIsProcessing(true);
     setError(null);
 
     try {
-      // Create a payment reference
-      const reference = `PROP-${propertyId}-${Date.now()}`;
+      // Use plotId instead of _id for the API call
+      const plotIds = selectedPlots.map((plot) => plot.plotId);
 
-      // Process payment using wallet
-      const success = await fundWallet(
-        totalAmount * -1, // Negative amount for payment
-        "property_purchase",
-        {
-          reference,
-          propertyId,
-          plotIds: selectedPlots.map((plot) => plot._id),
-          description: `Purchase of ${selectedPlots.length} plot(s) in ${property.title}`,
-        }
-      );
+      console.log("Sending plot IDs:", plotIds);
+
+      const success = await initiatePropertyPurchase(propertyId, plotIds);
 
       if (success) {
-        // Call the API to update plot status
-        // This would be handled by the initiatePropertyPurchase function in the context
         toast.success("Payment successful", {
           description: `You have successfully purchased ${selectedPlots.length} plot(s)`,
         });
@@ -237,93 +230,103 @@ export default function PropertyDetailPage() {
       }
     } catch (error: any) {
       setError(error.message || "An error occurred during payment");
-    } finally {
-      setIsProcessing(false);
     }
-  };
+  }, [
+    selectedPlots,
+    propertyId,
+    initiatePropertyPurchase,
+    getPropertyById,
+    refreshWalletData,
+  ]);
 
   // Handle back navigation
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     router.push("/properties");
-  };
+  }, [router]);
 
   // Handle share functionality
-  const handleShare = (platform: string) => {
-    const shareUrl = window.location.href;
-    const shareTitle = property?.title || "Check out this property";
-    const shareDescription = property?.description
-      ? stripHtmlTags(property.description).substring(0, 150) + "..."
-      : "Check out this amazing property listing!";
-    const shareImage = property?.thumbnail || "/diverse-property-showcase.png";
+  const handleShare = useCallback(
+    (platform: string) => {
+      const shareUrl = window.location.href;
+      const shareTitle = property?.title || "Check out this property";
+      const shareDescription = property?.description
+        ? stripHtmlTags(property.description).substring(0, 150) + "..."
+        : "Check out this amazing property listing!";
 
-    let shareLink = "";
+      let shareLink = "";
 
-    switch (platform) {
-      case "facebook":
-        shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-          shareUrl
-        )}&quote=${encodeURIComponent(shareTitle)}`;
-        break;
-      case "twitter":
-        shareLink = `https://twitter.com/intent/tweet?url=${encodeURIComponent(
-          shareUrl
-        )}&text=${encodeURIComponent(shareTitle)}`;
-        break;
-      case "linkedin":
-        shareLink = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
-          shareUrl
-        )}`;
-        break;
-      case "whatsapp":
-        shareLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(
-          shareTitle + " " + shareUrl
-        )}`;
-        break;
-      case "email":
-        shareLink = `mailto:?subject=${encodeURIComponent(
-          shareTitle
-        )}&body=${encodeURIComponent(shareDescription + "\n\n" + shareUrl)}`;
-        break;
-      case "copy":
-        navigator.clipboard.writeText(shareUrl);
-        toast.success("Link copied to clipboard");
-        setShareDialogOpen(false);
-        return;
-      case "native":
-        if (navigator.share) {
-          navigator
-            .share({
-              title: shareTitle,
-              text: shareDescription,
-              url: shareUrl,
-            })
-            .catch((err) => {
-              console.error("Error sharing:", err);
-            })
-            .finally(() => {
-              setShareDialogOpen(false);
-            });
-          return;
-        } else {
-          // Fallback to copy if Web Share API is not available
+      switch (platform) {
+        case "facebook":
+          shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+            shareUrl
+          )}&quote=${encodeURIComponent(shareTitle)}`;
+          break;
+        case "twitter":
+          shareLink = `https://twitter.com/intent/tweet?url=${encodeURIComponent(
+            shareUrl
+          )}&text=${encodeURIComponent(shareTitle)}`;
+          break;
+        case "linkedin":
+          shareLink = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+            shareUrl
+          )}`;
+          break;
+        case "whatsapp":
+          shareLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(
+            shareTitle + " " + shareUrl
+          )}`;
+          break;
+        case "email":
+          shareLink = `mailto:?subject=${encodeURIComponent(
+            shareTitle
+          )}&body=${encodeURIComponent(shareDescription + "\n\n" + shareUrl)}`;
+          break;
+        case "copy":
           navigator.clipboard.writeText(shareUrl);
           toast.success("Link copied to clipboard");
           setShareDialogOpen(false);
           return;
-        }
-    }
+        case "native":
+          if (navigator.share) {
+            navigator
+              .share({
+                title: shareTitle,
+                text: shareDescription,
+                url: shareUrl,
+              })
+              .catch((err) => {
+                console.error("Error sharing:", err);
+              })
+              .finally(() => {
+                setShareDialogOpen(false);
+              });
+            return;
+          } else {
+            // Fallback to copy if Web Share API is not available
+            navigator.clipboard.writeText(shareUrl);
+            toast.success("Link copied to clipboard");
+            setShareDialogOpen(false);
+            return;
+          }
+      }
 
-    // Open share link in a new window
-    if (shareLink) {
-      window.open(shareLink, "_blank", "noopener,noreferrer");
-      setShareDialogOpen(false);
-    }
-  };
+      // Open share link in a new window
+      if (shareLink) {
+        window.open(shareLink, "_blank", "noopener,noreferrer");
+        setShareDialogOpen(false);
+      }
+    },
+    [property]
+  );
 
-  const stripHtmlTags = (html: string) => {
+  const stripHtmlTags = useCallback((html: string) => {
     const doc = new DOMParser().parseFromString(html, "text/html");
     return doc.body.textContent || "";
-  };
+  }, []);
+
+  const setActiveTabCallback = useCallback((tab: string) => {
+    setActiveTab(tab);
+  }, []);
 
   if (isLoading || !property) {
     return (
@@ -365,7 +368,7 @@ export default function PropertyDetailPage() {
             <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
               {selectedPlots.map((plot) => (
                 <div
-                  key={plot._id}
+                  key={plot.plotId}
                   className="flex items-center justify-between bg-muted/50 p-2 rounded-md"
                 >
                   <div>
@@ -435,13 +438,13 @@ export default function PropertyDetailPage() {
             <Button
               onClick={processPropertyPayment}
               disabled={
-                isProcessing ||
+                isPurchasing ||
                 hasInsufficientFunds ||
                 selectedPlots.length === 0
               }
               className="w-full"
             >
-              {isProcessing ? (
+              {isPurchasing ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Processing...
@@ -468,13 +471,13 @@ export default function PropertyDetailPage() {
             <Button
               onClick={processPropertyPayment}
               disabled={
-                isProcessing ||
+                isPurchasing ||
                 hasInsufficientFunds ||
                 selectedPlots.length === 0
               }
               className="w-full"
             >
-              {isProcessing ? (
+              {isPurchasing ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Processing...
@@ -734,7 +737,7 @@ export default function PropertyDetailPage() {
               <Tabs
                 defaultValue="overview"
                 value={activeTab}
-                onValueChange={setActiveTab}
+                onValueChange={setActiveTabCallback}
                 className="w-full"
               >
                 <TabsList className="w-full justify-start rounded-none border-b bg-transparent h-auto p-0">
@@ -892,14 +895,15 @@ export default function PropertyDetailPage() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {property.plots.map((plot: any) => (
                           <div
-                            key={plot._id}
+                            key={plot.plotId}
                             className={cn(
                               "border rounded-lg p-4 cursor-pointer transition-all",
                               plot.status === "Available"
                                 ? "hover:border-primary hover:shadow-md"
                                 : "opacity-70 cursor-not-allowed",
-                              selectedPlots.some((p) => p._id === plot._id) &&
-                                "border-primary bg-primary/5"
+                              selectedPlots.some(
+                                (p) => p.plotId === plot.plotId
+                              ) && "border-primary bg-primary/5"
                             )}
                             onClick={() => handlePlotSelection(plot)}
                           >
@@ -931,12 +935,14 @@ export default function PropertyDetailPage() {
                             {plot.status === "Available" && (
                               <div className="mt-3 pt-3 border-t flex justify-between items-center">
                                 <span className="text-sm text-muted-foreground">
-                                  {selectedPlots.some((p) => p._id === plot._id)
+                                  {selectedPlots.some(
+                                    (p) => p.plotId === plot.plotId
+                                  )
                                     ? "Selected"
                                     : "Select plot"}
                                 </span>
                                 {selectedPlots.some(
-                                  (p) => p._id === plot._id
+                                  (p) => p.plotId === plot.plotId
                                 ) ? (
                                   <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
                                     <Check className="h-3 w-3 text-white" />
@@ -1092,7 +1098,10 @@ export default function PropertyDetailPage() {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-3 pt-2">
-              <Button onClick={() => setActiveTab("plots")} className="w-full">
+              <Button
+                onClick={() => setActiveTabCallback("plots")}
+                className="w-full"
+              >
                 View Available Plots
               </Button>
 
@@ -1124,6 +1133,7 @@ export default function PropertyDetailPage() {
                       src={
                         property.companyLogo ||
                         "/placeholder.svg?height=48&width=48&query=company" ||
+                        "/placeholder.svg" ||
                         "/placeholder.svg"
                       }
                     />
@@ -1144,8 +1154,6 @@ export default function PropertyDetailPage() {
               </CardContent>
             </Card>
           )}
-
-     
         </div>
       </div>
     </div>

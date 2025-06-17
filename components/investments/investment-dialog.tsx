@@ -9,8 +9,11 @@ import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/components/ui/use-toast";
-import { useIsMobile } from "../ui/use-mobile";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useWallet } from "@/contexts/wallet-context";
 import { useInvestment } from "@/contexts/investments-context";
 import { AnimatePresence, motion } from "framer-motion";
@@ -27,7 +30,6 @@ import {
   BarChart3,
   TrendingUp,
   Info,
-  X,
   ArrowRight,
   Calculator,
 } from "lucide-react";
@@ -56,7 +58,6 @@ export function InvestmentDialog({
   investment,
 }: InvestmentDialogProps) {
   const isMobile = useIsMobile();
-  const { toast } = useToast();
   const router = useRouter();
   const { wallet, isLoading: walletLoading } = useWallet();
   const { investInProperty, isSubmitting } = useInvestment();
@@ -204,100 +205,84 @@ export function InvestmentDialog({
     router.push("/dashboard/fund-wallet");
   }, [onClose, router]);
 
-
-
   // Wrap handleInvest in useCallback
-const handleInvest = useCallback(async () => {
-  if (!selectedPlan || !selectedDuration) {
-    toast({
-      title: "Error",
-      description: "Please select a plan and duration",
-      variant: "destructive",
-    });
-    return;
-  }
-
-  if (investmentAmount < (investment?.minimumInvestment || 0)) {
-    toast({
-      title: "Error",
-      description: `Minimum investment amount is ${formatCurrency(
-        investment?.minimumInvestment || 0
-      )}`,
-      variant: "destructive",
-    });
-    return;
-  }
-
-  if (!wallet || wallet.balance < investmentAmount) {
-    toast({
-      title: "Insufficient Balance",
-      description: "Please fund your wallet to continue",
-      variant: "destructive",
-    });
-    return;
-  }
-
-  setIsProcessing(true);
-
-  try {
-    const success = await investInProperty(
-      investment._id,
-      investmentAmount,
-      selectedPlan.name,
-      selectedDuration.name,
-      notes,
-      calculatedReturns
-    );
-
-    if (success) {
-      setDirection(1);
-      setTimeout(() => {
-        setCurrentStep(4);
-      }, 50);
-
-      setTimeout(() => {
-        onClose();
-      }, 3000);
-      router.push("/dashboard/investments/my-investments");
+  const handleInvest = useCallback(async () => {
+    if (!selectedPlan || !selectedDuration) {
+      toast.error("Please select a plan and duration");
+      return;
     }
-  } catch (error) {
-    console.error("Investment failed:", error);
-    toast({
-      title: "Investment Failed",
-      description: "Something went wrong. Please try again.",
-      variant: "destructive",
-    });
-  } 
-  
-}, [
-  selectedPlan,
-  selectedDuration,
-  investmentAmount,
-  investment?._id,
-  wallet,
-  formatCurrency,
-  toast,
-  investInProperty,
-  notes,
-  calculatedReturns,
-  setDirection,
-  setCurrentStep,
-  onClose,
-  router
-]);
-  
+
+    if (investmentAmount < (investment?.minimumInvestment || 0)) {
+      toast.error(
+        `Minimum investment amount is ${formatCurrency(
+          investment?.minimumInvestment || 0
+        )}`
+      );
+      return;
+    }
+
+    if (!wallet || wallet.balance < investmentAmount) {
+      toast.error("Insufficient balance. Please fund your wallet to continue");
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      const success = await investInProperty(
+        investment._id,
+        investmentAmount,
+        selectedPlan.name,
+        selectedDuration.name,
+        notes,
+        calculatedReturns
+      );
+
+      if (success) {
+        setDirection(1);
+        setTimeout(() => {
+          setCurrentStep(4);
+        }, 50);
+
+        setTimeout(() => {
+          onClose();
+        }, 3000);
+        router.push("/dashboard/investments/my-investments");
+      }
+    } catch (error) {
+      console.error("Investment failed:", error);
+      toast.error("Investment failed. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [
+    selectedPlan,
+    selectedDuration,
+    investmentAmount,
+    investment?._id,
+    wallet,
+    formatCurrency,
+    investInProperty,
+    notes,
+    calculatedReturns,
+    setDirection,
+    setCurrentStep,
+    onClose,
+    router,
+  ]);
+
   // Memoized dialog content component
   const DialogContentComponent = useMemo(() => {
     const Component = ({ children }: { children: React.ReactNode }) => {
       if (isMobile) {
         return (
-          <DrawerContent className="max-h-[95vh] overflow-hidden bg-[#0F0F12]/95 backdrop-blur-xl border-[#1F1F23]">
-            <div className="flex justify-between items-center px-6 py-4 border-b border-[#1F1F23]">
+          <DrawerContent className="max-h-[95vh] overflow-hidden bg-background/95 backdrop-blur-xl border-border">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-border">
               <div>
-                <h2 className="text-xl font-semibold text-white">
+                <h2 className="text-xl font-semibold text-foreground">
                   Invest in {investment?.title}
                 </h2>
-                <p className="text-sm text-gray-400 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Complete your investment in a few steps
                 </p>
               </div>
@@ -310,13 +295,13 @@ const handleInvest = useCallback(async () => {
       }
 
       return (
-        <DialogContent className="max-w-4xl p-0 overflow-y-auto bg-[#0F0F12]/95 backdrop-blur-xl border-[#1F1F23] rounded-lg shadow-2xl md:h-[80%] md:w-[90%] lg:h-[80%] lg:w-[50%]">
-          <div className="flex justify-between items-center px-8 py-6 border-b border-[#1F1F23]">
+        <DialogContent className="max-w-4xl p-0 overflow-y-auto bg-background/95 backdrop-blur-xl border-border rounded-lg shadow-2xl md:h-[80%] md:w-[90%] lg:h-[80%] lg:w-[50%]">
+          <div className="flex justify-between items-center px-8 py-6 border-b border-border">
             <div>
-              <h2 className="text-xl font-semibold text-white">
+              <h2 className="text-xl font-semibold text-foreground">
                 Invest in {investment?.title}
               </h2>
-              <p className="text-sm text-gray-400 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Complete your investment in a few steps
               </p>
             </div>
@@ -340,11 +325,11 @@ const handleInvest = useCallback(async () => {
     ];
 
     return (
-      <div className="px-8 py-6 border-b border-[#1F1F23]">
+      <div className="px-8 py-6 border-b border-border">
         <div className="relative">
-          <div className="absolute top-[15px] left-0 w-full h-1 bg-[#1F1F23] rounded-full" />
+          <div className="absolute top-[15px] left-0 w-full h-1 bg-muted rounded-full" />
           <div
-            className="absolute top-[15px] left-0 h-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full transition-all duration-500 ease-in-out"
+            className="absolute top-[15px] left-0 h-1 bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-500 ease-in-out"
             style={{
               width: `${((currentStep - 1) / (steps.length - 1)) * 100}%`,
             }}
@@ -361,10 +346,10 @@ const handleInvest = useCallback(async () => {
                     w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300
                     ${
                       isActive
-                        ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
+                        ? "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground"
                         : isCurrent
-                        ? "border-2 border-blue-600 bg-[#0F0F12] text-blue-400"
-                        : "bg-[#1F1F23] border-2 border-[#2B2B30] text-gray-500"
+                        ? "border-2 border-primary bg-background text-primary"
+                        : "bg-muted border-2 border-border text-muted-foreground"
                     }
                   `}
                   >
@@ -373,7 +358,11 @@ const handleInvest = useCallback(async () => {
                   <span
                     className={`
                     text-xs font-medium mt-2 transition-all duration-300
-                    ${isActive || isCurrent ? "text-blue-400" : "text-gray-500"}
+                    ${
+                      isActive || isCurrent
+                        ? "text-primary"
+                        : "text-muted-foreground"
+                    }
                   `}
                   >
                     {step.label}
@@ -401,67 +390,84 @@ const handleInvest = useCallback(async () => {
           relative cursor-pointer rounded-lg overflow-y-auto transition-all duration-300
           ${
             isSelected
-              ? "ring-2 ring-blue-500 ring-offset-2 ring-offset-[#0F0F12]"
-              : "hover:shadow-lg hover:shadow-blue-500/10"
+              ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+              : "hover:shadow-lg hover:shadow-primary/10"
           }
         `}
         >
-          <div className="relative p-6 bg-[#1F1F23]/80 backdrop-blur-xl border border-[#2B2B30] rounded-lg h-full hover:border-blue-500/50 transition-all duration-300">
+          <Card
+            className={`
+            relative h-full transition-all duration-300
+            ${
+              isSelected
+                ? "border-primary bg-primary/5"
+                : "hover:border-primary/50"
+            }
+          `}
+          >
             {isSelected && (
-              <div className="absolute top-3 right-3 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                <CheckCircle className="h-4 w-4 text-white" />
+              <div className="absolute top-3 right-3 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                <CheckCircle className="h-4 w-4 text-primary-foreground" />
               </div>
             )}
 
-            <div className="flex flex-col h-full">
-              <div className="mb-4">
-                <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400 mb-3">
-                  Investment Plan
-                </span>
-                <h3 className="text-lg font-semibold text-white">
-                  {plan.name}
-                </h3>
-              </div>
+            <CardContent className="p-6">
+              <div className="flex flex-col h-full">
+                <div className="mb-4">
+                  <Badge variant="secondary" className="mb-3">
+                    Investment Plan
+                  </Badge>
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {plan.name}
+                  </h3>
+                </div>
 
-              <div className="space-y-4 flex-grow">
-                <div className="flex items-center">
-                  <DollarSign className="h-5 w-5 text-gray-400 mr-2" />
-                  <div>
-                    <p className="text-sm text-gray-400">Minimum Investment</p>
-                    <p className="font-semibold text-white">
-                      {formatCurrency(Number.parseFloat(plan.minAmount))}
-                    </p>
+                <div className="space-y-4 flex-grow">
+                  <div className="flex items-center">
+                    <DollarSign className="h-5 w-5 text-muted-foreground mr-2" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        Minimum Investment
+                      </p>
+                      <p className="font-semibold text-foreground">
+                        {formatCurrency(Number.parseFloat(plan.minAmount))}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center">
+                    <Percent className="h-5 w-5 text-muted-foreground mr-2" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        Return Rate
+                      </p>
+                      <p className="font-semibold text-foreground">
+                        {plan.returnRate}%{" "}
+                        <span className="text-green-600 dark:text-green-400">
+                          APY
+                        </span>
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center">
-                  <Percent className="h-5 w-5 text-gray-400 mr-2" />
-                  <div>
-                    <p className="text-sm text-gray-400">Return Rate</p>
-                    <p className="font-semibold text-white">
-                      {plan.returnRate}%{" "}
-                      <span className="text-green-400">APY</span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-[#2B2B30]">
-                <div
-                  className={`
+                <div className="mt-6 pt-4 border-t border-border">
+                  <div
+                    className={`
                 py-2 px-4 rounded-lg text-center text-sm font-medium transition-all
                 ${
                   isSelected
-                    ? "bg-blue-600 text-white"
-                    : "bg-[#2B2B30] text-gray-300 hover:bg-[#3B3B40]"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
                 }
               `}
-                >
-                  {isSelected ? "Selected" : "Select Plan"}
+                  >
+                    {isSelected ? "Selected" : "Select Plan"}
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </motion.div>
       );
     };
@@ -488,68 +494,86 @@ const handleInvest = useCallback(async () => {
           relative cursor-pointer rounded-lg overflow-y-auto transition-all duration-300
           ${
             isSelected
-              ? "ring-2 ring-blue-500 ring-offset-2 ring-offset-[#0F0F12]"
-              : "hover:shadow-lg hover:shadow-blue-500/10"
+              ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+              : "hover:shadow-lg hover:shadow-primary/10"
           }
         `}
         >
-          <div className="relative p-6 bg-[#1F1F23]/80 backdrop-blur-xl border border-[#2B2B30] rounded-lg h-full hover:border-blue-500/50 transition-all duration-300">
+          <Card
+            className={`
+            relative h-full transition-all duration-300
+            ${
+              isSelected
+                ? "border-primary bg-primary/5"
+                : "hover:border-primary/50"
+            }
+          `}
+          >
             {isSelected && (
-              <div className="absolute top-3 right-3 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                <CheckCircle className="h-4 w-4 text-white" />
+              <div className="absolute top-3 right-3 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                <CheckCircle className="h-4 w-4 text-primary-foreground" />
               </div>
             )}
 
-            <div className="flex flex-col h-full">
-              <div className="mb-4">
-                <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-400 mb-3">
-                  Duration
-                </span>
-                <h3 className="text-lg font-semibold text-white">
-                  {duration.name}
-                </h3>
-              </div>
-
-              <div className="space-y-4 flex-grow">
-                <div className="flex items-center">
-                  <Calendar className="h-5 w-5 text-gray-400 mr-2" />
-                  <div>
-                    <p className="text-sm text-gray-400">Investment Period</p>
-                    <p className="font-semibold text-white">
-                      {duration.months} months
-                    </p>
-                  </div>
+            <CardContent className="p-6">
+              <div className="flex flex-col h-full">
+                <div className="mb-4">
+                  <Badge
+                    variant="outline"
+                    className="mb-3 border-purple-500/30 text-purple-600 dark:text-purple-400"
+                  >
+                    Duration
+                  </Badge>
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {duration.name}
+                  </h3>
                 </div>
 
-                {hasBonusRate && (
+                <div className="space-y-4 flex-grow">
                   <div className="flex items-center">
-                    <TrendingUp className="h-5 w-5 text-green-400 mr-2" />
+                    <Calendar className="h-5 w-5 text-muted-foreground mr-2" />
                     <div>
-                      <p className="text-sm text-gray-400">Bonus Rate</p>
-                      <p className="font-semibold text-green-400">
-                        +{duration.bonusRate}%
+                      <p className="text-sm text-muted-foreground">
+                        Investment Period
+                      </p>
+                      <p className="font-semibold text-foreground">
+                        {duration.months} months
                       </p>
                     </div>
                   </div>
-                )}
-              </div>
 
-              <div className="mt-6 pt-4 border-t border-[#2B2B30]">
-                <div
-                  className={`
+                  {hasBonusRate && (
+                    <div className="flex items-center">
+                      <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400 mr-2" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          Bonus Rate
+                        </p>
+                        <p className="font-semibold text-green-600 dark:text-green-400">
+                          +{duration.bonusRate}%
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-border">
+                  <div
+                    className={`
                 py-2 px-4 rounded-lg text-center text-sm font-medium transition-all
                 ${
                   isSelected
-                    ? "bg-blue-600 text-white"
-                    : "bg-[#2B2B30] text-gray-300 hover:bg-[#3B3B40]"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
                 }
               `}
-                >
-                  {isSelected ? "Selected" : "Select Duration"}
+                  >
+                    {isSelected ? "Selected" : "Select Duration"}
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </motion.div>
       );
     };
@@ -566,10 +590,10 @@ const handleInvest = useCallback(async () => {
       >
         <div className="space-y-6">
           <div>
-            <h3 className="text-xl font-semibold text-white mb-2">
+            <h3 className="text-xl font-semibold text-foreground mb-2">
               Select your investment plan
             </h3>
-            <p className="text-gray-400">
+            <p className="text-muted-foreground">
               Choose the plan that best fits your investment goals
             </p>
           </div>
@@ -589,10 +613,10 @@ const handleInvest = useCallback(async () => {
 
         <div className="space-y-6">
           <div>
-            <h3 className="text-xl font-semibold text-white mb-2">
+            <h3 className="text-xl font-semibold text-foreground mb-2">
               Choose investment duration
             </h3>
-            <p className="text-gray-400">
+            <p className="text-muted-foreground">
               Longer durations may offer bonus returns
             </p>
           </div>
@@ -611,24 +635,14 @@ const handleInvest = useCallback(async () => {
         </div>
 
         <div className="pt-6 flex justify-end">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+          <Button
             onClick={handleNextStep}
             disabled={!canProceedToStep2}
-            className={`
-          flex items-center px-8 py-2.5 rounded-lg font-medium text-white
-          transition-all duration-300 relative overflow-y-auto
-          ${
-            canProceedToStep2
-              ? "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-              : "bg-[#2B2B30] cursor-not-allowed text-gray-500"
-          }
-        `}
+            className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-300"
           >
-            <span className="relative z-10 text-sm">Continue to Amount</span>
-            <ChevronRight className="ml-2 h-5 w-5 relative z-10 text-sm" />
-          </motion.button>
+            Continue to Amount
+            <ChevronRight className="ml-2 h-5 w-5" />
+          </Button>
         </div>
       </motion.div>
     ),
@@ -654,106 +668,114 @@ const handleInvest = useCallback(async () => {
       >
         <div className="space-y-6">
           <div>
-            <h3 className="text-xl font-semibold text-white mb-2">
+            <h3 className="text-xl font-semibold text-foreground mb-2">
               Investment amount
             </h3>
-            <p className="text-gray-400">
+            <p className="text-muted-foreground">
               Choose your investment amount and add any notes
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-6">
-              <div
+              <Card
                 onClick={() => handleCustomAmountToggle(false)}
                 className={`
-              p-6 border rounded-lg cursor-pointer transition-all duration-300 bg-[#1F1F23]/80 backdrop-blur-xl
+              cursor-pointer transition-all duration-300
               ${
                 !useCustomAmount
-                  ? "border-blue-500 ring-2 ring-blue-500 ring-offset-2 ring-offset-[#0F0F12]"
-                  : "border-[#2B2B30] hover:border-blue-500/50"
+                  ? "border-primary ring-2 ring-primary ring-offset-2 ring-offset-background bg-primary/5"
+                  : "hover:border-primary/50"
               }
             `}
               >
-                <div className="flex justify-between items-center mb-4">
-                  <h4 className="font-medium text-white">Minimum Amount</h4>
-                  {!useCustomAmount && (
-                    <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                      <CheckCircle className="h-4 w-4 text-white" />
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-baseline space-x-2">
-                  <span className="text-2xl font-bold text-white">
-                    {formatCurrency(
-                      Number.parseFloat(selectedPlan?.minAmount || "0")
-                    )}
-                  </span>
-                  <span className="text-sm text-gray-400">
-                    minimum investment
-                  </span>
-                </div>
-              </div>
-
-              <div
-                onClick={() => handleCustomAmountToggle(true)}
-                className={`
-              p-6 border rounded-lg cursor-pointer transition-all duration-300 bg-[#1F1F23]/80 backdrop-blur-xl
-              ${
-                useCustomAmount
-                  ? "border-blue-500 ring-2 ring-blue-500 ring-offset-2 ring-offset-[#0F0F12]"
-                  : "border-[#2B2B30] hover:border-blue-500/50"
-              }
-            `}
-              >
-                <div className="flex justify-between items-center mb-4">
-                  <h4 className="font-medium text-white">Custom Amount</h4>
-                  {useCustomAmount && (
-                    <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                      <CheckCircle className="h-4 w-4 text-white" />
-                    </div>
-                  )}
-                </div>
-
-                {useCustomAmount && (
-                  <div className="mt-4">
-                    <Label
-                      htmlFor="custom-amount"
-                      className="text-sm font-medium text-gray-300"
-                    >
-                      Enter your investment amount
-                    </Label>
-                    <div className="relative mt-2">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <span className="text-gray-400">₦</span>
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="font-medium text-foreground">
+                      Minimum Amount
+                    </h4>
+                    {!useCustomAmount && (
+                      <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                        <CheckCircle className="h-4 w-4 text-primary-foreground" />
                       </div>
-                      <Input
-                        id="custom-amount"
-                        type="number"
-                        value={customAmount}
-                        onChange={(e) =>
-                          handleCustomAmountChange(e.target.value)
-                        }
-                        placeholder="Enter amount"
-                        className="pl-8 bg-[#2B2B30] border-[#3B3B40] text-white placeholder:text-gray-500 focus:ring-blue-500 focus:border-blue-500"
-                        min={selectedPlan?.minAmount || 0}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Minimum:{" "}
+                    )}
+                  </div>
+
+                  <div className="flex items-baseline space-x-2">
+                    <span className="text-2xl font-bold text-foreground">
                       {formatCurrency(
                         Number.parseFloat(selectedPlan?.minAmount || "0")
                       )}
-                    </p>
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      minimum investment
+                    </span>
                   </div>
-                )}
-              </div>
+                </CardContent>
+              </Card>
+
+              <Card
+                onClick={() => handleCustomAmountToggle(true)}
+                className={`
+              cursor-pointer transition-all duration-300
+              ${
+                useCustomAmount
+                  ? "border-primary ring-2 ring-primary ring-offset-2 ring-offset-background bg-primary/5"
+                  : "hover:border-primary/50"
+              }
+            `}
+              >
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="font-medium text-foreground">
+                      Custom Amount
+                    </h4>
+                    {useCustomAmount && (
+                      <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                        <CheckCircle className="h-4 w-4 text-primary-foreground" />
+                      </div>
+                    )}
+                  </div>
+
+                  {useCustomAmount && (
+                    <div className="mt-4">
+                      <Label
+                        htmlFor="custom-amount"
+                        className="text-sm font-medium text-foreground"
+                      >
+                        Enter your investment amount
+                      </Label>
+                      <div className="relative mt-2">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                          <span className="text-muted-foreground">₦</span>
+                        </div>
+                        <Input
+                          id="custom-amount"
+                          type="number"
+                          value={customAmount}
+                          onChange={(e) =>
+                            handleCustomAmountChange(e.target.value)
+                          }
+                          placeholder="Enter amount"
+                          className="pl-8"
+                          min={selectedPlan?.minAmount || 0}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Minimum:{" "}
+                        {formatCurrency(
+                          Number.parseFloat(selectedPlan?.minAmount || "0")
+                        )}
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
               <div className="pt-4">
                 <Label
                   htmlFor="notes"
-                  className="text-sm font-medium text-gray-300"
+                  className="text-sm font-medium text-foreground"
                 >
                   Investment Notes (Optional)
                 </Label>
@@ -762,60 +784,62 @@ const handleInvest = useCallback(async () => {
                   value={notes}
                   onChange={(e) => handleNotesChange(e.target.value)}
                   placeholder="Add any notes about your investment goals or preferences..."
-                  className="mt-2 bg-[#2B2B30] border-[#3B3B40] text-white placeholder:text-gray-500 focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-2"
                   rows={3}
                 />
               </div>
             </div>
 
             <div>
-              <div className="sticky top-6 bg-[#1F1F23]/80 backdrop-blur-xl rounded-lg border border-[#2B2B30] overflow-y-auto">
-                <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
-                  <h4 className="text-lg font-semibold flex items-center">
+              <Card className="sticky top-6 bg-gradient-to-b from-background to-muted/30 shadow-md dark:shadow-primary/5">
+                <CardHeader className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
+                  <CardTitle className="text-lg font-semibold flex items-center">
                     <Calculator className="h-5 w-5 mr-2" />
                     Investment Summary
-                  </h4>
-                  <p className="text-blue-100 text-sm mt-1">
+                  </CardTitle>
+                  <p className="text-primary-foreground/80 text-sm">
                     Based on your selected options
                   </p>
-                </div>
+                </CardHeader>
 
-                <div className="p-6 space-y-6">
+                <CardContent className="p-6 space-y-6">
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Plan</span>
-                      <span className="font-medium text-white">
+                      <span className="text-muted-foreground">Plan</span>
+                      <span className="font-medium text-foreground">
                         {selectedPlan?.name}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Duration</span>
-                      <span className="font-medium text-white">
+                      <span className="text-muted-foreground">Duration</span>
+                      <span className="font-medium text-foreground">
                         {selectedDuration?.months} months
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Investment Amount</span>
-                      <span className="font-medium text-white">
+                      <span className="text-muted-foreground">
+                        Investment Amount
+                      </span>
+                      <span className="font-medium text-foreground">
                         {formatCurrency(investmentAmount)}
                       </span>
                     </div>
                   </div>
 
-                  <div className="h-px bg-[#2B2B30]" />
+                  <div className="h-px bg-border" />
 
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Return Rate</span>
+                      <span className="text-muted-foreground">Return Rate</span>
                       <div className="flex items-center">
-                        <span className="font-medium text-white">
+                        <span className="font-medium text-foreground">
                           {selectedPlan?.returnRate}%
                         </span>
                         {Number.parseFloat(selectedDuration?.bonusRate || "0") >
                           0 && (
-                          <span className="ml-1 text-green-400">
+                          <span className="ml-1 text-green-600 dark:text-green-400">
                             +{selectedDuration?.bonusRate}%
                           </span>
                         )}
@@ -823,65 +847,54 @@ const handleInvest = useCallback(async () => {
                     </div>
 
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Monthly Returns</span>
-                      <span className="font-medium text-white">
+                      <span className="text-muted-foreground">
+                        Monthly Returns
+                      </span>
+                      <span className="font-medium text-foreground">
                         {formatCurrency(calculatedReturns.monthlyReturn)}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Total Returns</span>
-                      <span className="font-medium text-green-400">
+                      <span className="text-muted-foreground">
+                        Total Returns
+                      </span>
+                      <span className="font-medium text-green-600 dark:text-green-400">
                         {formatCurrency(calculatedReturns.totalReturn)}
                       </span>
                     </div>
                   </div>
 
-                  <div className="h-px bg-[#2B2B30]" />
+                  <div className="h-px bg-border" />
 
                   <div className="flex justify-between items-center">
-                    <span className="text-lg font-semibold text-white">
+                    <span className="font-semibold text-foreground">
                       Total Value
                     </span>
-                    <span className="text-xl font-bold text-blue-400">
+                    <span className="font-bold text-primary">
                       {formatCurrency(calculatedReturns.totalAmount)}
                     </span>
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
 
         <div className="pt-6 flex justify-between">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handlePrevStep}
-            className="flex items-center px-6 py-2 text-sm rounded-lg font-medium text-gray-300 border border-[#2B2B30] hover:bg-[#1F1F23] transition-all duration-300"
-          >
+          <Button variant="outline" onClick={handlePrevStep}>
             <ChevronLeft className="mr-2 h-5 w-5" />
             Back to Plans
-          </motion.button>
+          </Button>
 
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+          <Button
             onClick={handleNextStep}
             disabled={!canProceedToStep2}
-            className={`
-          flex items-center px-8 py-2.5 rounded-lg font-medium text-white
-          transition-all duration-300 relative overflow-y-auto
-          ${
-            canProceedToStep2
-              ? "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-              : "bg-[#2B2B30] cursor-not-allowed text-gray-500"
-          }
-        `}
+            className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-300"
           >
-            <span className="relative z-10 text-sm">Continue to Payment</span>
-            <ChevronRight className="ml-2 h-5 w-5 relative z-10 text-sm" />
-          </motion.button>
+            Continue to Payment
+            <ChevronRight className="ml-2 h-5 w-5" />
+          </Button>
         </div>
       </motion.div>
     ),
@@ -915,129 +928,145 @@ const handleInvest = useCallback(async () => {
       >
         <div className="space-y-6">
           <div>
-            <h3 className="text-xl font-semibold text-white mb-2">
+            <h3 className="text-xl font-semibold text-foreground mb-2">
               Complete your investment
             </h3>
-            <p className="text-gray-400">
+            <p className="text-muted-foreground">
               Review your investment details and complete payment
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-6">
-              <div className="p-6 bg-blue-500/10 border border-blue-500/20 rounded-lg backdrop-blur-xl">
-                <div className="flex items-center space-x-4 mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                    <Wallet className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-white">Wallet Payment</h4>
-                    <p className="text-sm text-gray-400">
-                      Pay directly from your wallet balance
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center mt-4 p-4 bg-[#1F1F23]/50 rounded-lg border border-[#2B2B30]">
-                  <span className="text-gray-400">Available Balance</span>
-                  <span className="text-xl font-bold text-white">
-                    {formatCurrency(wallet?.balance || 0)}
-                  </span>
-                </div>
-              </div>
-
-              {!canProceedToStep3 && (
-                <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-lg backdrop-blur-xl">
-                  <div className="flex items-start space-x-3">
-                    <AlertCircle className="w-5 h-5 text-red-400 mt-0.5" />
+              <Card className="bg-primary/10 border-primary/20">
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-4 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-primary to-primary/80 rounded-lg flex items-center justify-center">
+                      <Wallet className="h-6 w-6 text-primary-foreground" />
+                    </div>
                     <div>
-                      <h4 className="font-semibold text-red-400">
-                        {wallet && wallet.balance < investmentAmount
-                          ? "Insufficient Wallet Balance"
-                          : "Payment Error"}
+                      <h4 className="font-semibold text-foreground">
+                        Wallet Payment
                       </h4>
-                      <p className="text-sm text-red-300 mt-1">
-                        {wallet && wallet.balance < investmentAmount
-                          ? `You need ${formatCurrency(
-                              investmentAmount - wallet.balance
-                            )} more in your wallet to complete this investment.`
-                          : "Please check your payment details and try again."}
+                      <p className="text-sm text-muted-foreground">
+                        Pay directly from your wallet balance
                       </p>
-
-                      <button
-                        onClick={handleFundWallet}
-                        className="mt-3 px-4 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/30 transition-colors"
-                      >
-                        Fund Wallet
-                      </button>
                     </div>
                   </div>
-                </div>
+
+                  <div className="flex justify-between items-center mt-4 p-4 bg-muted/50 rounded-lg border border-border">
+                    <span className="text-muted-foreground">
+                      Available Balance
+                    </span>
+                    <span className="text-xl font-bold text-foreground">
+                      {formatCurrency(wallet?.balance || 0)}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {!canProceedToStep3 && (
+                <Card className="bg-red-500/10 border-red-500/20">
+                  <CardContent className="p-6">
+                    <div className="flex items-start space-x-3">
+                      <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" />
+                      <div>
+                        <h4 className="font-semibold text-red-600 dark:text-red-400">
+                          {wallet && wallet.balance < investmentAmount
+                            ? "Insufficient Wallet Balance"
+                            : "Payment Error"}
+                        </h4>
+                        <p className="text-sm text-red-600/80 dark:text-red-400/80 mt-1">
+                          {wallet && wallet.balance < investmentAmount
+                            ? `You need ${formatCurrency(
+                                investmentAmount - wallet.balance
+                              )} more in your wallet to complete this investment.`
+                            : "Please check your payment details and try again."}
+                        </p>
+
+                        <Button
+                          onClick={handleFundWallet}
+                          variant="outline"
+                          className="mt-3 border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/10"
+                        >
+                          Fund Wallet
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
 
-              <div className="p-6 bg-[#1F1F23]/80 border border-[#2B2B30] rounded-lg backdrop-blur-xl">
-                <h4 className="font-semibold text-white mb-4">
-                  Payment Summary
-                </h4>
-
-                <div className="space-y-3">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-foreground">
+                    Payment Summary
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-400">Investment Amount</span>
-                    <span className="font-medium text-white">
+                    <span className="text-muted-foreground">
+                      Investment Amount
+                    </span>
+                    <span className="font-medium text-foreground">
                       {formatCurrency(investmentAmount)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-400">Processing Fee</span>
-                    <span className="font-medium text-white">₦0.00</span>
+                    <span className="text-muted-foreground">
+                      Processing Fee
+                    </span>
+                    <span className="font-medium text-foreground">₦0.00</span>
                   </div>
-                  <div className="h-px bg-[#2B2B30] my-2" />
+                  <div className="h-px bg-border my-2" />
                   <div className="flex justify-between items-center">
-                    <span className="font-semibold text-white">
+                    <span className="font-semibold text-foreground">
                       Total to Pay
                     </span>
-                    <span className="font-bold text-blue-400">
+                    <span className="font-bold text-primary">
                       {formatCurrency(investmentAmount)}
                     </span>
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
 
             <div>
-              <div className="sticky top-6 bg-[#1F1F23]/80 backdrop-blur-xl rounded-lg border border-[#2B2B30] overflow-y-auto">
-                <div className="bg-[#2B2B30]/50 p-6">
-                  <h4 className="text-lg font-semibold text-white flex items-center">
-                    <Info className="h-5 w-5 mr-2 text-gray-400" />
+              <Card className="sticky top-6 bg-gradient-to-b from-background to-muted/30 shadow-md dark:shadow-primary/5">
+                <CardHeader className="bg-muted/50">
+                  <CardTitle className="text-lg font-semibold text-foreground flex items-center">
+                    <Info className="h-5 w-5 mr-2 text-muted-foreground" />
                     Investment Details
-                  </h4>
-                </div>
+                  </CardTitle>
+                </CardHeader>
 
-                <div className="p-6 space-y-6">
+                <CardContent className="p-6 space-y-6">
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Investment Plan</span>
-                      <span className="font-medium text-white">
+                      <span className="text-muted-foreground">
+                        Investment Plan
+                      </span>
+                      <span className="font-medium text-foreground">
                         {selectedPlan?.name}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Duration</span>
-                      <span className="font-medium text-white">
+                      <span className="text-muted-foreground">Duration</span>
+                      <span className="font-medium text-foreground">
                         {selectedDuration?.months} months
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Return Rate</span>
+                      <span className="text-muted-foreground">Return Rate</span>
                       <div className="flex items-center">
-                        <span className="font-medium text-white">
+                        <span className="font-medium text-foreground">
                           {selectedPlan?.returnRate}%
                         </span>
                         {Number.parseFloat(selectedDuration?.bonusRate || "0") >
                           0 && (
-                          <span className="ml-1 text-green-400">
+                          <span className="ml-1 text-green-600 dark:text-green-400">
                             +{selectedDuration?.bonusRate}%
                           </span>
                         )}
@@ -1045,74 +1074,75 @@ const handleInvest = useCallback(async () => {
                     </div>
                   </div>
 
-                  <div className="h-px bg-[#2B2B30]" />
+                  <div className="h-px bg-border" />
 
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Investment Amount</span>
-                      <span className="font-medium text-white">
+                      <span className="text-muted-foreground">
+                        Investment Amount
+                      </span>
+                      <span className="font-medium text-foreground">
                         {formatCurrency(investmentAmount)}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Expected Returns</span>
-                      <span className="font-medium text-green-400">
+                      <span className="text-muted-foreground">
+                        Expected Returns
+                      </span>
+                      <span className="font-medium text-green-600 dark:text-green-400">
                         {formatCurrency(calculatedReturns.totalReturn)}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Monthly Returns</span>
-                      <span className="font-medium text-white">
+                      <span className="text-muted-foreground">
+                        Monthly Returns
+                      </span>
+                      <span className="font-medium text-foreground">
                         {formatCurrency(calculatedReturns.monthlyReturn)}
                       </span>
                     </div>
                   </div>
 
-                  <div className="h-px bg-[#2B2B30]" />
+                  <div className="h-px bg-border" />
 
                   <div className="flex justify-between items-center">
-                    <span className="text-lg font-semibold text-white">
+                    <span className="text-lg font-semibold text-foreground">
                       Total Value
                     </span>
-                    <span className="text-xl font-bold text-blue-400">
+                    <span className="text-xl font-bold text-primary">
                       {formatCurrency(calculatedReturns.totalAmount)}
                     </span>
                   </div>
 
                   {notes && (
-                    <div className="mt-4 p-4 bg-[#2B2B30]/50 rounded-lg">
-                      <p className="text-sm text-gray-400 italic">"{notes}"</p>
+                    <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+                      <p className="text-sm text-muted-foreground italic">
+                        "{notes}"
+                      </p>
                     </div>
                   )}
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
 
         <div className="pt-6 flex justify-between">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handlePrevStep}
-            className="flex items-center px-6 py-2 text-sm rounded-lg font-medium text-gray-300 border border-[#2B2B30] hover:bg-[#1F1F23] transition-all duration-300"
-          >
+          <Button variant="outline" onClick={handlePrevStep}>
             <ChevronLeft className="mr-2 h-5 w-5" />
             Back to Amount
-          </motion.button>
+          </Button>
 
-          <button
+          <Button
             onClick={handleInvest}
             disabled={!canProceedToStep3 || isProcessing || isSubmitting}
             className={`
-          flex items-center px-8 py-2.5 rounded-lg font-medium text-white
-          transition-all duration-300 relative overflow-y-auto
           ${
             canProceedToStep3 && !isProcessing && !isSubmitting
-              ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-              : "bg-[#2B2B30] cursor-not-allowed text-gray-500"
+              ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+              : ""
           }
         `}
           >
@@ -1123,19 +1153,16 @@ const handleInvest = useCallback(async () => {
               </>
             ) : (
               <>
-                <span className="relative z-10 text-sm">
-                  Confirm Investment
-                </span>
-                <ArrowRight className="ml-2 h-5 w-5 relative z-10 text-sm" />
+                Confirm Investment
+                <ArrowRight className="ml-2 h-5 w-5" />
               </>
             )}
-          </button>
+          </Button>
         </div>
       </motion.div>
     ),
     [
       direction,
-      wallet?.balance,
       investmentAmount,
       canProceedToStep3,
       isProcessing,
@@ -1165,7 +1192,7 @@ const handleInvest = useCallback(async () => {
           transition={{ delay: 0.2, duration: 0.5, type: "spring" }}
           className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mb-6 border border-green-500/30"
         >
-          <CheckCircle className="w-12 h-12 text-green-400" />
+          <CheckCircle className="w-12 h-12 text-green-600 dark:text-green-400" />
         </motion.div>
 
         <motion.div
@@ -1173,10 +1200,10 @@ const handleInvest = useCallback(async () => {
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.4, duration: 0.5 }}
         >
-          <h3 className="text-2xl font-bold text-white text-center mb-3">
+          <h3 className="text-2xl font-bold text-foreground text-center mb-3">
             Investment Successful!
           </h3>
-          <p className="text-gray-400 text-center text-lg max-w-md">
+          <p className="text-muted-foreground text-center text-lg max-w-md">
             Your investment of {formatCurrency(investmentAmount)} has been
             processed successfully.
           </p>
@@ -1188,67 +1215,73 @@ const handleInvest = useCallback(async () => {
           transition={{ delay: 0.6, duration: 0.5 }}
           className="mt-8 w-full max-w-md"
         >
-          <div className="bg-[#1F1F23]/80 backdrop-blur-xl border border-green-500/20 rounded-lg overflow-y-auto">
-            <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-6">
-              <h4 className="text-lg font-semibold">Investment Summary</h4>
+          <Card className="bg-gradient-to-b from-background to-muted/30 shadow-md border-green-500/20">
+            <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 text-white">
+              <CardTitle className="text-lg font-semibold">
+                Investment Summary
+              </CardTitle>
               <p className="text-green-100 text-sm">
                 Transaction completed successfully
               </p>
-            </div>
+            </CardHeader>
 
-            <div className="p-6 space-y-4">
+            <CardContent className="p-6 space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-gray-400">Investment ID</span>
-                <span className="font-medium text-white">
+                <span className="text-muted-foreground">Investment ID</span>
+                <span className="font-medium text-foreground">
                   {investment?._id?.substring(0, 8) || "INV12345678"}
                 </span>
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="text-gray-400">Investment Amount</span>
-                <span className="font-medium text-white">
+                <span className="text-muted-foreground">Investment Amount</span>
+                <span className="font-medium text-foreground">
                   {formatCurrency(investmentAmount)}
                 </span>
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="text-gray-400">Expected Returns</span>
-                <span className="font-medium text-green-400">
+                <span className="text-muted-foreground">Expected Returns</span>
+                <span className="font-medium text-green-600 dark:text-green-400">
                   {formatCurrency(calculatedReturns.totalReturn)}
                 </span>
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="text-gray-400">Investment Duration</span>
-                <span className="font-medium text-white">
+                <span className="text-muted-foreground">
+                  Investment Duration
+                </span>
+                <span className="font-medium text-foreground">
                   {selectedDuration?.months} months
                 </span>
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="text-gray-400">Monthly Returns</span>
-                <span className="font-medium text-white">
+                <span className="text-muted-foreground">Monthly Returns</span>
+                <span className="font-medium text-foreground">
                   {formatCurrency(calculatedReturns.monthlyReturn)}
                 </span>
               </div>
 
-              <div className="h-px bg-[#2B2B30] my-2" />
+              <div className="h-px bg-border my-2" />
 
               <div className="flex justify-between items-center">
-                <span className="font-semibold text-white">Total Value</span>
-                <span className="font-bold text-blue-400">
+                <span className="font-semibold text-foreground">
+                  Total Value
+                </span>
+                <span className="font-bold text-primary">
                   {formatCurrency(calculatedReturns.totalAmount)}
                 </span>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </motion.div>
 
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.8, duration: 0.5 }}
-          className="mt-8 flex items-center justify-center space-x-2 text-gray-400"
+          className="mt-8 flex items-center justify-center space-x-2 text-muted-foreground"
         >
           <Loader2 className="w-4 h-4 animate-spin" />
           <p className="text-sm">

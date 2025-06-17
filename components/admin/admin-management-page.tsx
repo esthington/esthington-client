@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   MoreHorizontal,
   Ban,
@@ -10,7 +10,16 @@ import {
   AlertTriangle,
   UserPlus,
   Key,
-  ArrowUpDown,
+  Copy,
+  Search,
+  Users,
+  Shield,
+  UserCheck,
+  UserX,
+  Mail,
+  Phone,
+  Calendar,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +29,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -38,20 +48,47 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import FadeIn from "@/components/animations/fade-in";
-import type { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "@/lib/table-utils";
-import { useManagementPermissions } from "@/hooks/use-management-permissions";
-import { toast } from "sonner";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useToast } from "@/components/ui/use-toast";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 import { useAuth } from "@/contexts/auth-context";
-import type { AdminData, UserProfile } from "@/contexts/auth-context";
+import type { UserProfile } from "@/contexts/auth-context";
+import { UserStatus } from "@/contexts/auth-context";
+
+// Form schema for adding admins
+const adminFormSchema = z.object({
+  firstName: z.string().min(2, "First name must be at least 2 characters"),
+  lastName: z.string().min(2, "Last name must be at least 2 characters"),
+  userName: z.string().optional(),
+  email: z.string().email("Please enter a valid email address"),
+  phone: z.string().optional(),
+  role: z.enum(["admin", "super_admin"]),
+});
+
+type AdminFormData = z.infer<typeof adminFormSchema>;
 
 export default function AdminManagementPage() {
-  // Use the auth context instead of management context
+  const { toast } = useToast();
   const {
     admins,
-    filteredAdmins,
     adminFilter,
     setAdminFilter,
     getAdmins,
@@ -60,13 +97,11 @@ export default function AdminManagementPage() {
     deleteAdmin,
     suspendAdmin,
     activateAdmin,
+    resetUserPassword,
     adminsLoading: isLoading,
     isSubmitting,
     isSuperAdmin,
   } = useAuth();
-
-  // Use permissions hook
-  const { hasPermission } = useManagementPermissions("super_admin");
 
   const [selectedAdmin, setSelectedAdmin] = useState<UserProfile | null>(null);
   const [showAdminDetails, setShowAdminDetails] = useState(false);
@@ -74,82 +109,183 @@ export default function AdminManagementPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showAddAdminDialog, setShowAddAdminDialog] = useState(false);
   const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
-
-  // New admin form state
-  const [newAdminName, setNewAdminName] = useState("");
-  const [newAdminEmail, setNewAdminEmail] = useState("");
-  const [newAdminRole, setNewAdminRole] = useState<"admin" | "super_admin">(
-    "admin"
-  );
-  const [newAdminPermissions, setNewAdminPermissions] = useState<string[]>([]);
-  const [newAdminFirstName, setNewAdminFirstName] = useState("");
-  const [newAdminLastName, setNewAdminLastName] = useState("");
-  const [newAdminPhone, setNewAdminPhone] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [tempPassword, setTempPassword] = useState("");
 
-  // Fetch admins on component mount if user is super admin
+  // Form for adding new admins
+  const addForm = useForm<AdminFormData>({
+    resolver: zodResolver(adminFormSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      userName: "",
+      email: "",
+      phone: "",
+      role: "admin",
+    },
+  });
+
+  // Memoized filtered admins to prevent unnecessary re-renders
+  const filteredAdmins = useMemo(() => {
+    if (!admins || admins.length === 0) return [];
+
+    // First filter to only include admin and super_admin roles
+    let filtered = admins.filter(
+      (admin) => admin.role === "admin" || admin.role === "super_admin"
+    );
+
+    // Filter by search term
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (admin) =>
+          admin.firstName.toLowerCase().includes(searchLower) ||
+          admin.lastName.toLowerCase().includes(searchLower) ||
+          admin.email.toLowerCase().includes(searchLower) ||
+          (admin.userName && admin.userName.toLowerCase().includes(searchLower))
+      );
+    }
+
+    // Filter by tab
+    if (activeTab === "super_admin") {
+      filtered = filtered.filter((admin) => admin.role === "super_admin");
+    } else if (activeTab === "admin") {
+      filtered = filtered.filter((admin) => admin.role === "admin");
+    } else if (activeTab === "suspended") {
+      filtered = filtered.filter(
+        (admin) => admin.status === UserStatus.INACTIVE
+      );
+    }
+
+    return filtered;
+  }, [admins, searchTerm, activeTab]);
+
+  // Stats for dashboard cards
+  const stats = useMemo(() => {
+    if (!admins) return { total: 0, active: 0, suspended: 0, superAdmins: 0 };
+
+    // Filter to only admin and super_admin roles
+    const adminUsers = admins.filter(
+      (admin) => admin.role === "admin" || admin.role === "super_admin"
+    );
+
+    return {
+      total: adminUsers.length,
+      active: adminUsers.filter((admin) => admin.status === UserStatus.ACTIVE)
+        .length,
+      suspended: adminUsers.filter(
+        (admin) => admin.status === UserStatus.INACTIVE
+      ).length,
+      superAdmins: adminUsers.filter((admin) => admin.role === "super_admin")
+        .length,
+    };
+  }, [admins]);
+
+  // Fetch admins on component mount - only once
   useEffect(() => {
     if (isSuperAdmin) {
-      getAdmins();
+      getAdmins().catch(console.error);
     }
   }, [isSuperAdmin]);
 
-  // Update filter when tab changes
+  // Update admin filter when search or tab changes
+  const updateFilter = useCallback(() => {
+    const newFilter = { ...adminFilter };
+
+    if (searchTerm) {
+      newFilter.search = searchTerm;
+    } else {
+      delete newFilter.search;
+    }
+
+    if (activeTab === "super_admin") {
+      newFilter.role = "super_admin";
+      delete newFilter.status;
+    } else if (activeTab === "admin") {
+      newFilter.role = "admin";
+      delete newFilter.status;
+    } else if (activeTab === "suspended") {
+      newFilter.status = "inactive";
+      delete newFilter.role;
+    } else {
+      delete newFilter.role;
+      delete newFilter.status;
+    }
+
+    // Only update if filter actually changed
+    if (JSON.stringify(newFilter) !== JSON.stringify(adminFilter)) {
+      setAdminFilter(newFilter);
+    }
+  }, [searchTerm, activeTab, adminFilter, setAdminFilter]);
+
   useEffect(() => {
-    // Update the filter in the auth context
-    setAdminFilter({
-      ...adminFilter,
-      role:
-        activeTab === "super_admin"
-          ? "super_admin"
-          : activeTab === "admin"
-          ? "admin"
-          : "",
-      status: activeTab === "suspended" ? "inactive" : "",
-    });
-  }, [activeTab]);
-  // }, [activeTab, adminFilter, setAdminFilter]);
+    updateFilter();
+  }, [searchTerm, activeTab, updateFilter]); // Don't include updateFilter to avoid loops
 
-  const handleViewAdmin = (admin: UserProfile) => {
-    setSelectedAdmin(admin);
-    setShowAdminDetails(true);
-  };
+  const handleViewAdmin = useCallback((admin: UserProfile) => {
+    try {
+      setSelectedAdmin(admin);
+      setShowAdminDetails(true);
+    } catch (error) {
+      console.error("Error viewing admin:", error);
+    }
+  }, []);
 
-  const handleSuspendAdmin = (admin: UserProfile) => {
-    setSelectedAdmin(admin);
-    setShowSuspendDialog(true);
-  };
+  const handleSuspendAdmin = useCallback((admin: UserProfile) => {
+    try {
+      setSelectedAdmin(admin);
+      setShowSuspendDialog(true);
+    } catch (error) {
+      console.error("Error suspending admin:", error);
+    }
+  }, []);
 
-  const handleDeleteAdmin = (admin: UserProfile) => {
-    setSelectedAdmin(admin);
-    setShowDeleteDialog(true);
-  };
+  const handleDeleteAdmin = useCallback((admin: UserProfile) => {
+    try {
+      setSelectedAdmin(admin);
+      setShowDeleteDialog(true);
+    } catch (error) {
+      console.error("Error deleting admin:", error);
+    }
+  }, []);
 
-  const handleResetPassword = (admin: UserProfile) => {
-    setSelectedAdmin(admin);
-    setShowResetPasswordDialog(true);
-  };
+  const handleResetPassword = useCallback((admin: UserProfile) => {
+    try {
+      setSelectedAdmin(admin);
+      setTempPassword("");
+      setShowResetPasswordDialog(true);
+    } catch (error) {
+      console.error("Error resetting password:", error);
+    }
+  }, []);
 
   const confirmSuspend = async () => {
     if (!selectedAdmin) return;
 
     try {
-      if (!selectedAdmin.isActive) {
+      if (selectedAdmin.status === UserStatus.INACTIVE) {
         await activateAdmin(selectedAdmin._id);
-        toast.success(
-          `${selectedAdmin.firstName} ${selectedAdmin.lastName} has been activated`
-        );
+        toast({
+          title: "Success",
+          description: `${selectedAdmin.firstName} ${selectedAdmin.lastName} has been activated`,
+        });
       } else {
         await suspendAdmin(selectedAdmin._id);
-        toast.success(
-          `${selectedAdmin.firstName} ${selectedAdmin.lastName} has been suspended`
-        );
+        toast({
+          title: "Success",
+          description: `${selectedAdmin.firstName} ${selectedAdmin.lastName} has been suspended`,
+        });
       }
       setShowSuspendDialog(false);
-      getAdmins(); // Refresh the admin list
+      getAdmins();
     } catch (error) {
       console.error("Failed to update admin status:", error);
-      toast.error("Failed to update admin status. Please try again.");
+      toast({
+        title: "Error",
+        description: "Failed to update admin status. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -158,14 +294,19 @@ export default function AdminManagementPage() {
 
     try {
       await deleteAdmin(selectedAdmin._id);
-      toast.success(
-        `${selectedAdmin.firstName} ${selectedAdmin.lastName} has been deleted`
-      );
+      toast({
+        title: "Success",
+        description: `${selectedAdmin.firstName} ${selectedAdmin.lastName} has been deleted`,
+      });
       setShowDeleteDialog(false);
-      getAdmins(); // Refresh the admin list
+      getAdmins();
     } catch (error) {
       console.error("Failed to delete admin:", error);
-      toast.error("Failed to delete admin. Please try again.");
+      toast({
+        title: "Error",
+        description: "Failed to delete admin. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -173,55 +314,53 @@ export default function AdminManagementPage() {
     if (!selectedAdmin) return;
 
     try {
-      // Use the resetPassword function from auth context
-      // This is a placeholder - you'll need to implement the actual function in the auth context
-      // await updateAdmin(selectedAdmin.id)
-      setShowResetPasswordDialog(false);
-      toast.success(`Password reset link sent to ${selectedAdmin.email}`);
+      const response = await resetUserPassword(selectedAdmin._id);
+      if (response?.tempPassword) {
+        setTempPassword(response.tempPassword);
+      }
+      toast({
+        title: "Success",
+        description: "Password reset successfully.",
+      });
     } catch (error) {
       console.error("Failed to reset password:", error);
-      toast.error("Failed to reset password. Please try again.");
+      toast({
+        title: "Error",
+        description: "Failed to reset password. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleAddAdmin = async () => {
-    if (!newAdminFirstName || !newAdminLastName || !newAdminEmail) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
+  const handleAddAdmin = async (values: AdminFormData) => {
     try {
-      const newAdmin: AdminData = {
-        firstName: newAdminFirstName,
-        lastName: newAdminLastName,
+      const adminData = {
+        firstName: values.firstName,
+        lastName: values.lastName,
         userName:
-          newAdminName ||
-          `${newAdminFirstName.toLowerCase()}.${newAdminLastName.toLowerCase()}`,
-        email: newAdminEmail,
-        phone: newAdminPhone,
-        role: newAdminRole,
-        permissions:
-          newAdminPermissions.length > 0
-            ? newAdminPermissions
-            : ["users_view", "properties_view"],
+          values.userName ||
+          `${values.firstName.toLowerCase()}.${values.lastName.toLowerCase()}`,
+        email: values.email,
+        phone: values.phone,
+        role: values.role,
+        permissions: ["users_view", "properties_view"],
       };
 
-      await addAdmin(newAdmin);
-      toast.success("Admin added successfully");
+      await addAdmin(adminData);
+      toast({
+        title: "Success",
+        description: "Admin added successfully",
+      });
       setShowAddAdminDialog(false);
-      getAdmins(); // Refresh the admin list
-
-      // Reset form
-      setNewAdminFirstName("");
-      setNewAdminLastName("");
-      setNewAdminName("");
-      setNewAdminEmail("");
-      setNewAdminPhone("");
-      setNewAdminRole("admin");
-      setNewAdminPermissions([]);
+      addForm.reset();
+      await getAdmins();
     } catch (error) {
       console.error("Failed to add admin:", error);
-      toast.error("Failed to add admin. Please try again.");
+      toast({
+        title: "Error",
+        description: "Failed to add admin. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -229,478 +368,594 @@ export default function AdminManagementPage() {
     switch (role) {
       case "super_admin":
         return (
-          <Badge className="bg-purple-500 hover:bg-purple-600">
+          <Badge className="bg-purple-100 text-purple-800 border-purple-200">
+            <Shield className="mr-1 h-3 w-3" />
             Super Admin
           </Badge>
         );
       case "admin":
-        return <Badge className="bg-blue-500 hover:bg-blue-600">Admin</Badge>;
+        return (
+          <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+            <Shield className="mr-1 h-3 w-3" />
+            Admin
+          </Badge>
+        );
       default:
-        return <Badge>Unknown</Badge>;
+        return <Badge variant="outline">Unknown</Badge>;
     }
   };
 
-  const getStatusBadge = (isActive: boolean) => {
-    if (isActive) {
-      return <Badge className="bg-green-500 hover:bg-green-600">Active</Badge>;
+  const getStatusBadge = (status: UserStatus) => {
+    if (status === UserStatus.ACTIVE) {
+      return (
+        <Badge className="bg-green-100 text-green-800 border-green-200">
+          <UserCheck className="mr-1 h-3 w-3" />
+          Active
+        </Badge>
+      );
     } else {
       return (
-        <Badge className="bg-amber-500 hover:bg-amber-600">Suspended</Badge>
+        <Badge className="bg-red-100 text-red-800 border-red-200">
+          <UserX className="mr-1 h-3 w-3" />
+          Suspended
+        </Badge>
       );
     }
   };
 
-  const getStatusIcon = (isActive: boolean) => {
-    if (isActive) {
-      return <CheckCircle className="h-4 w-4 text-green-500" />;
-    } else {
-      return <AlertTriangle className="h-4 w-4 text-amber-500" />;
-    }
-  };
-
-  const columns: ColumnDef<UserProfile>[] = [
-    {
-      accessorKey: "name",
-      header: "Admin",
-      cell: ({ row }) => {
-        const admin = row.original;
-        return (
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full overflow-hidden">
-              <img
-                src={
-                  admin.avatar ||
-                  "/placeholder.svg?height=40&width=40&query=admin"
-                }
-                alt={`${admin.firstName} ${admin.lastName}`}
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <div>
-              <div className="font-medium">{`${admin.firstName} ${admin.lastName}`}</div>
-              <div className="text-sm text-muted-foreground">{admin.email}</div>
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "role",
-      header: ({ column }) => {
-        return (
-          <div className="text-center">
-            <Button
-              variant="ghost"
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-            >
-              Role
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        );
-      },
-      cell: ({ row }) => (
-        <div className="text-center">{getRoleBadge(row.original.role)}</div>
-      ),
-    },
-    {
-      accessorKey: "isActive",
-      header: ({ column }) => {
-        return (
-          <div className="text-center">
-            <Button
-              variant="ghost"
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-            >
-              Status
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        );
-      },
-      cell: ({ row }) => {
-        const isActive = row.original.isActive;
-        return (
-          <div className="flex items-center justify-center gap-2">
-            {getStatusIcon(isActive)}
-            <span className="capitalize">
-              {isActive ? "Active" : "Suspended"}
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "createdAt",
-      header: ({ column }) => {
-        return (
-          <div className="text-center">
-            <Button
-              variant="ghost"
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-            >
-              Joined
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        );
-      },
-      cell: ({ row }) => (
-        <div className="text-center">
-          {new Date(row.original.createdAt).toLocaleDateString()}
-        </div>
-      ),
-    },
-    {
-      id: "actions",
-      cell: ({ row }) => {
-        const admin = row.original;
-        return (
-          <div className="text-right">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <MoreHorizontal className="h-4 w-4" />
-                  <span className="sr-only">Open menu</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {hasPermission("viewAdmins") && (
+  // Admin Cards Component for Mobile
+  function AdminCards({ admins }: { admins: UserProfile[] }) {
+    return (
+      <div className="grid gap-4 md:hidden">
+        {admins.map((admin) => (
+          <Card key={admin._id} className="p-4">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-sm font-medium text-primary">
+                    {admin.firstName.charAt(0)}
+                    {admin.lastName.charAt(0)}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">
+                    {admin.firstName} {admin.lastName}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">{admin.email}</p>
+                </div>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
                   <DropdownMenuItem onClick={() => handleViewAdmin(admin)}>
                     <Eye className="mr-2 h-4 w-4" />
                     View Details
                   </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onClick={() => handleResetPassword(admin)}>
-                  <Key className="mr-2 h-4 w-4" />
-                  Reset Password
-                </DropdownMenuItem>
-                {hasPermission("suspendAdmins") && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => handleSuspendAdmin(admin)}>
-                      <Ban className="mr-2 h-4 w-4" />
-                      {!admin.isActive ? "Activate Admin" : "Suspend Admin"}
-                    </DropdownMenuItem>
-                  </>
-                )}
-                {hasPermission("deleteAdmins") && (
+                  <DropdownMenuItem onClick={() => handleResetPassword(admin)}>
+                    <Key className="mr-2 h-4 w-4" />
+                    Reset Password
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleSuspendAdmin(admin)}>
+                    <Ban className="mr-2 h-4 w-4" />
+                    {admin.status === UserStatus.INACTIVE
+                      ? "Activate"
+                      : "Suspend"}
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => handleDeleteAdmin(admin)}
-                    className="text-red-500 focus:text-red-500"
+                    className="text-red-600"
                     disabled={admin.role === "super_admin"}
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
-                    Delete Admin
+                    Delete
                   </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        );
-      },
-    },
-  ];
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-3">
+              <div className="flex items-center gap-2">
+                {getRoleBadge(admin.role)}
+              </div>
+              <div className="flex items-center gap-2">
+                {getStatusBadge(admin.status)}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                <span className="text-xs">
+                  {admin.createdAt
+                    ? new Date(admin.createdAt).toLocaleDateString()
+                    : "N/A"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                <span className="text-xs">
+                  {admin.lastLogin
+                    ? new Date(admin.lastLogin).toLocaleDateString()
+                    : "Never"}
+                </span>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  // Admin Table Component for Desktop
+  function AdminTable() {
+    if (isLoading) {
+      return (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex justify-center items-center h-40">
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                <p className="text-muted-foreground">Loading admins...</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    if (filteredAdmins.length === 0) {
+      return (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col justify-center items-center h-40 text-center">
+              <Users className="h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground text-lg font-medium">
+                No admins found
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Try adjusting your search or filters
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <>
+        {/* Desktop Table */}
+        <Card className="hidden md:block">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="font-semibold">Admin</TableHead>
+                    <TableHead className="font-semibold">Contact</TableHead>
+                    <TableHead className="font-semibold">Role</TableHead>
+                    <TableHead className="font-semibold">Status</TableHead>
+                    <TableHead className="font-semibold">Joined</TableHead>
+                    <TableHead className="font-semibold">Last Login</TableHead>
+                    <TableHead className="text-right font-semibold">
+                      Actions
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAdmins.map((admin) => (
+                    <TableRow key={admin._id} className="hover:bg-muted/30">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <span className="text-sm font-medium text-primary">
+                              {admin.firstName.charAt(0)}
+                              {admin.lastName.charAt(0)}
+                            </span>
+                          </div>
+                          <div>
+                            <div className="font-medium">
+                              {admin.firstName} {admin.lastName}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              ID: {admin._id.slice(-8)}
+                            </div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">{admin.email}</span>
+                          </div>
+                          {admin.phone && (
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm">{admin.phone}</span>
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{getRoleBadge(admin.role)}</TableCell>
+                      <TableCell>{getStatusBadge(admin.status)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">
+                            {admin.createdAt
+                              ? new Date(admin.createdAt).toLocaleDateString()
+                              : "N/A"}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">
+                            {admin.lastLogin
+                              ? new Date(admin.lastLogin).toLocaleDateString()
+                              : "Never"}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem
+                              onClick={() => handleViewAdmin(admin)}
+                            >
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleResetPassword(admin)}
+                            >
+                              <Key className="mr-2 h-4 w-4" />
+                              Reset Password
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => handleSuspendAdmin(admin)}
+                            >
+                              <Ban className="mr-2 h-4 w-4" />
+                              {admin.status === UserStatus.INACTIVE
+                                ? "Activate Admin"
+                                : "Suspend Admin"}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteAdmin(admin)}
+                              className="text-red-600"
+                              disabled={admin.role === "super_admin"}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete Admin
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Mobile Cards */}
+        <AdminCards admins={filteredAdmins} />
+      </>
+    );
+  }
 
   // Check if user has permission to view this page
-  if (!hasPermission("viewAdmins")) {
+  if (!isSuperAdmin) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex flex-col items-center justify-center h-[60vh]">
-          <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
-          <p className="text-muted-foreground">
-            You don't have permission to view this page.
-          </p>
+      <div className="min-h-screen bg-gray-50/50">
+        <div className="container mx-auto p-4 md:p-6 max-w-7xl">
+          <div className="flex flex-col items-center justify-center h-[60vh]">
+            <div className="text-center">
+              <Shield className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
+              <p className="text-muted-foreground">
+                You don't have permission to view this page.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Add loading check before any admin operations
+  if (!admins || isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50/50">
+        <div className="container mx-auto p-4 md:p-6 max-w-7xl">
+          <div className="flex justify-center items-center h-40">
+            <div className="flex items-center gap-2">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+              <p className="text-muted-foreground">Loading admin panel...</p>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <FadeIn>
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="min-h-screen bg-gray-50/50">
+      <div className="container mx-auto p-4 md:p-6 max-w-7xl">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">
+            <h1 className="text-3xl font-bold tracking-tight">
               Admin Management
             </h1>
-            <p className="text-muted-foreground">
-              Manage administrator accounts
+            <p className="text-muted-foreground mt-1">
+              Manage administrator accounts and permissions
             </p>
           </div>
-
-          {hasPermission("createAdmins") && (
-            <Button onClick={() => setShowAddAdminDialog(true)}>
-              <UserPlus className="mr-2 h-4 w-4" />
-              Add Admin
-            </Button>
-          )}
+          <Button
+            onClick={() => setShowAddAdminDialog(true)}
+            className="w-full sm:w-auto"
+          >
+            <UserPlus className="mr-2 h-4 w-4" />
+            Add Admin
+          </Button>
         </div>
 
-        <Card>
-          <CardHeader className="p-4 pb-2">
-            <Tabs
-              defaultValue="all"
-              onValueChange={setActiveTab}
-              className="w-full"
-            >
-              <TabsList className="grid grid-cols-4 w-full md:w-auto">
-                <TabsTrigger value="all">All Admins</TabsTrigger>
-                <TabsTrigger value="super_admin">Super Admins</TabsTrigger>
-                <TabsTrigger value="admin">Admins</TabsTrigger>
-                <TabsTrigger value="suspended">Suspended</TabsTrigger>
-              </TabsList>
-              <CardContent className="p-4 pt-2">
-                <TabsContent value="all" className="mt-0">
-                  <DataTable
-                    columns={columns}
-                    data={filteredAdmins as UserProfile[]}
-                    searchPlaceholder="Search admins..."
-                    searchColumn="name"
-                    isLoading={isLoading}
-                  />
-                </TabsContent>
-
-                <TabsContent value="super_admin" className="mt-0">
-                  <DataTable
-                    columns={columns}
-                    data={filteredAdmins as UserProfile[]}
-                    searchPlaceholder="Search super admins..."
-                    searchColumn="name"
-                    isLoading={isLoading}
-                  />
-                </TabsContent>
-
-                <TabsContent value="admin" className="mt-0">
-                  <DataTable
-                    columns={columns}
-                    data={filteredAdmins as UserProfile[]}
-                    searchPlaceholder="Search admins..."
-                    searchColumn="name"
-                    isLoading={isLoading}
-                  />
-                </TabsContent>
-
-                <TabsContent value="suspended" className="mt-0">
-                  <DataTable
-                    columns={columns}
-                    data={filteredAdmins as UserProfile[]}
-                    searchPlaceholder="Search suspended admins..."
-                    searchColumn="name"
-                    isLoading={isLoading}
-                  />
-                </TabsContent>
-              </CardContent>
-            </Tabs>
-          </CardHeader>
-        </Card>
-      </div>
-
-      {/* Admin Details Dialog */}
-      {selectedAdmin && (
-        <Dialog open={showAdminDetails} onOpenChange={setShowAdminDetails}>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Admin Details</DialogTitle>
-              <DialogDescription>
-                Detailed information about the administrator
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="grid gap-6 py-4">
-              <div className="flex items-center gap-4">
-                <div className="h-20 w-20 rounded-full overflow-hidden">
-                  <img
-                    src={
-                      selectedAdmin.avatar ||
-                      "/placeholder.svg?height=80&width=80&query=admin" ||
-                      "/placeholder.svg"
-                    }
-                    alt={`${selectedAdmin.firstName} ${selectedAdmin.lastName}`}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold">{`${selectedAdmin.firstName} ${selectedAdmin.lastName}`}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedAdmin.email}
-                  </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    {getRoleBadge(selectedAdmin.role)}
-                    {getStatusBadge(selectedAdmin.isActive)}
-                  </div>
-                </div>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Admins
+              </CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.total}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active</CardTitle>
+              <UserCheck className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                {stats.active}
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      Account Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0 space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">
-                        Join Date
-                      </span>
-                      <span className="text-sm font-medium">
-                        {new Date(selectedAdmin.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">
-                        Last Active
-                      </span>
-                      <span className="text-sm font-medium">
-                        {selectedAdmin.lastLogin
-                          ? new Date(
-                              selectedAdmin.lastLogin
-                            ).toLocaleDateString()
-                          : "N/A"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">
-                        Username
-                      </span>
-                      <span className="text-sm font-medium">
-                        {selectedAdmin.userName}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* <Card>
-                  <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      Permissions
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <div className="flex flex-wrap gap-2">
-                      {selectedAdmin.permissions &&
-                      selectedAdmin.permissions.includes("all") ? (
-                        <Badge className="bg-purple-500">All Permissions</Badge>
-                      ) : (
-                        <>
-                          {selectedAdmin.permissions &&
-                            selectedAdmin.permissions.includes(
-                              "users_manage"
-                            ) && (
-                              <Badge className="bg-blue-500">
-                                Manage Users
-                              </Badge>
-                            )}
-                          {selectedAdmin.permissions &&
-                            selectedAdmin.permissions.includes(
-                              "users_view"
-                            ) && (
-                              <Badge className="bg-blue-300">View Users</Badge>
-                            )}
-                          {selectedAdmin.permissions &&
-                            selectedAdmin.permissions.includes(
-                              "properties_manage"
-                            ) && (
-                              <Badge className="bg-green-500">
-                                Manage Properties
-                              </Badge>
-                            )}
-                          {selectedAdmin.permissions &&
-                            selectedAdmin.permissions.includes(
-                              "properties_view"
-                            ) && (
-                              <Badge className="bg-green-300">
-                                View Properties
-                              </Badge>
-                            )}
-                          {selectedAdmin.permissions &&
-                            selectedAdmin.permissions.includes(
-                              "transactions_manage"
-                            ) && (
-                              <Badge className="bg-amber-500">
-                                Manage Transactions
-                              </Badge>
-                            )}
-                          {selectedAdmin.permissions &&
-                            selectedAdmin.permissions.includes(
-                              "transactions_view"
-                            ) && (
-                              <Badge className="bg-amber-300">
-                                View Transactions
-                              </Badge>
-                            )}
-                          {(!selectedAdmin.permissions ||
-                            selectedAdmin.permissions.length === 0) && (
-                            <span className="text-sm text-muted-foreground">
-                              No specific permissions
-                            </span>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card> */}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Suspended</CardTitle>
+              <UserX className="h-4 w-4 text-red-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">
+                {stats.suspended}
               </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Super Admins
+              </CardTitle>
+              <Shield className="h-4 w-4 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-600">
+                {stats.superAdmins}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-              <Card>
-                <CardHeader className="p-4 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Contact Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">
-                        Email
-                      </span>
-                      <span className="text-sm font-medium">
-                        {selectedAdmin.email}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">
-                        Phone
-                      </span>
-                      <span className="text-sm font-medium">
-                        {selectedAdmin.phone || "N/A"}
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+        {/* Search and Filters */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search admins by name, email, or username..."
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
             </div>
+          </CardContent>
+        </Card>
 
-            <DialogFooter className="flex flex-col sm:flex-row gap-2">
-              <Button
-                variant="outline"
-                onClick={() => handleResetPassword(selectedAdmin)}
-                className="w-full sm:w-auto"
-              >
-                <Key className="mr-2 h-4 w-4" />
-                Reset Password
-              </Button>
+        {/* Tabs and Content */}
+        <Tabs
+          defaultValue="all"
+          onValueChange={setActiveTab}
+          className="space-y-6"
+        >
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4">
+            <TabsTrigger value="all" className="text-xs sm:text-sm">
+              All
+            </TabsTrigger>
+            <TabsTrigger value="super_admin" className="text-xs sm:text-sm">
+              Super Admins
+            </TabsTrigger>
+            <TabsTrigger value="admin" className="text-xs sm:text-sm">
+              Admins
+            </TabsTrigger>
+            <TabsTrigger value="suspended" className="text-xs sm:text-sm">
+              Suspended
+            </TabsTrigger>
+          </TabsList>
 
-              {hasPermission("suspendAdmins") && (
+          <TabsContent value="all" className="space-y-4">
+            <AdminTable />
+          </TabsContent>
+
+          <TabsContent value="super_admin" className="space-y-4">
+            <AdminTable />
+          </TabsContent>
+
+          <TabsContent value="admin" className="space-y-4">
+            <AdminTable />
+          </TabsContent>
+
+          <TabsContent value="suspended" className="space-y-4">
+            <AdminTable />
+          </TabsContent>
+        </Tabs>
+
+        {/* All the dialogs remain the same but with improved styling */}
+        {/* Admin Details Dialog */}
+        {selectedAdmin && (
+          <Dialog open={showAdminDetails} onOpenChange={setShowAdminDetails}>
+            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Admin Details</DialogTitle>
+                <DialogDescription>
+                  Detailed information about the administrator
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="grid gap-6 py-4">
+                <div className="flex items-center gap-4">
+                  <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-2xl font-medium text-primary">
+                      {selectedAdmin.firstName.charAt(0)}
+                      {selectedAdmin.lastName.charAt(0)}
+                    </span>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold">
+                      {selectedAdmin.firstName} {selectedAdmin.lastName}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedAdmin.email}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      {getRoleBadge(selectedAdmin.role)}
+                      {getStatusBadge(selectedAdmin.status)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card>
+                    <CardHeader className="p-4 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        Account Information
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0 space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          Join Date
+                        </span>
+                        <span className="text-sm font-medium">
+                          {new Date(
+                            selectedAdmin.createdAt
+                          ).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          Last Active
+                        </span>
+                        <span className="text-sm font-medium">
+                          {selectedAdmin.lastLogin
+                            ? new Date(
+                                selectedAdmin.lastLogin
+                              ).toLocaleDateString()
+                            : "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          Username
+                        </span>
+                        <span className="text-sm font-medium">
+                          {selectedAdmin.userName}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="p-4 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        Contact Information
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">
+                            Email
+                          </span>
+                          <span className="text-sm font-medium">
+                            {selectedAdmin.email}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">
+                            Phone
+                          </span>
+                          <span className="text-sm font-medium">
+                            {selectedAdmin.phone || "N/A"}
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              <DialogFooter className="flex-col sm:flex-row gap-2">
                 <Button
-                  variant={!selectedAdmin.isActive ? "default" : "secondary"}
+                  variant="outline"
+                  onClick={() => handleResetPassword(selectedAdmin)}
+                  className="w-full sm:w-auto"
+                >
+                  <Key className="mr-2 h-4 w-4" />
+                  Reset Password
+                </Button>
+
+                <Button
+                  variant={
+                    selectedAdmin.status === UserStatus.INACTIVE
+                      ? "default"
+                      : "secondary"
+                  }
                   onClick={() => handleSuspendAdmin(selectedAdmin)}
                   className="w-full sm:w-auto"
                 >
                   <Ban className="mr-2 h-4 w-4" />
-                  {!selectedAdmin.isActive ? "Activate Admin" : "Suspend Admin"}
+                  {selectedAdmin.status === UserStatus.INACTIVE
+                    ? "Activate Admin"
+                    : "Suspend Admin"}
                 </Button>
-              )}
 
-              {hasPermission("deleteAdmins") && (
                 <Button
                   variant="destructive"
                   onClick={() => handleDeleteAdmin(selectedAdmin)}
@@ -710,403 +965,374 @@ export default function AdminManagementPage() {
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete Admin
                 </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Suspend Dialog */}
+        {selectedAdmin && (
+          <Dialog open={showSuspendDialog} onOpenChange={setShowSuspendDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>
+                  {selectedAdmin.status === UserStatus.INACTIVE
+                    ? "Activate Admin"
+                    : "Suspend Admin"}
+                </DialogTitle>
+                <DialogDescription>
+                  {selectedAdmin.status === UserStatus.INACTIVE
+                    ? "Are you sure you want to activate this admin? They will regain access to the admin panel."
+                    : "Are you sure you want to suspend this admin? They will lose access to the admin panel."}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="flex items-start space-x-3 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
+                <div>
+                  <p className="font-medium text-amber-800">
+                    {selectedAdmin.firstName} {selectedAdmin.lastName}
+                  </p>
+                  <p className="text-sm text-amber-700 mt-1">
+                    {selectedAdmin.email}
+                  </p>
+                </div>
+              </div>
+
+              <DialogFooter className="flex-col sm:flex-row gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowSuspendDialog(false)}
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant={
+                    selectedAdmin.status === UserStatus.INACTIVE
+                      ? "default"
+                      : "secondary"
+                  }
+                  onClick={confirmSuspend}
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto"
+                >
+                  {isSubmitting
+                    ? "Processing..."
+                    : selectedAdmin.status === UserStatus.INACTIVE
+                    ? "Activate Admin"
+                    : "Suspend Admin"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Delete Dialog */}
+        {selectedAdmin && (
+          <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete Admin</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to delete this admin? This action cannot
+                  be undone.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="flex items-start space-x-3 p-4 bg-red-50 rounded-lg border border-red-200">
+                <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
+                <div>
+                  <p className="font-medium text-red-800">
+                    {selectedAdmin.firstName} {selectedAdmin.lastName}
+                  </p>
+                  <p className="text-sm text-red-700 mt-1">
+                    {selectedAdmin.email}
+                  </p>
+                </div>
+              </div>
+
+              <DialogFooter className="flex-col sm:flex-row gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDeleteDialog(false)}
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={confirmDelete}
+                  disabled={
+                    selectedAdmin.role === "super_admin" || isSubmitting
+                  }
+                  className="w-full sm:w-auto"
+                >
+                  {isSubmitting ? "Deleting..." : "Delete Admin"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Reset Password Dialog */}
+        {selectedAdmin && (
+          <Dialog
+            open={showResetPasswordDialog}
+            onOpenChange={setShowResetPasswordDialog}
+          >
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Reset Admin Password</DialogTitle>
+              </DialogHeader>
+              {!tempPassword ? (
+                <>
+                  <div className="flex items-start space-x-3 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                    <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-amber-800">
+                        Reset password for {selectedAdmin.firstName}{" "}
+                        {selectedAdmin.lastName}?
+                      </p>
+                      <p className="text-sm text-amber-700 mt-1">
+                        This will generate a temporary password that the admin
+                        will need to change upon login.
+                      </p>
+                    </div>
+                  </div>
+                  <DialogFooter className="flex-col sm:flex-row gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowResetPasswordDialog(false)}
+                      disabled={isSubmitting}
+                      className="w-full sm:w-auto"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={confirmResetPassword}
+                      disabled={isSubmitting}
+                      className="w-full sm:w-auto"
+                    >
+                      {isSubmitting ? "Resetting..." : "Reset Password"}
+                    </Button>
+                  </DialogFooter>
+                </>
+              ) : (
+                <>
+                  <div className="flex flex-col items-center justify-center space-y-4 p-6">
+                    <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                      <CheckCircle className="h-6 w-6 text-green-600" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-lg font-semibold text-green-800">
+                        Password Reset Successfully
+                      </h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        A temporary password has been generated
+                      </p>
+                    </div>
+                    <div className="w-full p-4 bg-gray-50 rounded-lg border">
+                      <p className="text-sm font-medium mb-2">
+                        Temporary Password:
+                      </p>
+                      <div className="flex items-center justify-between bg-white p-3 rounded border font-mono text-sm">
+                        <code className="break-all">{tempPassword}</code>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(tempPassword);
+                            toast({
+                              title: "Copied",
+                              description: "Password copied to clipboard",
+                            });
+                          }}
+                          className="ml-2 flex-shrink-0"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Please securely share this temporary password with the
+                      admin. They will be required to change it upon login.
+                    </p>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      onClick={() => setShowResetPasswordDialog(false)}
+                      className="w-full"
+                    >
+                      Close
+                    </Button>
+                  </DialogFooter>
+                </>
               )}
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+            </DialogContent>
+          </Dialog>
+        )}
 
-      {/* Suspend Dialog */}
-      {selectedAdmin && (
-        <Dialog open={showSuspendDialog} onOpenChange={setShowSuspendDialog}>
-          <DialogContent>
+        {/* Add Admin Dialog */}
+        <Dialog open={showAddAdminDialog} onOpenChange={setShowAddAdminDialog}>
+          <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>
-                {!selectedAdmin.isActive ? "Activate Admin" : "Suspend Admin"}
-              </DialogTitle>
+              <DialogTitle>Add New Admin</DialogTitle>
               <DialogDescription>
-                {!selectedAdmin.isActive
-                  ? "Are you sure you want to activate this admin? They will regain access to the admin panel."
-                  : "Are you sure you want to suspend this admin? They will lose access to the admin panel."}
+                Create a new administrator account
               </DialogDescription>
             </DialogHeader>
 
-            <div className="flex items-center gap-4 py-4">
-              <div className="h-12 w-12 rounded-full overflow-hidden">
-                <img
-                  src={
-                    selectedAdmin.avatar ||
-                    "/placeholder.svg?height=48&width=48&query=admin" ||
-                    "/placeholder.svg"
-                  }
-                  alt={`${selectedAdmin.firstName} ${selectedAdmin.lastName}`}
-                  className="h-full w-full object-cover"
+            <Form {...addForm}>
+              <form
+                onSubmit={addForm.handleSubmit(handleAddAdmin)}
+                className="space-y-4"
+              >
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={addForm.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          First Name <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input placeholder="First name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={addForm.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Last Name <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input placeholder="Last name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={addForm.control}
+                  name="userName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Username</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Username (optional)" {...field} />
+                      </FormControl>
+                      <p className="text-xs text-muted-foreground">
+                        If left blank, username will be generated from first and
+                        last name
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
 
-              <div>
-                <h3 className="font-medium">{`${selectedAdmin.firstName} ${selectedAdmin.lastName}`}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {selectedAdmin.email}
-                </p>
-              </div>
-            </div>
+                <FormField
+                  control={addForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Email Address <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="Enter email address"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowSuspendDialog(false)}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant={!selectedAdmin.isActive ? "default" : "secondary"}
-                onClick={confirmSuspend}
-                disabled={isSubmitting}
-              >
-                {isSubmitting
-                  ? "Processing..."
-                  : !selectedAdmin.isActive
-                  ? "Activate Admin"
-                  : "Suspend Admin"}
-              </Button>
-            </DialogFooter>
+                <FormField
+                  control={addForm.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone Number</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="tel"
+                          placeholder="Enter phone number (optional)"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={addForm.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Admin Role</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="super_admin">
+                            Super Admin
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <DialogFooter className="flex-col sm:flex-row gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowAddAdminDialog(false)}
+                    disabled={isSubmitting}
+                    className="w-full sm:w-auto"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full sm:w-auto"
+                  >
+                    {isSubmitting ? "Adding..." : "Add Admin"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
-      )}
-
-      {/* Delete Dialog */}
-      {selectedAdmin && (
-        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Delete Admin</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete this admin? This action cannot
-                be undone.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="flex items-center gap-4 py-4">
-              <div className="h-12 w-12 rounded-full overflow-hidden">
-                <img
-                  src={
-                    selectedAdmin.avatar ||
-                    "/placeholder.svg?height=48&width=48&query=admin" ||
-                    "/placeholder.svg"
-                  }
-                  alt={`${selectedAdmin.firstName} ${selectedAdmin.lastName}`}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-
-              <div>
-                <h3 className="font-medium">{`${selectedAdmin.firstName} ${selectedAdmin.lastName}`}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {selectedAdmin.email}
-                </p>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowDeleteDialog(false)}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={confirmDelete}
-                disabled={selectedAdmin.role === "super_admin" || isSubmitting}
-              >
-                {isSubmitting ? "Deleting..." : "Delete Admin"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Reset Password Dialog */}
-      {selectedAdmin && (
-        <Dialog
-          open={showResetPasswordDialog}
-          onOpenChange={setShowResetPasswordDialog}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Reset Admin Password</DialogTitle>
-              <DialogDescription>
-                Send a password reset link to this admin's email address.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="flex items-center gap-4 py-4">
-              <div className="h-12 w-12 rounded-full overflow-hidden">
-                <img
-                  src={
-                    selectedAdmin.avatar ||
-                    "/placeholder.svg?height=48&width=48&query=admin" ||
-                    "/placeholder.svg"
-                  }
-                  alt={`${selectedAdmin.firstName} ${selectedAdmin.lastName}`}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-
-              <div>
-                <h3 className="font-medium">{`${selectedAdmin.firstName} ${selectedAdmin.lastName}`}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {selectedAdmin.email}
-                </p>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowResetPasswordDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button onClick={confirmResetPassword}>Send Reset Link</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Add Admin Dialog */}
-      <Dialog open={showAddAdminDialog} onOpenChange={setShowAddAdminDialog}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Add New Admin</DialogTitle>
-            <DialogDescription>
-              Create a new administrator account
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label htmlFor="firstName" className="text-sm font-medium">
-                  First Name <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  id="firstName"
-                  value={newAdminFirstName}
-                  onChange={(e) => setNewAdminFirstName(e.target.value)}
-                  placeholder="First name"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="lastName" className="text-sm font-medium">
-                  Last Name <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  id="lastName"
-                  value={newAdminLastName}
-                  onChange={(e) => setNewAdminLastName(e.target.value)}
-                  placeholder="Last name"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="userName" className="text-sm font-medium">
-                Username
-              </label>
-              <Input
-                id="userName"
-                value={newAdminName}
-                onChange={(e) => setNewAdminName(e.target.value)}
-                placeholder="Username (optional)"
-              />
-              <p className="text-xs text-muted-foreground">
-                If left blank, username will be generated from first and last
-                name
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
-                Email Address <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="email"
-                type="email"
-                value={newAdminEmail}
-                onChange={(e) => setNewAdminEmail(e.target.value)}
-                placeholder="Enter email address"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="phone" className="text-sm font-medium">
-                Phone Number
-              </label>
-              <Input
-                id="phone"
-                type="tel"
-                value={newAdminPhone}
-                onChange={(e) => setNewAdminPhone(e.target.value)}
-                placeholder="Enter phone number (optional)"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="role" className="text-sm font-medium">
-                Admin Role
-              </label>
-              <Select
-                value={newAdminRole}
-                onValueChange={(value: "admin" | "super_admin") =>
-                  setNewAdminRole(value)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="super_admin">Super Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* <div className="space-y-2">
-              <label className="text-sm font-medium">Permissions</label>
-              <Card>
-                <CardContent className="p-4 grid grid-cols-2 gap-2">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="users_manage"
-                      className="rounded border-gray-300"
-                      checked={newAdminPermissions.includes("users_manage")}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setNewAdminPermissions([
-                            ...newAdminPermissions,
-                            "users_manage",
-                          ]);
-                        } else {
-                          setNewAdminPermissions(
-                            newAdminPermissions.filter(
-                              (p) => p !== "users_manage"
-                            )
-                          );
-                        }
-                      }}
-                    />
-                    <label htmlFor="users_manage" className="text-sm">
-                      Manage Users
-                    </label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="properties_manage"
-                      className="rounded border-gray-300"
-                      checked={newAdminPermissions.includes(
-                        "properties_manage"
-                      )}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setNewAdminPermissions([
-                            ...newAdminPermissions,
-                            "properties_manage",
-                          ]);
-                        } else {
-                          setNewAdminPermissions(
-                            newAdminPermissions.filter(
-                              (p) => p !== "properties_manage"
-                            )
-                          );
-                        }
-                      }}
-                    />
-                    <label htmlFor="properties_manage" className="text-sm">
-                      Manage Properties
-                    </label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="transactions_manage"
-                      className="rounded border-gray-300"
-                      checked={newAdminPermissions.includes(
-                        "transactions_manage"
-                      )}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setNewAdminPermissions([
-                            ...newAdminPermissions,
-                            "transactions_manage",
-                          ]);
-                        } else {
-                          setNewAdminPermissions(
-                            newAdminPermissions.filter(
-                              (p) => p !== "transactions_manage"
-                            )
-                          );
-                        }
-                      }}
-                    />
-                    <label htmlFor="transactions_manage" className="text-sm">
-                      Manage Transactions
-                    </label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="all"
-                      className="rounded border-gray-300"
-                      checked={newAdminPermissions.includes("all")}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setNewAdminPermissions(["all"]);
-                        } else {
-                          setNewAdminPermissions([]);
-                        }
-                      }}
-                    />
-                    <label htmlFor="all" className="text-sm">
-                      All Permissions
-                    </label>
-                  </div>
-                </CardContent>
-              </Card>
-            </div> */}
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowAddAdminDialog(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddAdmin}
-              disabled={
-                isSubmitting ||
-                !newAdminFirstName ||
-                !newAdminLastName ||
-                !newAdminEmail
-              }
-            >
-              {isSubmitting ? "Adding..." : "Add Admin"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </FadeIn>
+      </div>
+    </div>
   );
 }

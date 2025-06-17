@@ -1,7 +1,8 @@
 "use client"
 
-import { ApprovalsPage } from "@/components/admin/approvals-page"
+import WithdrawalApprovalManagement from "@/components/admin/approvals-page";
+
 
 export default function AdminApprovalsPage() {
-  return <ApprovalsPage />
+  return <WithdrawalApprovalManagement />;
 }

@@ -150,7 +150,7 @@ type InvestmentContextType = {
   fetchUserInvestments: () => Promise<void>;
   fetchAvailableProperties: () => Promise<void>;
   getInvestmentById: (id: string) => Promise<InvestmentDetailsType | null>;
-  getProperties: (params?: {}) => Promise<any>; // Add this line
+  getProperties: (params?: {}) => Promise<any>;
 
   // CRUD operations
   createInvestment: (formData: FormData) => Promise<string | null>;
@@ -245,13 +245,14 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Fetch user investments
+  // Fetch user investments - FIXED to use correct endpoint
   const fetchUserInvestments = async () => {
     if (!user?._id) return;
 
     setIsLoading(true);
     try {
-      const response = await apiConfig.get(`/users/${user._id}/investments`, {
+      // Use the correct endpoint that matches our fixed routes
+      const response = await apiConfig.get("/investments/user/my-investments", {
         withCredentials: true,
       });
 
@@ -266,8 +267,7 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Add the getProperties function implementation
-  // Add this function inside the InvestmentProvider component, before the return statement
+  // Get properties function
   const getProperties = async (params?: {}): Promise<any> => {
     try {
       const response = await apiConfig.get("/properties/all", {
@@ -283,19 +283,21 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
       return { properties: [] };
     } catch (error: any) {
       console.error("Error fetching properties:", error);
-
       return { properties: [] };
     }
   };
 
-  // Update the fetchAvailableProperties function to use getProperties
+  // Fetch available properties
   const fetchAvailableProperties = async () => {
     setIsLoading(true);
     try {
-      // First try to get properties specifically available for investment
-      let response = await apiConfig.get("/properties/all", {
-        withCredentials: true,
-      });
+      // Use the correct endpoint that matches our fixed routes
+      const response = await apiConfig.get(
+        "/investments/properties/available",
+        {
+          withCredentials: true,
+        }
+      );
 
       if (
         response.status === 200 &&
@@ -304,7 +306,7 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
       ) {
         setAvailableProperties(response.data.data || []);
       } else {
-        // If no specific endpoint or no data, fall back to getting all properties
+        // Fallback to all properties
         const result = await getProperties();
         setAvailableProperties(result.properties || []);
       }
@@ -745,7 +747,7 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
       return false;
     }
 
-    // setIsSubmitting(true);
+    setIsSubmitting(true);
     try {
       // First check if the investment exists and is active
       const investment = investments.find((inv) => inv._id === investmentId);
@@ -763,7 +765,7 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
         );
       }
 
-      // // Create user investment record
+      // Create user investment record
       const response = await apiConfig.post(
         `/investments/${investmentId}/invest`,
         {
@@ -782,41 +784,44 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
       const userInvestment = response.data.data;
 
       // Update investments list with new funding amount
-      setInvestments((prev) =>
-        prev.map((inv) => {
-          if (inv._id === investmentId) {
-            const newRaisedAmount = inv.raisedAmount + amount;
-            const newPercentageFunded = Math.min(
-              100,
-              (newRaisedAmount / inv.targetAmount) * 100
-            );
+      if (response.status === 201) {
+        setInvestments((prev) =>
+          prev.map((inv) => {
+            if (inv._id === investmentId) {
+              const newRaisedAmount = inv.raisedAmount + amount;
+              const newPercentageFunded = Math.min(
+                100,
+                (newRaisedAmount / inv.targetAmount) * 100
+              );
 
-            return {
-              ...inv,
-              raisedAmount: newRaisedAmount,
-              totalInvestors: inv.totalInvestors + 1,
-              percentageFunded: newPercentageFunded,
-              investors: [
-                ...inv.investors,
-                {
-                  userId: user._id,
-                  amount,
-                  date: new Date().toISOString(),
-                },
-              ],
-            };
-          }
-          return inv;
-        })
-      );
+              return {
+                ...inv,
+                raisedAmount: newRaisedAmount,
+                totalInvestors: inv.totalInvestors + 1,
+                percentageFunded: newPercentageFunded,
+                investors: [
+                  ...inv.investors,
+                  {
+                    userId: user._id,
+                    amount,
+                    date: new Date().toISOString(),
+                  },
+                ],
+              };
+            }
+            return inv;
+          })
+        );
 
-      // Add to user investments
-      setUserInvestments((prev) => [...prev, userInvestment]);
+        // Add to user investments
+        setUserInvestments((prev) => [...prev, userInvestment]);
 
-      // Refresh wallet data
-      await refreshWalletData();
+        // Refresh wallet data
+        await refreshWalletData();
 
-      toast.success("Investment successful! Thank you for investing.");
+        toast.success("Investment successful! Thank you for investing.");
+        return true;
+      }
 
       return false;
     } catch (error: any) {
@@ -827,17 +832,6 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
       setIsSubmitting(false);
     }
   };
-
-  // Replace your API call temporarily with this:
-  // const investInProperty = async (...args: any) => {
-  //   // setIsSubmitting(true);
-
-  //   // Simulate API call without actually making one
-  //   await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  //   // setIsSubmitting(false);
-  //   return false;
-  // };
 
   // Include getProperties in the context value
   const value = {
@@ -858,7 +852,7 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
     fetchUserInvestments,
     fetchAvailableProperties,
     getInvestmentById,
-    getProperties, // Add this line
+    getProperties,
 
     // CRUD operations
     createInvestment,

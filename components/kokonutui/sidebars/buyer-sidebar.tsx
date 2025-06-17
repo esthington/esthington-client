@@ -23,6 +23,7 @@ import {
   ChevronRight,
   Landmark,
   Map,
+  MapPinHouse,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -241,6 +242,9 @@ export default function BuyerSidebar() {
                           <NavItem href="/dashboard/properties" icon={Building}>
                             Properties
                           </NavItem>
+                             <NavItem href="/dashboard/myproperties" icon={MapPinHouse}>
+                                                      My Properties
+                                                    </NavItem>
                         </motion.div>
                       )}
                     </AnimatePresence>

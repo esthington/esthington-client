@@ -27,6 +27,8 @@ import {
   Users,
   Map,
   Landmark,
+  BuildingIcon,
+  MapPinHouse,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -264,6 +266,9 @@ export default function AgentSidebar() {
                           </NavItem>
                           <NavItem href="/dashboard/properties" icon={Building}>
                             Properties
+                          </NavItem>
+                          <NavItem href="/dashboard/myproperties" icon={MapPinHouse}>
+                            My Properties
                           </NavItem>
                         </motion.div>
                       )}

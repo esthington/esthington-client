@@ -1232,7 +1232,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     updateProfile,
     changePassword,
     resetUserPassword,
-
     // User management
     users,
     usersLoading,

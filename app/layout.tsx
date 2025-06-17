@@ -46,6 +46,7 @@ export default function RootLayout({
                             <AnalyticsProvider>
                               <VerificationProvider>
                                 <FeedbackProvider>{children}</FeedbackProvider>
+                                
                               </VerificationProvider>
                             </AnalyticsProvider>
                           </SupportProvider>

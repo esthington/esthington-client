@@ -53,7 +53,7 @@ type SystemContextType = {
 const defaultSettings: SystemSettings = {
   appName: "Esthington",
   logo: "/logo.svg",
-  theme: "dark",
+  theme: "light",
   maintenanceMode: false,
   version: "1.0.0",
   contactEmail: "support@esthington.com",

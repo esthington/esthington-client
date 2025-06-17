@@ -54,7 +54,7 @@ import Image from "next/image";
 import { useMarketplace } from "@/contexts/marketplace-context";
 import { useMarketplacePermissions } from "@/hooks/use-marketplace-permissions";
 import { toast } from "sonner";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -167,28 +167,34 @@ export default function MarketplacePage() {
     };
   }, [listings]);
 
-  const handleBuyNow = async (land: any) => {
-    if (!user) {
-      toast.error("Please login to continue", {
-        description: "You need to be logged in to make a purchase.",
-      });
-      return;
-    }
+  const handleBuyNow = useCallback(
+    async (land: any) => {
+      if (!user) {
+        toast.error("Please login to continue", {
+          description: "You need to be logged in to make a purchase.",
+        });
+        return;
+      }
 
-    setSelectedLand(land);
-    setIsPaymentOpen(true);
-  };
+      setSelectedLand(land);
+      setIsPaymentOpen(true);
+    },
+    [user]
+  );
 
-  const handleEditListing = (id: string) => {
-    router.push(`/dashboard/marketplace/edit/${id}`);
-  };
+  const handleEditListing = useCallback(
+    (id: string) => {
+      router.push(`/dashboard/marketplace/edit/${id}`);
+    },
+    [router]
+  );
 
-  const handleDeleteListing = (land: any) => {
+  const handleDeleteListing = useCallback((land: any) => {
     setLandToDelete(land);
     setIsDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const confirmDelete = async () => {
+  const confirmDelete = useCallback(async () => {
     if (!landToDelete) return;
 
     setIsDeleting(true);
@@ -207,16 +213,15 @@ export default function MarketplacePage() {
     } finally {
       setIsDeleting(false);
     }
-  };
+  }, [landToDelete, deleteListing]);
 
-  const processPayment = async () => {
+  const processPayment = useCallback(async () => {
     if (!selectedLand) return;
 
     setIsProcessing(true);
     setError(null);
 
     try {
-      
       const amount = selectedLand.price;
       const hasInsufficientFunds = amount > balance;
 
@@ -225,7 +230,7 @@ export default function MarketplacePage() {
         setIsProcessing(false);
         return;
       }
-      const success = await buyProperty(selectedLand.id);
+      const success = await buyProperty(selectedLand.id, 1);
 
       if (success) {
         toast.success("Payment successful", {
@@ -251,7 +256,7 @@ export default function MarketplacePage() {
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, [selectedLand, balance, refreshWalletData, router]);
 
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat("en-NG", {
@@ -298,6 +303,7 @@ export default function MarketplacePage() {
                       src={
                         selectedLand.images[0] ||
                         "/placeholder.svg?height=64&width=64&query=land" ||
+                        "/placeholder.svg" ||
                         "/placeholder.svg"
                       }
                       alt={selectedLand.title}
@@ -453,6 +459,7 @@ export default function MarketplacePage() {
                   src={
                     landToDelete.images[0] ||
                     "/placeholder.svg?height=64&width=64&query=land" ||
+                    "/placeholder.svg" ||
                     "/placeholder.svg"
                   }
                   alt={landToDelete.title}
@@ -878,7 +885,8 @@ export default function MarketplacePage() {
                       <Image
                         src={
                           land.images[0] ||
-                          "/placeholder.svg?height=400&width=600&query=beautiful land property"
+                          "/placeholder.svg?height=400&width=600&query=beautiful land property" ||
+                          "/placeholder.svg"
                         }
                         alt={land.title}
                         fill
@@ -1002,7 +1010,8 @@ export default function MarketplacePage() {
                       <Image
                         src={
                           land.images[0] ||
-                          "/placeholder.svg?height=400&width=600&query=beautiful land property"
+                          "/placeholder.svg?height=400&width=600&query=beautiful land property" ||
+                          "/placeholder.svg"
                         }
                         alt={land.title}
                         fill

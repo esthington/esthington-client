@@ -1,11 +1,10 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/contexts/auth-context";
 import { LoadingSpinner } from "../ui/loading-spinner";
-
 // Import role-specific sidebars
 import BuyerSidebar from "./sidebars/buyer-sidebar";
 import AgentSidebar from "./sidebars/agent-sidebar";
@@ -17,6 +16,17 @@ import AgentBottomNav from "./bottom-navs/agent-bottom-nav";
 import AdminBottomNav from "./bottom-navs/admin-bottom-nav";
 import TopNav from "./top-nav";
 import { withAuth } from "@/hocs";
+import dynamic from "next/dynamic";
+
+interface TawkMessengerProps {
+  propertyId: string;
+  widgetId: string;
+}
+
+const TawkMessengerReact = dynamic<TawkMessengerProps>(
+  () => import("@tawk.to/tawk-messenger-react").then(mod => mod.default),
+  { ssr: false }
+);
 
 // Define valid user roles for better type safety
 type UserRole = "buyer" | "agent" | "admin" | "super_admin";
@@ -33,6 +43,12 @@ function DashboardLayout({ children }: LayoutProps) {
   useEffect(() => {
     console.log("Current user role:", user?.role);
   }, [user?.role]);
+
+  const initialRenderRef = useRef(false);
+
+  useEffect(() => {
+    initialRenderRef.current = true;
+  }, [user]);
 
   // Normalize role to handle case sensitivity or formatting issues
   const normalizeRole = (role?: string): UserRole => {
@@ -89,6 +105,13 @@ function DashboardLayout({ children }: LayoutProps) {
         </main>
         {renderBottomNav()}
       </div>
+
+      {initialRenderRef.current && (
+        <TawkMessengerReact
+          propertyId="684a98c4c2de78190f3149e8"
+          widgetId="1ithm9g6m"
+        />
+      )}
     </div>
   );
 }
