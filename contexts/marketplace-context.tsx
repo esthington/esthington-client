@@ -503,6 +503,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     quantity: number
   ): Promise<boolean> => {
     setIsSubmitting(true);
+    
     try {
       const response = await apiConfig.patch(
         `/marketplace/listings/${listingId}/quantity`,

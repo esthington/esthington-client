@@ -100,7 +100,7 @@ export default function EditMarketplaceListingPage() {
     galleryUrls: [] as string[],
     documents: [] as Array<File>,
     documentUrls: [] as string[],
-    creatorId: user?.id || "",
+    creatorId: user?._id || "",
     categories: [] as string[],
     tags: [] as string[],
     isDigital: false,
@@ -122,7 +122,7 @@ export default function EditMarketplaceListingPage() {
 
         if (listing) {
           setFormData({
-            id: listing.id,
+            id: id,
             title: listing.title || "",
             description: listing.description || "",
             location: listing.location || "",
@@ -148,7 +148,7 @@ export default function EditMarketplaceListingPage() {
             galleryUrls: listing.images || [],
             documents: [],
             documentUrls: listing.documents || [],
-            creatorId: listing.creatorId || user?.id || "",
+            creatorId: listing.creatorId || user?._id || "",
             categories: listing.categories || [],
             tags: listing.tags || [],
             isDigital: listing.isDigital || false,
@@ -478,7 +478,7 @@ export default function EditMarketplaceListingPage() {
         featured: formData.featured,
         companyId: formData.companyId,
         amenities: formData.amenities,
-        creatorId: formData.creatorId || user?.id || "",
+        creatorId: formData.creatorId || user?._id || "",
         categories:
           formData.categories.length > 0 ? formData.categories : undefined,
         tags: formData.tags.length > 0 ? formData.tags : undefined,

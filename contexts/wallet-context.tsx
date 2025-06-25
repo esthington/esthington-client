@@ -25,6 +25,7 @@ export interface Transaction {
     | "investment"
     | "property_purchase";
   amount: number;
+  check: string;
   status: "pending" | "completed" | "failed" | "cancelled";
   reference: string;
   description: string;
@@ -667,7 +668,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
     setIsLoading(true);
     try {
       const response = await apiConfig.post(
-        "/process-withdrawal",
+        "/process-withdrawal/",
         {
           amount,
           bankAccountId,
@@ -1218,8 +1219,8 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
   ): Promise<boolean> => {
     try {
       const response = await apiConfig.patch(
-        `/process-withdrawal/${transactionId}/approve-withdrawal`,
-        { notes },
+        `/process-withdrawal/${transactionId}/approve`,
+        { note: notes },
         { withCredentials: true }
       );
 
@@ -1252,8 +1253,8 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({
   ): Promise<boolean> => {
     try {
       const response = await apiConfig.patch(
-        `/process-withdrawal/${transactionId}/reject-withdrawal`,
-        { reason },
+        `/process-withdrawal/${transactionId}/reject`,
+        { note: reason },
         { withCredentials: true }
       );
 

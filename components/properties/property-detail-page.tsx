@@ -241,7 +241,7 @@ export default function PropertyDetailPage() {
 
   // Handle back navigation
   const handleBack = useCallback(() => {
-    router.push("/properties");
+    router.push("/dashboard/properties");
   }, [router]);
 
   // Handle share functionality

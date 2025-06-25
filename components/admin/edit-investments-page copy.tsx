@@ -1233,7 +1233,7 @@ export function EditInvestmentPage() {
                                 }
                               >
                                 <div className="flex h-full">
-                                  <div className="w-20 h-20 relative">
+                                  <div className="w-1/3 relative">
                                     <img
                                       src={
                                         property.thumbnail ||
@@ -1245,23 +1245,21 @@ export function EditInvestmentPage() {
                                       className="h-full w-full object-cover"
                                     />
                                   </div>
-                                  <div className="w-2/3 px-4 py-1 flex flex-col justify-between">
+                                  <div className="w-2/3 p-4 flex flex-col justify-between">
                                     <div>
                                       <h3 className="font-medium text-slate-900 dark:text-white line-clamp-1">
                                         {property.title}
                                       </h3>
-                                      <div className="flex flex-row items-center gap-5">
-                                        <div className="flex items-center mt-1 text-sm text-slate-500 dark:text-slate-400">
-                                          <Building className="h-3.5 w-3.5 mr-1" />
-                                          <span>{property.type}</span>
-                                        </div>
-                                        <div className="flex items-center mt-1 text-sm text-slate-500 dark:text-slate-400">
-                                          <MapPin className="h-3.5 w-3.5 mr-1" />
-                                          <span>{property.location}</span>
-                                        </div>
+                                      <div className="flex items-center mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                        <Building className="h-3.5 w-3.5 mr-1" />
+                                        <span>{property.type}</span>
+                                      </div>
+                                      <div className="flex items-center mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                        <MapPin className="h-3.5 w-3.5 mr-1" />
+                                        <span>{property.location}</span>
                                       </div>
                                     </div>
-                                    <div className="">
+                                    <div className="mt-2">
                                       <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
                                         Value: ₦
                                         {property.price.toLocaleString()}

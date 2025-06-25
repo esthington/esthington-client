@@ -58,7 +58,7 @@ export default function PropertyCard({ property, onClick, onDelete }: PropertyCa
         </motion.div>
         <div className="absolute top-2 right-2 flex gap-1">
           <Badge
-            variant={property.status === "Available" ? "success" : "secondary"}
+            variant={property.status === "Available" ? "default" : "secondary"}
             className="bg-green-500/20 text-green-400 border-green-500/30"
           >
             {property.status}

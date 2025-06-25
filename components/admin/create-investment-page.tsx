@@ -2519,26 +2519,6 @@ export function CreateInvestmentPage() {
         </div>
       </form>
 
-      <AnimatePresence>
-        {showSuccess && (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-6 right-6 bg-gradient-to-r from-emerald-500 to-cyan-600 text-white p-4 rounded-lg shadow-xl backdrop-blur-sm max-w-md z-50"
-          >
-            <div className="flex items-center">
-              <div className="bg-white/20 rounded-full p-2 mr-3">
-                <Check className="h-6 w-6" />
-              </div>
-              <div>
-                <h4 className="font-medium text-lg">Success!</h4>
-                <p>Investment created successfully! Redirecting...</p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

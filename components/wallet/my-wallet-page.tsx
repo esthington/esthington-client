@@ -84,6 +84,8 @@ export default function MyWalletPage() {
   const [dateFilter, setDateFilter] = useState("all-time");
   const [showBalanceAnimation, setShowBalanceAnimation] = useState(false);
 
+
+
   // Trigger balance animation on load
   useEffect(() => {
     if (!isLoading && wallet) {
@@ -478,7 +480,7 @@ export default function MyWalletPage() {
                           : "opacity-0 translate-y-4"
                       }`}
                     >
-                      ₦{wallet?.availableBalance?.toLocaleString() || "0"}
+                      ₦{wallet?.balance?.toLocaleString() || "0"}
                     </h2>
                     <div
                       className={`ml-3 mt-2 px-2 py-1 rounded-full bg-white/20 text-xs font-medium transition-all duration-1000 ease-out delay-300 ${
@@ -503,7 +505,10 @@ export default function MyWalletPage() {
                   <Sparkles className="h-3.5 w-3.5 text-amber-300" />
                 </div>
                 <p className="text-xl font-semibold">
-                  ₦{wallet?.balance?.toLocaleString() || "0"}
+                  ₦
+                  {(wallet?.balance !== undefined && wallet?.pendingBalance !== undefined)
+                    ? (wallet.balance + wallet.pendingBalance).toLocaleString()
+                    : "0"}
                 </p>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10 shadow-inner">
@@ -1033,12 +1038,14 @@ export default function MyWalletPage() {
                                 <div className="flex items-center justify-end">
                                   <p
                                     className={`text-sm font-semibold ${
-                                      transaction.type === "deposit"
+                                      transaction.check === "incoming"
                                         ? "text-emerald-600 dark:text-emerald-400"
                                         : "text-rose-600 dark:text-rose-400"
                                     }`}
                                   >
-                                    {transaction.type === "deposit" ? "+" : "-"}
+                                    {transaction.check === "incoming"
+                                      ? "+"
+                                      : "-"}
                                     ₦{transaction.amount.toLocaleString()}
                                   </p>
                                   <span

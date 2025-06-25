@@ -72,6 +72,7 @@ interface Transaction {
   _id: string;
   reference: string;
   type: string;
+  check: string;
   amount: number;
   status: string;
   paymentMethod?: string;
@@ -465,7 +466,7 @@ function TransactionManagementPage() {
       case PaymentMethod.PAYSTACK:
         return <CreditCard className="h-4 w-4 text-orange-500" />;
       default:
-        return <DollarSign className="h-4 w-4" />;
+        return <Wallet className="h-4 w-4 text-green-500" />;
     }
   };
 
@@ -630,7 +631,17 @@ function TransactionManagementPage() {
                       <TableCell>{getTypeBadge(transaction.type)}</TableCell>
                       <TableCell>
                         <div className="font-medium">
-                          {formatCurrency(transaction.amount)}
+                          {/* {formatCurrency(transaction.amount)} */}
+                          <p
+                            className={`text-sm font-semibold ${
+                              transaction.check === "incoming"
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : "text-rose-600 dark:text-rose-400"
+                            }`}
+                          >
+                            {transaction.check === "incoming" ? "+" : "-"}₦
+                            {transaction.amount.toLocaleString()}
+                          </p>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -641,7 +652,7 @@ function TransactionManagementPage() {
                           {getPaymentMethodIcon(transaction.paymentMethod)}
                           <span className="text-sm capitalize">
                             {transaction.paymentMethod?.replace("_", " ") ||
-                              "N/A"}
+                              "Wallet"}
                           </span>
                         </div>
                       </TableCell>
@@ -653,7 +664,10 @@ function TransactionManagementPage() {
                           )}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {format(new Date(transaction.createdAt ?? ""), "HH:mm")}
+                          {format(
+                            new Date(transaction.createdAt ?? ""),
+                            "HH:mm"
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
@@ -675,7 +689,7 @@ function TransactionManagementPage() {
                               <Eye className="mr-2 h-4 w-4" />
                               View Details
                             </DropdownMenuItem>
-                            {transaction.status ===
+                            {/* {transaction.status ===
                               TransactionStatus.PENDING && (
                               <>
                                 <DropdownMenuSeparator />
@@ -698,7 +712,7 @@ function TransactionManagementPage() {
                                   Reject
                                 </DropdownMenuItem>
                               </>
-                            )}
+                            )} */}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -751,7 +765,7 @@ function TransactionManagementPage() {
                         <Eye className="mr-2 h-4 w-4" />
                         View Details
                       </DropdownMenuItem>
-                      {transaction.status === TransactionStatus.PENDING && (
+                      {/* {transaction.status === TransactionStatus.PENDING && (
                         <>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -773,7 +787,7 @@ function TransactionManagementPage() {
                             Reject
                           </DropdownMenuItem>
                         </>
-                      )}
+                      )} */}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -797,7 +811,10 @@ function TransactionManagementPage() {
                   <div>
                     <span className="text-muted-foreground">Date:</span>
                     <div className="font-medium">
-                      {format(new Date(transaction.createdAt ?? ""), "MMM d, yyyy")}
+                      {format(
+                        new Date(transaction.createdAt ?? ""),
+                        "MMM d, yyyy"
+                      )}
                     </div>
                   </div>
                 </div>
@@ -880,67 +897,7 @@ function TransactionManagementPage() {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Transactions
-                </CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {calculatedStats.total}
-                </div>
-              </CardContent>
-            </Card>
-            {/* <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pending</CardTitle>
-                <Clock className="h-4 w-4 text-amber-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-amber-600">
-                  {calculatedStats.pending}
-                </div>
-              </CardContent>
-            </Card> */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Completed</CardTitle>
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {calculatedStats.completed}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Failed</CardTitle>
-                <XCircle className="h-4 w-4 text-red-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">
-                  {calculatedStats.failed}
-                </div>
-              </CardContent>
-            </Card>
-            {/* <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Volume
-                </CardTitle>
-                <TrendingUp className="h-4 w-4 text-blue-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">
-                  {formatCurrency(calculatedStats.totalVolume)}
-                </div>
-              </CardContent>
-            </Card> */}
-          </div>
+    
 
           {/* Filters */}
           <Card className="mb-6">
@@ -1169,14 +1126,14 @@ function TransactionManagementPage() {
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-amber-500" />
                         <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
-                          This transaction is pending approval
+                          This transaction is still pending 
                         </p>
                       </div>
                     </div>
                   )}
                 </div>
 
-                <DialogFooter className="flex-col sm:flex-row gap-2">
+                {/* <DialogFooter className="flex-col sm:flex-row gap-2">
                   {selectedTransaction.status === TransactionStatus.PENDING ? (
                     <>
                       <Button
@@ -1210,7 +1167,7 @@ function TransactionManagementPage() {
                       Close
                     </Button>
                   )}
-                </DialogFooter>
+                </DialogFooter> */}
               </DialogContent>
             </Dialog>
           )}

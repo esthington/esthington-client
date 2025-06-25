@@ -44,11 +44,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import Profile01 from "../profile-01";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function AdminSidebar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const [showAccountDialog, setShowAccountDialog] = useState(false);
+
+  const { user } = useAuth();
+
   const [expandedSections, setExpandedSections] = useState({
     dashboard: true,
     wallet: true,
@@ -270,64 +274,68 @@ export default function AdminSidebar() {
                   </div>
 
                   {/* Wallet Section */}
-                  <div>
-                    <button
-                      onClick={() => toggleSection("wallet")}
-                      className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition-colors"
-                    >
-                      <span>Wallet</span>
-                      {expandedSections.wallet ? (
-                        <ChevronDown className="h-4 w-4" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4" />
-                      )}
-                    </button>
-                    <AnimatePresence initial={false}>
-                      {expandedSections.wallet && (
-                        <motion.div
-                          className="space-y-1 overflow-hidden"
-                          initial="closed"
-                          animate="open"
-                          exit="closed"
-                          variants={sectionVariants}
-                        >
-                          <NavItem href="/dashboard/my-wallet" icon={Wallet}>
-                            My Wallet
-                          </NavItem>
-                          <NavItem
-                            href="/dashboard/fund-wallet"
-                            icon={CreditCard}
+                  {user?.role === "super_admin" ? (
+                    <div>
+                      <button
+                        onClick={() => toggleSection("wallet")}
+                        className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition-colors"
+                      >
+                        <span>Wallet</span>
+                        {expandedSections.wallet ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
+                        )}
+                      </button>
+                      <AnimatePresence initial={false}>
+                        {expandedSections.wallet && (
+                          <motion.div
+                            className="space-y-1 overflow-hidden"
+                            initial="closed"
+                            animate="open"
+                            exit="closed"
+                            variants={sectionVariants}
                           >
-                            Fund Wallet
-                          </NavItem>
-                          <NavItem
-                            href="/dashboard/transfer-money"
-                            icon={ArrowUpRight}
-                          >
-                            Transfer Money
-                          </NavItem>
-                          <NavItem
-                            href="/dashboard/withdraw-money"
-                            icon={ArrowDownCircle}
-                          >
-                            Withdraw Money
-                          </NavItem>
-                          <NavItem
-                            href="/dashboard/my-bank-account"
-                            icon={Bank}
-                          >
-                            My Bank Account
-                          </NavItem>
-                          <NavItem
-                            href="/dashboard/my-transactions"
-                            icon={History}
-                          >
-                            My Transactions
-                          </NavItem>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+                            <NavItem href="/dashboard/my-wallet" icon={Wallet}>
+                              My Wallet
+                            </NavItem>
+                            <NavItem
+                              href="/dashboard/fund-wallet"
+                              icon={CreditCard}
+                            >
+                              Fund Wallet
+                            </NavItem>
+                            <NavItem
+                              href="/dashboard/transfer-money"
+                              icon={ArrowUpRight}
+                            >
+                              Transfer Money
+                            </NavItem>
+                            <NavItem
+                              href="/dashboard/withdraw-money"
+                              icon={ArrowDownCircle}
+                            >
+                              Withdraw Money
+                            </NavItem>
+                            <NavItem
+                              href="/dashboard/my-bank-account"
+                              icon={Bank}
+                            >
+                              My Bank Account
+                            </NavItem>
+                            <NavItem
+                              href="/dashboard/my-transactions"
+                              icon={History}
+                            >
+                              My Transactions
+                            </NavItem>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  ) : (
+                    ""
+                  )}
 
                   {/* Management Section */}
                   <div>
@@ -366,7 +374,10 @@ export default function AdminSidebar() {
                           {/* <NavItem href="/dashboard/reports" icon={BarChart2}>
                             Reports
                           </NavItem> */}
-                          <NavItem href="/dashboard/investment-due" icon={BadgeDollarSignIcon}>
+                          <NavItem
+                            href="/dashboard/investment-due"
+                            icon={BadgeDollarSignIcon}
+                          >
                             Investment Due
                           </NavItem>
                           <NavItem href="/dashboard/approvals" icon={FileText}>
@@ -519,12 +530,12 @@ export default function AdminSidebar() {
                           >
                             Account
                           </NavItem>
-                          <NavItem href="/dashboard/security" icon={Shield}>
+                          {/* <NavItem href="/dashboard/security" icon={Shield}>
                             Security
                           </NavItem>
                           <NavItem href="/dashboard/notifications" icon={Bell}>
                             Notifications
-                          </NavItem>
+                          </NavItem> */}
                         </motion.div>
                       )}
                     </AnimatePresence>

@@ -15,9 +15,7 @@ function DashboardPage() {
         </div>
       }
     >
-      
       <DashboardContent />
-  
     </Suspense>
   );
 }

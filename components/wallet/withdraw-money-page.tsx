@@ -90,6 +90,13 @@ export default function WithdrawMoneyPage() {
       return;
     }
 
+    console.log(
+      "amountValue, selectedAccountId, note",
+      amountValue,
+      selectedAccountId,
+      note
+    );
+
     const success = await withdrawMoney(amountValue, selectedAccountId, note);
 
     if (success) {

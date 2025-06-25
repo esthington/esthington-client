@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Plus,
   Edit,
@@ -24,12 +24,12 @@ import {
   XCircle,
   ArrowUpRight,
   Sparkles,
-} from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
-import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -38,67 +38,104 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
-import { CompanyProvider, useCompany } from "@/contexts/company-context"
-import { useAuth } from "@/contexts/auth-context"
-import { cn } from "@/lib/utils"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer"
-import { useIsMobile } from "@/hooks/use-mobile"
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { CompanyProvider, useCompany } from "@/contexts/company-context";
+import { useAuth } from "@/contexts/auth-context";
+import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+} from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Form state type
 interface CompanyFormState {
-  name: string
-  description: string
-  logo: File | null
-  logoPreview: string
-  website: string
-  email: string
-  phone: string
-  address: string
-  active: boolean
+  name: string;
+  description: string;
+  logo: File | null;
+  logoPreview: string;
+  website: string;
+  email: string;
+  phone: string;
+  address: string;
+  active: boolean;
 }
 
 // Main page component
 export default function CompanyManagementPage() {
-  const router = useRouter()
-  const [isClient, setIsClient] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const { user } = useAuth()
+  const router = useRouter();
+  const [isClient, setIsClient] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
-    setIsClient(true)
+    setIsClient(true);
 
     // Check user role
     if (user?.role !== "admin" && user?.role !== "super_admin") {
-      router.push("/dashboard")
+      router.push("/dashboard");
     }
 
     // Check if user has completed onboarding
-    const hasCompletedOnboarding = localStorage.getItem("onboardingCompleted") === "true"
+    const hasCompletedOnboarding =
+      localStorage.getItem("onboardingCompleted") === "true";
     if (!hasCompletedOnboarding) {
-      router.push("/dashboard/")
+      router.push("/dashboard/");
     }
 
     // Simulate loading time for animation
     const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 800)
+      setIsLoading(false);
+    }, 800);
 
-    return () => clearTimeout(timer)
-  }, [router, user])
+    return () => clearTimeout(timer);
+  }, [router, user]);
 
   if (!isClient) {
-    return null // Return null during server-side rendering
+    return null; // Return null during server-side rendering
   }
 
   if (isLoading) {
@@ -106,36 +143,45 @@ export default function CompanyManagementPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center gap-4">
           <LoadingSpinner size="lg" className="text-purple-600" />
-          <p className="text-muted-foreground animate-pulse">Loading company management...</p>
+          <p className="text-muted-foreground animate-pulse">
+            Loading company management...
+          </p>
         </div>
       </div>
-    )
+    );
   }
 
   // If not admin, don't render the page
   if (user?.role !== "admin" && user?.role !== "super_admin") {
-    return null
+    return null;
   }
 
   return (
     <CompanyProvider>
       <CompanyManagementContent />
     </CompanyProvider>
-  )
+  );
 }
 
 // Main content component
 function CompanyManagementContent() {
-  const [viewMode, setViewMode] = useState<"table" | "grid">("table")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
-  const [showInactive, setShowInactive] = useState(false)
-  const [activeTab, setActiveTab] = useState("all")
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [showInactive, setShowInactive] = useState(false);
+  const [activeTab, setActiveTab] = useState("all");
 
-  const isMobile = useIsMobile()
+  const isMobile = useIsMobile();
 
   // Get companies from context
-  const { companies, isLoading, createCompany, updateCompany, deleteCompany, refreshCompanyData } = useCompany()
+  const {
+    companies,
+    isLoading,
+    createCompany,
+    updateCompany,
+    deleteCompany,
+    refreshCompanyData,
+  } = useCompany();
 
   // Filter companies based on search query and active status
   const filteredCompanies = companies
@@ -145,67 +191,69 @@ function CompanyManagementContent() {
           (activeTab === "active" && company.active) ||
           (activeTab === "inactive" && !company.active)) &&
         (company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          company.email.toLowerCase().includes(searchQuery.toLowerCase())),
+          company.email.toLowerCase().includes(searchQuery.toLowerCase()))
     )
     .sort((a, b) => {
       if (sortOrder === "asc") {
-        return a.name.localeCompare(b.name)
+        return a.name.localeCompare(b.name);
       } else {
-        return b.name.localeCompare(a.name)
+        return b.name.localeCompare(a.name);
       }
-    })
+    });
 
   // Create company dialog state
-  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   // Edit company dialog state
-  const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [companyToEdit, setCompanyToEdit] = useState<any | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [companyToEdit, setCompanyToEdit] = useState<any | null>(null);
 
   // Delete company dialog state
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [companyToDelete, setCompanyToDelete] = useState<any | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [companyToDelete, setCompanyToDelete] = useState<any | null>(null);
 
   // Handle edit button click
   const handleEditClick = (company: any) => {
-    setCompanyToEdit(company)
-    setEditDialogOpen(true)
-  }
+    setCompanyToEdit(company);
+    setEditDialogOpen(true);
+  };
 
   // Handle delete button click
   const handleDeleteClick = (company: any) => {
-    setCompanyToDelete(company)
-    setDeleteDialogOpen(true)
-  }
+    setCompanyToDelete(company);
+    setDeleteDialogOpen(true);
+  };
 
   // Handle delete confirmation
   const handleDeleteConfirm = async () => {
-    if (!companyToDelete) return
+    if (!companyToDelete) return;
 
     try {
-      const success = await deleteCompany(companyToDelete._id)
+      const success = await deleteCompany(companyToDelete._id);
       if (success) {
-        setDeleteDialogOpen(false)
+        setDeleteDialogOpen(false);
       }
     } catch (error) {
-      console.error("Error deleting company:", error)
+      console.error("Error deleting company:", error);
     }
-  }
+  };
 
   // Toggle sort order
   const toggleSortOrder = () => {
-    setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-  }
+    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+  };
 
   // Handle refresh
   const handleRefresh = () => {
-    refreshCompanyData()
-  }
+    refreshCompanyData();
+  };
 
   // Stats
-  const totalCompanies = companies.length
-  const activeCompanies = companies.filter((company) => company.active).length
-  const inactiveCompanies = companies.filter((company) => !company.active).length
+  const totalCompanies = companies.length;
+  const activeCompanies = companies.filter((company) => company.active).length;
+  const inactiveCompanies = companies.filter(
+    (company) => !company.active
+  ).length;
 
   return (
     <TooltipProvider>
@@ -233,7 +281,10 @@ function CompanyManagementContent() {
             </div>
 
             {isMobile ? (
-              <Drawer open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+              <Drawer
+                open={createDialogOpen}
+                onOpenChange={setCreateDialogOpen}
+              >
                 <DialogTrigger asChild>
                   <Button className="bg-[#342B81] text-white shadow-md hover:shadow-lg transition-all">
                     <Plus className="mr-2 h-4 w-4" />
@@ -245,7 +296,8 @@ function CompanyManagementContent() {
                     <DrawerHeader>
                       <DrawerTitle>Create New Company</DrawerTitle>
                       <DrawerDescription>
-                        Add a new company to your platform. Fill in the details below.
+                        Add a new company to your platform. Fill in the details
+                        below.
                       </DrawerDescription>
                     </DrawerHeader>
                     <div className="px-4 pb-4">
@@ -260,7 +312,10 @@ function CompanyManagementContent() {
                 </DrawerContent>
               </Drawer>
             ) : (
-              <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+              <Dialog
+                open={createDialogOpen}
+                onOpenChange={setCreateDialogOpen}
+              >
                 <DialogTrigger asChild>
                   <Button className="bg-[#342B81] text-white shadow-md hover:shadow-lg transition-all">
                     <Plus className="mr-2 h-4 w-4" />
@@ -271,7 +326,8 @@ function CompanyManagementContent() {
                   <DialogHeader>
                     <DialogTitle>Create New Company</DialogTitle>
                     <DialogDescription>
-                      Add a new company to your platform. Fill in the details below.
+                      Add a new company to your platform. Fill in the details
+                      below.
                     </DialogDescription>
                   </DialogHeader>
                   <CompanyForm
@@ -564,8 +620,9 @@ function CompanyManagementContent() {
                                     src={
                                       company.logo ||
                                       "/placeholder.svg?height=40&width=40&query=company" ||
+                                      "/placeholder.svg" ||
                                       "/placeholder.svg"
-                                     || "/placeholder.svg"}
+                                    }
                                     alt={company.name}
                                   />
                                   <AvatarFallback className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white">
@@ -666,10 +723,10 @@ function CompanyManagementContent() {
                                       <Edit className="mr-2 h-4 w-4" />
                                       <span>Edit Details</span>
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem className="cursor-pointer">
+                                    {/* <DropdownMenuItem className="cursor-pointer">
                                       <ArrowUpRight className="mr-2 h-4 w-4" />
                                       <span>View Details</span>
-                                    </DropdownMenuItem>
+                                    </DropdownMenuItem> */}
                                     <DropdownMenuItem
                                       onClick={() => handleDeleteClick(company)}
                                       className="text-red-500 focus:text-red-500 cursor-pointer"
@@ -742,8 +799,9 @@ function CompanyManagementContent() {
                                   src={
                                     company.logo ||
                                     "/placeholder.svg?height=48&width=48&query=company" ||
+                                    "/placeholder.svg" ||
                                     "/placeholder.svg"
-                                   || "/placeholder.svg"}
+                                  }
                                   alt={company.name}
                                 />
                                 <AvatarFallback className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white text-lg">
@@ -911,10 +969,9 @@ function CompanyManagementContent() {
                   }}
                 />
               )}
-              </DialogContent>
-            </Dialog>
-        )
-        }
+            </DialogContent>
+          </Dialog>
+        )}
 
         {/* Delete Company Dialog */}
         <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -934,8 +991,9 @@ function CompanyManagementContent() {
                       src={
                         companyToDelete.logo ||
                         "/placeholder.svg?height=40&width=40&query=company" ||
+                        "/placeholder.svg" ||
                         "/placeholder.svg"
-                       || "/placeholder.svg"}
+                      }
                       alt={companyToDelete.name}
                     />
                     <AvatarFallback className="bg-gradient-to-br from-red-500 to-pink-600 text-white">
@@ -979,13 +1037,13 @@ function CompanyForm({
   company = null,
   onSuccess,
 }: {
-  mode: "create" | "edit"
-  company?: any | null
-  onSuccess: () => void
+  mode: "create" | "edit";
+  company?: any | null;
+  onSuccess: () => void;
 }) {
-  const { createCompany, updateCompany } = useCompany()
+  const { createCompany, updateCompany } = useCompany();
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formState, setFormState] = useState<CompanyFormState>({
     name: company?.name || "",
     description: company?.description || "",
@@ -998,41 +1056,48 @@ function CompanyForm({
     active: company?.active ?? true,
   });
 
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Handle input change
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormState((prev) => ({ ...prev, [name]: value }))
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormState((prev) => ({ ...prev, [name]: value }));
 
     // Clear error when field is edited
     if (errors[name]) {
       setErrors((prev) => {
-        const newErrors = { ...prev }
-        delete newErrors[name]
-        return newErrors
-      })
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
     }
-  }
+  };
 
   // Handle switch change
   const handleSwitchChange = (checked: boolean) => {
-    setFormState((prev) => ({ ...prev, active: checked }))
-  }
+    setFormState((prev) => ({ ...prev, active: checked }));
+  };
 
   // Handle logo upload
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const file = e.target.files?.[0];
+    if (!file) return;
 
     // Validate file type
-    const validTypes = ["image/jpeg", "image/png", "image/gif", "image/svg+xml"]
+    const validTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/svg+xml",
+    ];
     if (!validTypes.includes(file.type)) {
       setErrors((prev) => ({
         ...prev,
         logo: "Invalid file type. Please upload a JPG, PNG, GIF, or SVG image.",
-      }))
-      return
+      }));
+      return;
     }
 
     // Validate file size (max 2MB)
@@ -1040,103 +1105,113 @@ function CompanyForm({
       setErrors((prev) => ({
         ...prev,
         logo: "File is too large. Maximum size is 2MB.",
-      }))
-      return
+      }));
+      return;
     }
 
     // Create preview URL
-    const previewUrl = URL.createObjectURL(file)
+    const previewUrl = URL.createObjectURL(file);
 
     setFormState((prev) => ({
       ...prev,
       logo: file,
       logoPreview: previewUrl,
-    }))
+    }));
 
     // Clear error
     if (errors.logo) {
       setErrors((prev) => {
-        const newErrors = { ...prev }
-        delete newErrors.logo
-        return newErrors
-      })
+        const newErrors = { ...prev };
+        delete newErrors.logo;
+        return newErrors;
+      });
     }
-  }
+  };
 
   // Validate form
   const validateForm = () => {
-    const newErrors: Record<string, string> = {}
+    const newErrors: Record<string, string> = {};
 
     if (!formState.name.trim()) {
-      newErrors.name = "Company name is required"
+      newErrors.name = "Company name is required";
     }
 
     if (!formState.description.trim()) {
-      newErrors.description = "Description is required"
+      newErrors.description = "Description is required";
     }
 
     if (!formState.email.trim()) {
-      newErrors.email = "Email is required"
+      newErrors.email = "Email is required";
     } else if (!/^\S+@\S+\.\S+$/.test(formState.email)) {
-      newErrors.email = "Invalid email format"
+      newErrors.email = "Invalid email format";
     }
 
     if (mode === "create" && !formState.logo && !formState.logoPreview) {
-      newErrors.logo = "Company logo is required"
+      newErrors.logo = "Company logo is required";
     }
 
-    if (formState.website && !/^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(formState.website)) {
-      newErrors.website = "Invalid website URL"
+    if (
+      formState.website &&
+      !/^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(
+        formState.website
+      )
+    ) {
+      newErrors.website = "Invalid website URL";
     }
 
-    if (formState.phone && !/^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/.test(formState.phone)) {
-      newErrors.phone = "Invalid phone number format"
+    if (
+      formState.phone &&
+      !/^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/.test(
+        formState.phone
+      )
+    ) {
+      newErrors.phone = "Invalid phone number format";
     }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    if (!validateForm()) return
+    if (!validateForm()) return;
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
-      const formData = new FormData()
-      formData.append("name", formState.name)
-      formData.append("description", formState.description)
-      formData.append("email", formState.email)
-      formData.append("active", formState.active.toString())
+      const formData = new FormData();
+      formData.append("name", formState.name);
+      formData.append("description", formState.description);
+      formData.append("email", formState.email);
+      formData.append("active", formState.active.toString());
 
-      if (formState.website) formData.append("website", formState.website)
-      if (formState.phone) formData.append("phone", formState.phone)
-      if (formState.address) formData.append("address", formState.address)
+      if (formState.website) formData.append("website", formState.website);
+      if (formState.phone) formData.append("phone", formState.phone);
+      if (formState.address) formData.append("address", formState.address);
 
       if (formState.logo) {
-        formData.append("logo", formState.logo)
+        formData.append("logo", formState.logo);
       }
 
-      let result = null
+      let result = null;
 
       if (mode === "create") {
-        result = await createCompany(formData)
+        result = await createCompany(formData);
       } else if (company?._id) {
-        result = await updateCompany(company._id, formData)
+        result = await updateCompany(company._id, formData);
       }
 
       if (result) {
-        onSuccess()
+        onSuccess();
       }
     } catch (error: any) {
-      console.error("Error submitting form:", error)
+      console.error("Error submitting form:", error);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <form onSubmit={handleSubmit}>
@@ -1153,7 +1228,7 @@ function CompanyForm({
             onChange={handleChange}
             className={cn(
               "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700",
-              errors.name ? "border-red-500" : "",
+              errors.name ? "border-red-500" : ""
             )}
             disabled={isSubmitting}
           />
@@ -1172,11 +1247,13 @@ function CompanyForm({
             onChange={handleChange}
             className={cn(
               "min-h-[100px] bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700",
-              errors.description ? "border-red-500" : "",
+              errors.description ? "border-red-500" : ""
             )}
             disabled={isSubmitting}
           />
-          {errors.description && <p className="text-sm text-red-500">{errors.description}</p>}
+          {errors.description && (
+            <p className="text-sm text-red-500">{errors.description}</p>
+          )}
         </div>
 
         <div className="grid gap-2">
@@ -1188,7 +1265,7 @@ function CompanyForm({
               <div
                 className={cn(
                   "h-24 w-24 rounded-md border flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700",
-                  formState.logoPreview ? "p-0" : "p-2",
+                  formState.logoPreview ? "p-0" : "p-2"
                 )}
               >
                 {formState.logoPreview ? (
@@ -1203,7 +1280,9 @@ function CompanyForm({
                     className="h-full w-full object-contain"
                   />
                 ) : (
-                  <div className="text-xs text-center text-muted-foreground">No logo uploaded</div>
+                  <div className="text-xs text-center text-muted-foreground">
+                    No logo uploaded
+                  </div>
                 )}
               </div>
             </div>
@@ -1216,12 +1295,16 @@ function CompanyForm({
                 onChange={handleLogoUpload}
                 className={cn(
                   "cursor-pointer bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700",
-                  errors.logo ? "border-red-500" : "",
+                  errors.logo ? "border-red-500" : ""
                 )}
                 disabled={isSubmitting}
               />
-              <p className="text-xs text-muted-foreground mt-1">Upload a JPG, PNG, GIF, or SVG image (max 2MB)</p>
-              {errors.logo && <p className="text-sm text-red-500 mt-1">{errors.logo}</p>}
+              <p className="text-xs text-muted-foreground mt-1">
+                Upload a JPG, PNG, GIF, or SVG image (max 2MB)
+              </p>
+              {errors.logo && (
+                <p className="text-sm text-red-500 mt-1">{errors.logo}</p>
+              )}
             </div>
           </div>
         </div>
@@ -1240,11 +1323,13 @@ function CompanyForm({
               onChange={handleChange}
               className={cn(
                 "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700",
-                errors.email ? "border-red-500" : "",
+                errors.email ? "border-red-500" : ""
               )}
               disabled={isSubmitting}
             />
-            {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
+            {errors.email && (
+              <p className="text-sm text-red-500">{errors.email}</p>
+            )}
           </div>
 
           <div className="grid gap-2">
@@ -1257,11 +1342,13 @@ function CompanyForm({
               onChange={handleChange}
               className={cn(
                 "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700",
-                errors.phone ? "border-red-500" : "",
+                errors.phone ? "border-red-500" : ""
               )}
               disabled={isSubmitting}
             />
-            {errors.phone && <p className="text-sm text-red-500">{errors.phone}</p>}
+            {errors.phone && (
+              <p className="text-sm text-red-500">{errors.phone}</p>
+            )}
           </div>
         </div>
 
@@ -1275,11 +1362,13 @@ function CompanyForm({
             onChange={handleChange}
             className={cn(
               "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700",
-              errors.website ? "border-red-500" : "",
+              errors.website ? "border-red-500" : ""
             )}
             disabled={isSubmitting}
           />
-          {errors.website && <p className="text-sm text-red-500">{errors.website}</p>}
+          {errors.website && (
+            <p className="text-sm text-red-500">{errors.website}</p>
+          )}
         </div>
 
         <div className="grid gap-2">
@@ -1305,13 +1394,19 @@ function CompanyForm({
           />
           <Label htmlFor="active" className="flex items-center gap-2">
             Active
-            {formState.active && <Sparkles className="h-3.5 w-3.5 text-purple-500" />}
+            {formState.active && (
+              <Sparkles className="h-3.5 w-3.5 text-purple-500" />
+            )}
           </Label>
         </div>
       </div>
 
       <DialogFooter>
-        <Button type="submit" disabled={isSubmitting} className="bg-[#342B81] text-white">
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="bg-[#342B81] text-white"
+        >
           {isSubmitting ? (
             <>
               <LoadingSpinner size="sm" className="mr-2" />
@@ -1323,5 +1418,5 @@ function CompanyForm({
         </Button>
       </DialogFooter>
     </form>
-  )
+  );
 }

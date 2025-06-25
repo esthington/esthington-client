@@ -75,6 +75,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { useProperty, type Property } from "@/contexts/property-context";
+import { useAuth } from "@/contexts/auth-context";
 
 // Animation components with TypeScript support
 interface FadeInProps {
@@ -202,8 +203,10 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
     companyName,
     companyLogo,
   } = property;
+  const { user } = useAuth();
 
   const router = useRouter();
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
   const formattedPrice = new Intl.NumberFormat("en-NG", {
     style: "currency",
@@ -277,51 +280,55 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
             </div>
 
             {/* Actions Menu */}
-            <div className="absolute top-3 right-3 opacity-0 transform translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background shadow-sm"
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => onClick(_id)}>
-                    <Eye className="h-4 w-4 mr-2" /> View Details
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() =>
-                      router.push(`/dashboard/properties/edit/${_id}`)
-                    }
-                  >
-                    <Edit className="h-4 w-4 mr-2" /> Edit Details
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => onToggleFeatured(_id, !featured)}
-                  >
-                    {featured ? (
-                      <>
-                        <StarOff className="h-4 w-4 mr-2" /> Remove from
-                        Featured
-                      </>
-                    ) : (
-                      <>
-                        <Star className="h-4 w-4 mr-2" /> Add to Featured
-                      </>
-                    )}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setIsDeleteDialogOpen(true)}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" /> Delete Property
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            {isAdmin ? (
+              <div className="absolute top-3 right-3 opacity-0 transform translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      className="h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background shadow-sm"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={() => onClick(_id)}>
+                      <Eye className="h-4 w-4 mr-2" /> View Details
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        router.push(`/dashboard/properties/edit/${_id}`)
+                      }
+                    >
+                      <Edit className="h-4 w-4 mr-2" /> Edit Details
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => onToggleFeatured(_id, !featured)}
+                    >
+                      {featured ? (
+                        <>
+                          <StarOff className="h-4 w-4 mr-2" /> Remove from
+                          Featured
+                        </>
+                      ) : (
+                        <>
+                          <Star className="h-4 w-4 mr-2" /> Add to Featured
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setIsDeleteDialogOpen(true)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" /> Delete Property
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ) : (
+              ""
+            )}
           </div>
 
           {/* Property Content */}
@@ -744,6 +751,9 @@ export default function PropertyListingPage() {
     updateProperty,
   } = useProperty();
 
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+
   // State for locations and types
   const [locations, setLocations] = useState<string[]>([]);
   const [types, setTypes] = useState<string[]>([]);
@@ -849,12 +859,16 @@ export default function PropertyListingPage() {
               Browse and manage real estate properties
             </p>
           </div>
-          <Button
-            onClick={handleCreateProperty}
-            className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-300"
-          >
-            <Plus className="mr-2 h-4 w-4" /> Add New Property
-          </Button>
+          {isAdmin ? (
+            <Button
+              onClick={handleCreateProperty}
+              className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-300"
+            >
+              <Plus className="mr-2 h-4 w-4" /> Add New Property
+            </Button>
+          ) : (
+            ""
+          )}
         </div>
       </FadeIn>
 

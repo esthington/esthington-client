@@ -594,16 +594,16 @@ export default function MyTransactionsPage() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <div
-                              className={`text-sm font-medium ${
-                                transaction.type === "deposit"
+                            <p
+                              className={`text-sm font-semibold ${
+                                transaction.check === "incoming"
                                   ? "text-emerald-600 dark:text-emerald-400"
                                   : "text-rose-600 dark:text-rose-400"
                               }`}
                             >
-                              {transaction.type === "deposit" ? "+" : "-"}₦
+                              {transaction.check === "incoming" ? "+" : "-"}₦
                               {transaction.amount.toLocaleString()}
-                            </div>
+                            </p>
                             <Badge
                               variant="outline"
                               className={`${statusDetails.bgColor} ${statusDetails.textColor} ${statusDetails.borderColor}`}
