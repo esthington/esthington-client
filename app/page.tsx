@@ -11,6 +11,7 @@ export default function Home() {
   const [isClient, setIsClient] = useState(false);
   const [isSplashVisible, setIsSplashVisible] = useState(true);
 
+  //desc: this is to ensure that splash screen is shown only on the client side
   useEffect(() => {
     setIsClient(true);
 
