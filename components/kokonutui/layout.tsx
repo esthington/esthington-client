@@ -24,7 +24,7 @@ interface TawkMessengerProps {
 }
 
 const TawkMessengerReact = dynamic<TawkMessengerProps>(
-  () => import("@tawk.to/tawk-messenger-react").then(mod => mod.default),
+  () => import("@tawk.to/tawk-messenger-react").then((mod) => mod.default),
   { ssr: false }
 );
 
@@ -94,18 +94,45 @@ function DashboardLayout({ children }: LayoutProps) {
   };
 
   return (
-    <div className={`flex h-screen ${theme === "dark" ? "dark" : "light"}`}>
-      {renderSidebar()}
-      <div className="w-full flex flex-1 flex-col">
-        <header className="h-16 border-b border-border">
+    <div className={`min-h-screen ${theme === "dark" ? "dark" : "light"}`}>
+      {/* Desktop Layout */}
+      <div className="hidden lg:flex h-screen">
+        {/* Sticky Sidebar */}
+        <aside className="sticky top-0 h-screen overflow-y-auto border-r border-border bg-background">
+          {renderSidebar()}
+        </aside>
+
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Sticky Top Navigation */}
+          <header className="sticky top-0 z-10 h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <TopNav />
+          </header>
+
+          {/* Scrollable Main Content */}
+          <main className="flex-1 overflow-y-auto px-2 md:px-4 py-6 lg:px-20">
+            {children}
+          </main>
+        </div>
+      </div>
+
+      {/* Mobile Layout */}
+      <div className="lg:hidden min-h-screen">
+        {/* Mobile Top Navigation - Sticky */}
+        <header className="sticky top-0 z-10 h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <TopNav />
         </header>
-        <main className="flex-1 overflow-auto px-2 md:px-4 py-6 bg-background pb-20 lg:pb-6 lg:px-20">
+
+        {/* Mobile Main Content */}
+        <main className="px-2 md:px-4 py-6 pb-20 bg-background">
           {children}
         </main>
+
+        {/* Mobile Bottom Navigation */}
         {renderBottomNav()}
       </div>
 
+      {/* Tawk Messenger */}
       {initialRenderRef.current && (
         <TawkMessengerReact
           propertyId="684a98c4c2de78190f3149e8"

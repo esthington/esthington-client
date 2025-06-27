@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -21,6 +21,8 @@ import {
   Download,
   Users,
   Eye,
+  CheckCircle,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -77,11 +79,7 @@ const FadeIn: React.FC<FadeInProps> = ({
   );
 };
 
-interface InvestmentDetailPageProps {
-  id: string;
-}
-
-export default function InvestmentDetailPage() {
+export default function InvestmentDetailPageFixed() {
   const params = useParams();
   const id = params.id as string;
   const router = useRouter();
@@ -94,11 +92,70 @@ export default function InvestmentDetailPage() {
     toggleTrending,
     deleteInvestment,
     changeInvestmentStatus,
+    userInvestments,
+    fetchUserInvestments,
   } = useInvestment();
   const [activeTab, setActiveTab] = useState("overview");
   const [isInvestmentDialogOpen, setIsInvestmentDialogOpen] = useState(false);
 
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+
+  // Check if current user has already invested in this investment
+  const hasUserInvested = useMemo(() => {
+    if (!user?._id || !selectedInvestment?._id) return false;
+
+    // Check in userInvestments context
+    const hasInvestmentInContext = userInvestments.some((investment) => {
+      const investmentId =
+        typeof investment.investmentId === "object"
+          ? investment.investmentId._id
+          : investment.investmentId;
+      return investmentId === selectedInvestment._id;
+    });
+
+    // Also check in the investment's investors array
+    const hasInvestmentInInvestors = selectedInvestment.investors?.some(
+      (investor) => investor.userId === user._id
+    );
+
+    return hasInvestmentInContext || hasInvestmentInInvestors;
+  }, [
+    user?._id,
+    selectedInvestment?._id,
+    selectedInvestment?.investors,
+    userInvestments,
+  ]);
+
+  // Get user's investment amount if they have invested
+  const userInvestmentAmount = useMemo(() => {
+    if (!hasUserInvested || !user?._id || !selectedInvestment?._id) return 0;
+
+    // Check userInvestments context first
+    const contextInvestment = userInvestments.find((investment) => {
+      const investmentId =
+        typeof investment.investmentId === "object"
+          ? investment.investmentId._id
+          : investment.investmentId;
+      return investmentId === selectedInvestment._id;
+    });
+
+    if (contextInvestment) {
+      return contextInvestment.amount;
+    }
+
+    // Fallback to investors array
+    const investorRecord = selectedInvestment.investors?.find(
+      (investor) => investor.userId === user._id
+    );
+
+    return investorRecord?.amount || 0;
+  }, [
+    hasUserInvested,
+    user?._id,
+    selectedInvestment?._id,
+    selectedInvestment?.investors,
+    userInvestments,
+  ]);
 
   useEffect(() => {
     if (id) {
@@ -106,7 +163,16 @@ export default function InvestmentDetailPage() {
     }
   }, [id]);
 
+  useEffect(() => {
+    if (user?._id) {
+      fetchUserInvestments();
+    }
+  }, [user?._id]);
+
   const handleInvestNow = () => {
+    if (hasUserInvested) {
+      return; // Don't open dialog if user has already invested
+    }
     setIsInvestmentDialogOpen(true);
   };
 
@@ -341,12 +407,40 @@ export default function InvestmentDetailPage() {
                 </Button>
               </>
             ) : (
-              <Button
-                onClick={handleInvestNow}
-                className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-300"
-              >
-                Invest Now
-              </Button>
+              <>
+                {hasUserInvested ? (
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-green-100 text-green-800 border-green-200 px-3 py-1">
+                      <CheckCircle className="mr-1 h-3 w-3" />
+                      Invested: {formatCurrency(userInvestmentAmount)}
+                    </Badge>
+                    <Button
+                      disabled
+                      variant="outline"
+                      className="bg-muted/50 text-muted-foreground cursor-not-allowed"
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Already Invested
+                    </Button>
+                  </div>
+                ) : selectedInvestment.status !== InvestmentStatus.ACTIVE ? (
+                  <Button
+                    disabled
+                    variant="outline"
+                    className="bg-muted/50 text-muted-foreground cursor-not-allowed"
+                  >
+                    <AlertCircle className="mr-2 h-4 w-4" />
+                    Investment Not Active
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleInvestNow}
+                    className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-300"
+                  >
+                    Invest Now
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -384,6 +478,7 @@ export default function InvestmentDetailPage() {
                   <Image
                     src={
                       selectedInvestment.propertyId.thumbnail ||
+                      "/placeholder.svg" ||
                       "/placeholder.svg"
                     }
                     alt={selectedInvestment.title}
@@ -426,11 +521,17 @@ export default function InvestmentDetailPage() {
               onValueChange={setActiveTab}
               className="mt-6"
             >
-              <TabsList className="grid grid-cols-4 mb-6 bg-muted/50">
+              <TabsList
+                className={`grid ${
+                  isAdmin ? "grid-cols-4" : "grid-cols-3"
+                } mb-6 bg-muted/50`}
+              >
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="details">Investment Details</TabsTrigger>
                 <TabsTrigger value="documents">Documents</TabsTrigger>
-                <TabsTrigger value="investors">Investors</TabsTrigger>
+                {isAdmin && (
+                  <TabsTrigger value="investors">Investors</TabsTrigger>
+                )}
               </TabsList>
 
               <TabsContent value="overview" className="space-y-6">
@@ -961,74 +1062,117 @@ export default function InvestmentDetailPage() {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="investors" className="space-y-6">
-                <Card className="p-6 bg-gradient-to-b from-background to-muted/30 shadow-md dark:shadow-primary/5">
-                  <div className="space-y-6">
-                    <h3 className="text-lg font-semibold text-foreground mb-3">
-                      Investors
-                    </h3>
+              {isAdmin && (
+                <TabsContent value="investors" className="space-y-6">
+                  <Card className="p-6 bg-gradient-to-b from-background to-muted/30 shadow-md dark:shadow-primary/5">
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-foreground">
+                          Investors
+                        </h3>
+                        <Badge
+                          variant="outline"
+                          className="text-muted-foreground"
+                        >
+                          Admin Only
+                        </Badge>
+                      </div>
 
-                    {selectedInvestment.investors &&
-                    selectedInvestment.investors.length > 0 ? (
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead>
-                            <tr className="border-b border-border">
-                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">
-                                Investor
-                              </th>
-                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">
-                                Amount
-                              </th>
-                              <th className="text-left py-3 px-4 text-muted-foreground font-medium">
-                                Date
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {selectedInvestment.investors.map(
-                              (investor: any, index: any) => (
-                                <tr
-                                  key={index}
-                                  className="border-b border-border last:border-0"
-                                >
-                                  <td className="py-3 px-4 text-foreground">
-                                    {investor.userId.substring(0, 8)}...
-                                  </td>
-                                  <td className="py-3 px-4 text-foreground">
-                                    {formatCurrency(investor.amount)}
-                                  </td>
-                                  <td className="py-3 px-4 text-muted-foreground">
-                                    {formatDate(investor.date)}
-                                  </td>
-                                </tr>
-                              )
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center py-8 text-center">
-                        <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                        <h4 className="text-lg font-medium text-foreground mb-2">
-                          No investors yet
-                        </h4>
-                        <p className="text-muted-foreground max-w-md">
-                          Be the first to invest in this opportunity!
-                        </p>
-                        {!isAdmin && (
-                          <Button
-                            onClick={handleInvestNow}
-                            className="mt-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-300"
-                          >
-                            Invest Now
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </Card>
-              </TabsContent>
+                      {selectedInvestment.investors &&
+                      selectedInvestment.investors.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead>
+                              <tr className="border-b border-border">
+                                <th className="text-left py-3 px-4 text-muted-foreground font-medium">
+                                  Investor ID
+                                </th>
+                                <th className="text-left py-3 px-4 text-muted-foreground font-medium">
+                                  Amount
+                                </th>
+                                <th className="text-left py-3 px-4 text-muted-foreground font-medium">
+                                  Date
+                                </th>
+                                <th className="text-left py-3 px-4 text-muted-foreground font-medium">
+                                  Status
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {selectedInvestment.investors.map(
+                                (investor: any, index: any) => (
+                                  <tr
+                                    key={index}
+                                    className="border-b border-border last:border-0 hover:bg-muted/30"
+                                  >
+                                    <td className="py-3 px-4 text-foreground font-mono text-sm">
+                                      {investor.userId.substring(0, 8)}...
+                                    </td>
+                                    <td className="py-3 px-4 text-foreground font-medium">
+                                      {formatCurrency(investor.amount)}
+                                    </td>
+                                    <td className="py-3 px-4 text-muted-foreground">
+                                      {formatDate(investor.date)}
+                                    </td>
+                                    <td className="py-3 px-4">
+                                      <Badge className="bg-green-100 text-green-800 border-green-200">
+                                        <CheckCircle className="mr-1 h-3 w-3" />
+                                        Active
+                                      </Badge>
+                                    </td>
+                                  </tr>
+                                )
+                              )}
+                            </tbody>
+                          </table>
+
+                          <div className="mt-4 p-4 bg-muted/30 rounded-lg">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                              <div>
+                                <span className="text-muted-foreground">
+                                  Total Investors:
+                                </span>
+                                <span className="ml-2 font-medium text-foreground">
+                                  {selectedInvestment.investors.length}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">
+                                  Total Raised:
+                                </span>
+                                <span className="ml-2 font-medium text-foreground">
+                                  {formatCurrency(
+                                    selectedInvestment.raisedAmount
+                                  )}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">
+                                  Funding Progress:
+                                </span>
+                                <span className="ml-2 font-medium text-foreground">
+                                  {selectedInvestment.percentageFunded}%
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                          <Users className="h-12 w-12 text-muted-foreground mb-4" />
+                          <h4 className="text-lg font-medium text-foreground mb-2">
+                            No investors yet
+                          </h4>
+                          <p className="text-muted-foreground max-w-md">
+                            This investment opportunity hasn't received any
+                            investments yet.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                </TabsContent>
+              )}
             </Tabs>
           </FadeIn>
         </div>
@@ -1125,12 +1269,35 @@ export default function InvestmentDetailPage() {
 
                 {!isAdmin && (
                   <div className="pt-4">
-                    <Button
-                      onClick={handleInvestNow}
-                      className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-300"
-                    >
-                      Invest Now
-                    </Button>
+                    {hasUserInvested ? (
+                      <div className="space-y-2">
+                        <Badge className="w-full justify-center bg-green-100 text-green-800 border-green-200 py-2">
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          You have invested{" "}
+                          {formatCurrency(userInvestmentAmount)}
+                        </Badge>
+                        <p className="text-xs text-muted-foreground text-center">
+                          Thank you for your investment! Track your returns in
+                          your dashboard.
+                        </p>
+                      </div>
+                    ) : selectedInvestment.status !==
+                      InvestmentStatus.ACTIVE ? (
+                      <Button
+                        disabled
+                        className="w-full bg-muted text-muted-foreground cursor-not-allowed"
+                      >
+                        <AlertCircle className="mr-2 h-4 w-4" />
+                        Investment Not Active
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={handleInvestNow}
+                        className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-300"
+                      >
+                        Invest Now
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
@@ -1278,7 +1445,7 @@ export default function InvestmentDetailPage() {
         </div>
       </div>
 
-      {/* Investment Dialog - You'll need to create this component */}
+      {/* Investment Dialog - Fixed version */}
       <InvestmentDialog
         isOpen={isInvestmentDialogOpen}
         onClose={() => setIsInvestmentDialogOpen(false)}

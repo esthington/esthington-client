@@ -74,6 +74,9 @@ export function InvestmentDialog({
   const [isProcessing, setIsProcessing] = useState(false);
   const [direction, setDirection] = useState(0);
 
+  // Add state to prevent multiple submissions
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+
   // Memoized calculations to prevent re-renders
   const calculatedReturns = useMemo(() => {
     if (!selectedPlan || !selectedDuration) {
@@ -144,6 +147,7 @@ export function InvestmentDialog({
     setNotes("");
     setIsProcessing(false);
     setDirection(0);
+    setHasSubmitted(false); // Reset submission state
   }, []);
 
   useEffect(() => {
@@ -205,8 +209,13 @@ export function InvestmentDialog({
     router.push("/dashboard/fund-wallet");
   }, [onClose, router]);
 
-  // Wrap handleInvest in useCallback
+  // Fixed handleInvest to prevent flickering and multiple submissions
   const handleInvest = useCallback(async () => {
+    // Prevent multiple submissions
+    if (hasSubmitted || isProcessing || isSubmitting) {
+      return;
+    }
+
     if (!selectedPlan || !selectedDuration) {
       toast.error("Please select a plan and duration");
       return;
@@ -226,6 +235,8 @@ export function InvestmentDialog({
       return;
     }
 
+    // Set submission state to prevent multiple clicks
+    setHasSubmitted(true);
     setIsProcessing(true);
 
     try {
@@ -239,34 +250,40 @@ export function InvestmentDialog({
       );
 
       if (success) {
+        // Move to success step without flickering
         setDirection(1);
-        setTimeout(() => {
-          setCurrentStep(4);
-        }, 50);
+        setCurrentStep(4);
 
+        // Auto-close after showing success
         setTimeout(() => {
           onClose();
+          router.push("/dashboard/investments/my-investments");
         }, 3000);
-        router.push("/dashboard/investments/my-investments");
+      } else {
+        // Reset submission state on failure
+        setHasSubmitted(false);
       }
     } catch (error) {
       console.error("Investment failed:", error);
       toast.error("Investment failed. Please try again.");
+      setHasSubmitted(false); // Reset on error
     } finally {
       setIsProcessing(false);
     }
   }, [
+    hasSubmitted,
+    isProcessing,
+    isSubmitting,
     selectedPlan,
     selectedDuration,
     investmentAmount,
     investment?._id,
+    investment?.minimumInvestment,
     wallet,
     formatCurrency,
     investInProperty,
     notes,
     calculatedReturns,
-    setDirection,
-    setCurrentStep,
     onClose,
     router,
   ]);
@@ -313,7 +330,7 @@ export function InvestmentDialog({
       );
     };
     return Component;
-  }, [isMobile, investment?.title, onClose]);
+  }, [isMobile, investment?.title]);
 
   // Memoized progress bar component
   const ProgressBar = useMemo(() => {
@@ -987,7 +1004,7 @@ export function InvestmentDialog({
                         <Button
                           onClick={handleFundWallet}
                           variant="outline"
-                          className="mt-3 border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/10"
+                          className="mt-3 border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/10 bg-transparent"
                         >
                           Fund Wallet
                         </Button>
@@ -1130,23 +1147,29 @@ export function InvestmentDialog({
         </div>
 
         <div className="pt-6 flex justify-between">
-          <Button variant="outline" onClick={handlePrevStep}>
+          <Button
+            variant="outline"
+            onClick={handlePrevStep}
+            disabled={isProcessing || hasSubmitted}
+          >
             <ChevronLeft className="mr-2 h-5 w-5" />
             Back to Amount
           </Button>
 
           <Button
             onClick={handleInvest}
-            disabled={!canProceedToStep3 || isProcessing || isSubmitting}
+            disabled={
+              !canProceedToStep3 || isProcessing || isSubmitting || hasSubmitted
+            }
             className={`
           ${
-            canProceedToStep3 && !isProcessing && !isSubmitting
+            canProceedToStep3 && !isProcessing && !isSubmitting && !hasSubmitted
               ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
               : ""
           }
         `}
           >
-            {isProcessing || isSubmitting ? (
+            {isProcessing || isSubmitting || hasSubmitted ? (
               <>
                 <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                 Processing...
@@ -1167,10 +1190,12 @@ export function InvestmentDialog({
       canProceedToStep3,
       isProcessing,
       isSubmitting,
+      hasSubmitted,
       selectedPlan,
       selectedDuration,
       calculatedReturns,
       notes,
+      wallet,
       formatCurrency,
       handleFundWallet,
       handlePrevStep,
