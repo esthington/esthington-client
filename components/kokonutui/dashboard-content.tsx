@@ -396,7 +396,7 @@ export default function DashboardContentProfessional() {
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-base text-foreground">
+          <h1 className="text-2xl font-base text-foreground hidden lg:block">
             Platform Overview
           </h1>
           <p className="text-muted-foreground mt-2 text-sm">
@@ -770,7 +770,7 @@ export default function DashboardContentProfessional() {
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-base text-foreground">
+          <h1 className="text-2xl font-base text-foreground hidden lg:block">
             Agent Dashboard
           </h1>
           <p className="text-muted-foreground mt-2 text-sm">
@@ -1088,7 +1088,7 @@ export default function DashboardContentProfessional() {
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-base text-foreground">
+          <h1 className="text-2xl font-base text-foreground hidden lg:block">
             Investment Portfolio
           </h1>
           <p className="text-muted-foreground mt-2 text-sm">
