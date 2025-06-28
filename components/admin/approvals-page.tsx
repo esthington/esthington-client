@@ -338,7 +338,7 @@ function WithdrawalApprovalManagement() {
   // Check if user has admin access
   if (!hasAdminAccess) {
     return (
-      <div className="min-h-screen bg-gray-50/50">
+      <div className="min-h-screen ">
         <div className="container mx-auto p-4 md:p-6 max-w-7xl">
           <div className="flex flex-col items-center justify-center h-[60vh]">
             <div className="text-center">
@@ -697,7 +697,7 @@ function WithdrawalApprovalManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50 overflow-x-hidden">
+    <div className="min-h-screen  overflow-x-hidden">
       <div className="w-full max-w-full">
         <div className="container mx-auto p-4 md:p-6 max-w-7xl">
           {/* Header */}

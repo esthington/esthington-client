@@ -726,7 +726,7 @@ export default function UserManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
+    <div className="min-h-screen">
       <div className="w-full max-w-[100vw] overflow-hidden">
         <div className="container mx-auto p-4 md:p-6 max-w-7xl">
           {/* Header */}

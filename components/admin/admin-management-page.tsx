@@ -666,7 +666,7 @@ export default function AdminManagementPage() {
   // Check if user has permission to view this page
   if (!isSuperAdmin) {
     return (
-      <div className="min-h-screen bg-gray-50/50">
+      <div className="min-h-screen">
         <div className="container mx-auto p-4 md:p-6 max-w-7xl">
           <div className="flex flex-col items-center justify-center h-[60vh]">
             <div className="text-center">
@@ -685,7 +685,7 @@ export default function AdminManagementPage() {
   // Add loading check before any admin operations
   if (!admins || isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50/50">
+      <div className="min-h-screen">
         <div className="container mx-auto p-4 md:p-6 max-w-7xl">
           <div className="flex justify-center items-center h-40">
             <div className="flex items-center gap-2">
@@ -699,7 +699,7 @@ export default function AdminManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
+    <div className="min-h-screen">
       <div className="container mx-auto p-4 md:p-6 max-w-7xl">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">

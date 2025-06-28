@@ -503,7 +503,7 @@ function InvestmentDuesManagement() {
   // Check if user has admin access
   if (!hasAdminAccess) {
     return (
-      <div className="min-h-screen bg-gray-50/50">
+      <div className="min-h-screen ">
         <div className="container mx-auto p-4 md:p-6 max-w-7xl">
           <div className="flex flex-col items-center justify-center h-[60vh]">
             <div className="text-center">
@@ -917,7 +917,7 @@ function InvestmentDuesManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
+    <div className="min-h-screen ">
       <div className="container mx-auto p-4 md:p-6 max-w-7xl">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
