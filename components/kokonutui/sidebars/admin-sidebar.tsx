@@ -96,7 +96,7 @@ export default function AdminSidebar() {
   }
 
   function handleChatWithAdmin() {
-    // Open WhatsApp with a predefined message new
+    // Open WhatsApp with a predefined message
     window.open(
       "https://wa.me/1234567890?text=Hello%20Esthington%20Support,%20I%20need%20assistance.",
       "_blank"
