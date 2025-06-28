@@ -1130,7 +1130,7 @@ export default function DashboardContentProfessional() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <Card className="relative overflow-hidden border-0 shadow-md  bg-card">
+          <Card className="relative overflow-hidden border-0 shadow-md  bg-card bg-neutral-50 dark:bg-neutral-900">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-emerald-600"></div>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-sm font-semibold text-foreground">
@@ -1426,7 +1426,7 @@ export default function DashboardContentProfessional() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-6 max-w-7xl">
+      <div className="mx-auto py-6 max-w-7xl">
         {/* Welcome Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">

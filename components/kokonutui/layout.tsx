@@ -110,7 +110,7 @@ function DashboardLayout({ children }: LayoutProps) {
           </header>
 
           {/* Scrollable Main Content */}
-          <main className="flex-1 overflow-y-auto px-2 md:px-4 py-6 lg:px-20">
+          <main className="flex-1 overflow-y-auto px-2 md:px-4 py-6 lg:px-10">
             {children}
           </main>
         </div>
@@ -124,7 +124,7 @@ function DashboardLayout({ children }: LayoutProps) {
         </header>
 
         {/* Mobile Main Content */}
-        <main className="px-2 md:px-4 py-6 pb-20 bg-background">
+        <main className="px-2 md:px-2 py-6 pb-20 bg-background">
           {children}
         </main>
 
