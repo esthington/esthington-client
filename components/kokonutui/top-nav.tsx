@@ -716,6 +716,7 @@ function AgentSidebarContent() {
 
 // Admin Sidebar Content Component
 function AdminSidebarContent() {
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState({
     dashboard: true,
     wallet: true,
@@ -724,6 +725,11 @@ function AdminSidebarContent() {
     investments: true,
     system: true,
   });
+
+  useEffect(() => {
+    const role = localStorage.getItem("userRole");
+    setUserRole(role);
+  }, []);
 
   function toggleSection(section: keyof typeof expandedSections) {
     setExpandedSections((prev) => ({
@@ -822,6 +828,71 @@ function AdminSidebarContent() {
               )}
             </AnimatePresence>
           </div>
+
+          {/* Wallet Section - Only for super_admin */}
+          {userRole === "super_admin" && (
+            <div>
+              <button
+                onClick={() => toggleSection("wallet")}
+                className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <span>Wallet</span>
+                {expandedSections.wallet ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </button>
+              <AnimatePresence initial={false}>
+                {expandedSections.wallet && (
+                  <motion.div
+                    className="space-y-1 overflow-hidden"
+                    initial="closed"
+                    animate="open"
+                    exit="closed"
+                    variants={sectionVariants}
+                  >
+                    <a
+                      href="/dashboard/my-wallet"
+                      className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
+                    >
+                      <span>My Wallet</span>
+                    </a>
+                    <a
+                      href="/dashboard/fund-wallet"
+                      className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
+                    >
+                      <span>Fund Wallet</span>
+                    </a>
+                    <a
+                      href="/dashboard/transfer-money"
+                      className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
+                    >
+                      <span>Transfer Money</span>
+                    </a>
+                    <a
+                      href="/dashboard/withdraw-money"
+                      className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
+                    >
+                      <span>Withdraw Money</span>
+                    </a>
+                    <a
+                      href="/dashboard/my-bank-account"
+                      className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
+                    >
+                      <span>My Bank Account</span>
+                    </a>
+                    <a
+                      href="/dashboard/my-transactions"
+                      className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
+                    >
+                      <span>My Transactions</span>
+                    </a>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
 
           {/* Management Section */}
           <div>
