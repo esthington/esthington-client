@@ -1,5 +1,9 @@
 "use client";
 
+import { useAuth } from "@/contexts/auth-context";
+
+// Define valid user roles for better type safety
+type UserRole = "buyer" | "agent" | "admin" | "super_admin";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +23,14 @@ interface BreadcrumbItem {
 }
 
 export default function TopNav() {
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const { user } = useAuth();
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+
+  // Debug user role
+  useEffect(() => {
+    console.log("Current user role:", user?.role);
+    setUserRole(user?.role);
+  }, [user?.role]);
   const [isMobile, setIsMobile] = useState(false);
 
   // Check if device is mobile/tablet
@@ -31,12 +42,6 @@ export default function TopNav() {
     checkDevice();
     window.addEventListener("resize", checkDevice);
     return () => window.removeEventListener("resize", checkDevice);
-  }, []);
-
-  // Get user role from localStorage
-  useEffect(() => {
-    const role = localStorage.getItem("userRole");
-    setUserRole(role);
   }, []);
 
   const breadcrumbs: BreadcrumbItem[] = [
@@ -716,7 +721,13 @@ function AgentSidebarContent() {
 
 // Admin Sidebar Content Component
 function AdminSidebarContent() {
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const { user } = useAuth();
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+
+  useEffect(() => {
+    console.log("Admin sidebar - Current user role:", user?.role);
+    setUserRole(user?.role);
+  }, [user?.role]);
   const [expandedSections, setExpandedSections] = useState({
     dashboard: true,
     wallet: true,
@@ -725,11 +736,6 @@ function AdminSidebarContent() {
     investments: true,
     system: true,
   });
-
-  useEffect(() => {
-    const role = localStorage.getItem("userRole");
-    setUserRole(role);
-  }, []);
 
   function toggleSection(section: keyof typeof expandedSections) {
     setExpandedSections((prev) => ({
