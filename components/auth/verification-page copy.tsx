@@ -96,6 +96,94 @@ function AccountVerificationPage() {
     let isMounted = true;
     const longerEXP = 1000 * 60 * 60 * 24 * 30;
 
+    // const checkVerify = async () => {
+    //   if (!token) return
+
+    //   try {
+    //     setLoading(true)
+    //     setVerificationFailed(false)
+    //     verificationCheckedRef.current = true // Mark verification as checked to prevent loops
+
+    //     const response = await apiConfig.post("auth/user/verify-email", {
+    //       verificationToken: token,
+    //     })
+
+    //     if (!isMounted) return // Prevent setting state on unmounted component
+
+    //     if (response.data.type === "emailverified") {
+    //       cookie.set("esToken", response.data.token, {
+    //         expires: new Date(Date.now() + longerEXP),
+    //       })
+
+    //       setStatus("emailverified")
+    //       showToast("success", "Email verified successfully!", {
+    //         id: "email-verified-success",
+    //         duration: 3000,
+    //       })
+
+    //       let count = 5
+    //       const timer = setInterval(() => {
+    //         count -= 1
+    //         if (isMounted) {
+    //           setCountdown(count)
+    //         }
+    //         if (count <= 0) {
+    //           clearInterval(timer)
+    //           if (isMounted) {
+    //             router.replace("/dashboard") // Redirect to dashboard
+    //           }
+    //         }
+    //       }, 1000)
+
+    //       return () => {
+    //         clearInterval(timer)
+    //       }
+    //     }
+
+    //     if (response.data.type === "linkexpired") {
+    //       cookie.set("esToken", response.data.token, {
+    //         expires: new Date(Date.now() + longerEXP),
+    //       })
+    //       setStatus("linkexpired")
+    //       showToast("error", "Verification link has expired", {
+    //         id: "link-expired",
+    //         duration: 3000,
+    //       })
+    //     } else {
+    //       setStatus("emailsent")
+    //     }
+    //   } catch (error) {
+    //     console.error(error)
+
+    //     // Set verification failed state to true
+    //     if (isMounted) {
+    //       setVerificationFailed(true)
+    //       setStatus("verificationfailed")
+    //     }
+
+    //     if ((error as any)?.response?.data?.message === "User not found") {
+    //       showToast("error", "User not found", {
+    //         id: "user-not-found-verify",
+    //         duration: 3000,
+    //       })
+    //       setTimeout(() => {
+    //         if (isMounted) {
+    //           router.replace("/signup")
+    //         }
+    //       }, 1000)
+    //     } else {
+    //       showToast("error", "Verification failed", {
+    //         id: "verification-failed",
+    //         duration: 3000,
+    //       })
+    //     }
+    //   } finally {
+    //     if (isMounted) {
+    //       setLoading(false)
+    //     }
+    //   }
+    // }
+
     const checkVerify = async () => {
       if (!token) {
         console.log("⛔ No token available; exiting early.");
@@ -115,6 +203,11 @@ function AccountVerificationPage() {
         });
 
         console.log("📡 Verification response:", response.data);
+
+        // if (!isMounted) {
+        //   console.log("🛑 Component unmounted, stopping further execution.");
+        //   return;
+        // }
 
         if (response.data.success && response.data.type === "emailverified") {
           console.log("✅ Email verified. Saving token in cookie.");
@@ -139,12 +232,13 @@ function AccountVerificationPage() {
           let count = 5;
           const timer = setInterval(() => {
             count -= 1;
-            if (isMounted) {
-              setCountdown(count);
-            }
             if (count <= 0) {
               router.push("/dashboard");
               clearInterval(timer);
+              // if (isMounted) {
+              //   console.log("🚀 Redirecting to /dashboard");
+              //   router.replace("/dashboard");
+              // }
             }
           }, 1000);
 
@@ -184,8 +278,10 @@ function AccountVerificationPage() {
         }
       } catch (error) {
         console.error("❌ Verification failed:", error);
+
         setVerificationFailed(true);
         setStatus("verificationfailed");
+
         showToast("error", "Verification failed!", {
           id: "email-verified-failed",
           duration: 3000,
@@ -283,7 +379,6 @@ function AccountVerificationPage() {
           id: "user-not-found",
           duration: 3000,
         });
-
         setTimeout(() => {
           router.push("/signup");
         }, 1000);
@@ -333,7 +428,7 @@ function AccountVerificationPage() {
                   className="block dark:hidden"
                 />
                 <Image
-                  src="/logo-dark.png"
+                  src="/logo.png"
                   alt="Esthington Logo"
                   width={48}
                   height={48}
@@ -341,17 +436,14 @@ function AccountVerificationPage() {
                 />
               </div>
             </motion.div>
-
-            <CardTitle className="text-2xl mb-2 text-foreground">
+            <CardTitle className="text-2xl mb-2">
               Verify Your Esthington Account
             </CardTitle>
-
-            <CardDescription className="text-center mt-3 text-muted-foreground">
+            <CardDescription className="text-center mt-3">
               We've sent a verification email to your registered email address.
               Please check your inbox and click on the verification link to
               access your property listings and management tools.
             </CardDescription>
-
             <Button
               onClick={handleRequestNewEmail}
               className="w-full mt-3"
@@ -368,7 +460,6 @@ function AccountVerificationPage() {
             </Button>
           </>
         );
-
       case "linkexpired":
         return (
           <>
@@ -386,7 +477,7 @@ function AccountVerificationPage() {
                   className="block dark:hidden"
                 />
                 <Image
-                  src="/logo-dark.png"
+                  src="/logo.png"
                   alt="Esthington Logo"
                   width={48}
                   height={48}
@@ -394,20 +485,16 @@ function AccountVerificationPage() {
                 />
               </div>
             </motion.div>
-
             <div className="flex justify-center mb-4">
-              <AlertCircle className="w-16 h-16 text-amber-500 dark:text-amber-400" />
+              <AlertCircle className="w-16 h-16 text-amber-500" />
             </div>
-
-            <CardTitle className="text-2xl mb-2 text-foreground">
+            <CardTitle className="text-2xl mb-2">
               Verification Link Expired
             </CardTitle>
-
-            <CardDescription className="text-center mb-4 text-muted-foreground">
+            <CardDescription className="text-center mb-4">
               The verification link has expired. Please request a new
               verification email to access your property management dashboard.
             </CardDescription>
-
             <Button
               onClick={handleRequestNewEmail}
               className="w-full"
@@ -424,7 +511,6 @@ function AccountVerificationPage() {
             </Button>
           </>
         );
-
       case "verificationfailed":
         return (
           <>
@@ -442,7 +528,7 @@ function AccountVerificationPage() {
                   className="block dark:hidden"
                 />
                 <Image
-                  src="/logo-dark.png"
+                  src="/logo.png"
                   alt="Esthington Logo"
                   width={48}
                   height={48}
@@ -450,20 +536,14 @@ function AccountVerificationPage() {
                 />
               </div>
             </motion.div>
-
             <div className="flex justify-center mb-4">
-              <XCircle className="w-16 h-16 text-red-500 dark:text-red-400" />
+              <XCircle className="w-16 h-16 text-red-500" />
             </div>
-
-            <CardTitle className="text-2xl mb-2 text-foreground">
-              Verification Failed
-            </CardTitle>
-
-            <CardDescription className="text-center mb-4 text-muted-foreground">
+            <CardTitle className="text-2xl mb-2">Verification Failed</CardTitle>
+            <CardDescription className="text-center mb-4">
               We couldn't verify your email address. Please request a new
               verification email to try again.
             </CardDescription>
-
             <Button
               onClick={() => {
                 router.push("/login");
@@ -474,7 +554,6 @@ function AccountVerificationPage() {
             </Button>
           </>
         );
-
       case "emailverified":
         return (
           <>
@@ -492,7 +571,7 @@ function AccountVerificationPage() {
                   className="block dark:hidden"
                 />
                 <Image
-                  src="/logo-dark.png"
+                  src="/logo.png"
                   alt="Esthington Logo"
                   width={48}
                   height={48}
@@ -500,23 +579,19 @@ function AccountVerificationPage() {
                 />
               </div>
             </motion.div>
-
             <div className="flex justify-center mb-4">
-              <CheckCircle className="w-16 h-16 text-green-500 dark:text-green-400" />
+              <CheckCircle className="w-16 h-16 text-green-500" />
             </div>
-
-            <CardTitle className="text-2xl mb-2 text-foreground">
+            <CardTitle className="text-2xl mb-2">
               Account Verified Successfully
             </CardTitle>
-
-            <CardDescription className="text-center text-muted-foreground">
+            <CardDescription className="text-center">
               Your Esthington account has been successfully verified.
               Redirecting you to your property dashboard in {countdown}{" "}
               seconds...
             </CardDescription>
-
             <motion.div
-              className="w-full bg-gray-200 dark:bg-gray-700 h-2 mt-4 rounded-full overflow-hidden"
+              className="w-full bg-gray-200 h-2 mt-4 rounded-full overflow-hidden"
               initial={{ width: "100%" }}
               animate={{ width: "0%" }}
               transition={{ duration: 5, ease: "linear" }}
@@ -525,22 +600,21 @@ function AccountVerificationPage() {
             </motion.div>
           </>
         );
-
       default:
         return null;
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-background to-muted/20 dark:from-background dark:to-muted/10 p-4">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-white p-4">
       <div className="flex-grow flex flex-col items-center justify-center">
-        <Card className="w-full max-w-md border-border bg-card shadow-sm">
+        <Card className="w-full max-w-md border-gray-200 dark:border-gray-800 shadow-sm">
           <CardHeader>
             <CardContent className="text-center pt-6">
               {renderContent()}
             </CardContent>
           </CardHeader>
-          <CardFooter className="flex justify-center space-x-4 text-sm text-muted-foreground pb-6">
+          <CardFooter className="flex justify-center space-x-4 text-sm text-gray-500 pb-6">
             <a
               href="/help"
               className="flex items-center hover:text-primary transition-colors"
@@ -557,18 +631,17 @@ function AccountVerificationPage() {
             </a>
           </CardFooter>
         </Card>
-
         <motion.div
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
           className="mt-8 text-center"
         >
-          {/* <div className="flex items-center justify-center space-x-2 mb-2">
+          <div className="flex items-center justify-center space-x-2 mb-2">
             <Home className="h-4 w-4 text-primary" />
             <p className="text-sm font-medium text-primary">Esthington</p>
-          </div> */}
-          <p className="text-sm text-muted-foreground">
+          </div>
+          <p className="text-sm text-gray-500">
             © 2024 Esthington. All rights reserved.
           </p>
         </motion.div>
@@ -584,8 +657,8 @@ export default function AccountVerify() {
       {/* Do NOT include the Toaster component here */}
       <React.Suspense
         fallback={
-          <div className="min-h-screen flex items-center justify-center bg-background">
-            <div className="text-foreground">Loading...</div>
+          <div className="min-h-screen flex items-center justify-center">
+            Loading...
           </div>
         }
       >

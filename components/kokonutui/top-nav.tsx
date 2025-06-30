@@ -1,9 +1,9 @@
 "use client";
 
 import { useAuth } from "@/contexts/auth-context";
-
 // Define valid user roles for better type safety
 type UserRole = "buyer" | "agent" | "admin" | "super_admin";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,12 +11,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Image from "next/image";
-import { Bell, Menu, ChevronDown, ChevronRight, User } from "lucide-react";
+import { Menu, ChevronDown, ChevronRight, User } from "lucide-react";
 import Profile01 from "./profile-01";
 import { ThemeToggle } from "../theme-toggle";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 interface BreadcrumbItem {
   label: string;
@@ -26,12 +27,20 @@ interface BreadcrumbItem {
 export default function TopNav() {
   const { user } = useAuth();
   const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const pathname = usePathname();
 
   // Debug user role
   useEffect(() => {
     console.log("Current user role:", user?.role);
     setUserRole(user?.role ?? null);
   }, [user?.role]);
+
+  // Close sheet when pathname changes
+  useEffect(() => {
+    setIsSheetOpen(false);
+  }, [pathname]);
+
   const [isMobile, setIsMobile] = useState(false);
 
   // Check if device is mobile/tablet
@@ -70,7 +79,7 @@ export default function TopNav() {
       {/* Left side - Mobile menu button */}
       <div className="flex items-center">
         {isMobile && (
-          <Sheet>
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
               <button
                 type="button"
@@ -94,7 +103,9 @@ export default function TopNav() {
         >
           <Bell className="h-4 w-4 sm:h-5 sm:w-5 text-foreground/70" />
         </button> */}
+
         <ThemeToggle />
+
         <DropdownMenu>
           <DropdownMenuTrigger className="focus:outline-none">
             <Image
@@ -729,6 +740,7 @@ function AdminSidebarContent() {
     console.log("Admin sidebar - Current user role:", user?.role);
     setUserRole(user?.role ?? null);
   }, [user?.role]);
+
   const [expandedSections, setExpandedSections] = useState({
     dashboard: true,
     wallet: true,
