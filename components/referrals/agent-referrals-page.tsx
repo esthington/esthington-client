@@ -558,7 +558,7 @@ export default function AgentReferralsPage() {
                       whileHover={{ y: -2 }}
                       className="group relative overflow-hidden rounded-lg sm:rounded-xl bg-muted/30 p-3 sm:p-4 md:p-6 border border-border hover:shadow-md transition-all duration-300"
                     >
-                      <div className="relative z-10">
+                      <div className="relative z-2">
                         <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
                           <div className="p-2 sm:p-3 md:p-4 rounded-lg sm:rounded-xl bg-blue-500/10">
                             <UserPlus className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-blue-600 dark:text-blue-400" />
@@ -665,7 +665,7 @@ export default function AgentReferralsPage() {
                       whileHover={{ y: -2 }}
                       className="group relative overflow-hidden rounded-lg sm:rounded-xl bg-muted/30 p-3 sm:p-4 md:p-6 border border-border hover:shadow-md transition-all duration-300"
                     >
-                      <div className="relative z-10">
+                      <div className="relative z-2">
                         <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
                           <div className="p-2 sm:p-3 md:p-4 rounded-lg sm:rounded-xl bg-purple-500/10">
                             <Crown className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-purple-600 dark:text-purple-400" />
