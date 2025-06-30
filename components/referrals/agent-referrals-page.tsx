@@ -92,6 +92,7 @@ export default function AgentReferralsPage() {
 
   // Smooth scroll utility function
   const scrollToSection = (sectionId: string) => {
+    console.log(`Scrolling to section: ${sectionId}`); // Add this line for debugging
     const element = document.getElementById(sectionId);
     if (element) {
       const headerOffset = 80; // Account for fixed header
@@ -103,6 +104,8 @@ export default function AgentReferralsPage() {
         top: offsetPosition,
         behavior: "smooth",
       });
+    } else {
+      console.log(`Element with ID ${sectionId} not found`); // Add this for debugging
     }
   };
 
@@ -1272,6 +1275,8 @@ function EnhancedReferralCard({
                       src={
                         referral.referred.avatar ||
                         `/placeholder.svg?height=56&width=56&query=user` ||
+                        "/placeholder.svg" ||
+                        "/placeholder.svg" ||
                         "/placeholder.svg" ||
                         "/placeholder.svg" ||
                         "/placeholder.svg" ||
