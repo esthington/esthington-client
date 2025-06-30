@@ -279,7 +279,7 @@ export default function AgentReferralsPage() {
                           <h1 className="text-2xl font-bold text-foreground mb-1 sm:mb-2">
                             Referral Hub
                           </h1>
-                          <p className="text-xs sm:text-sm md:text-base lg:text-lg text-muted-foreground max-w-2xl">
+                          <p className="text-xs sm:text-sm md:text-base text-muted-foreground max-w-2xl">
                             Transform connections into commissions. Track,
                             manage, and optimize your referral network with
                             enterprise-grade tools.
