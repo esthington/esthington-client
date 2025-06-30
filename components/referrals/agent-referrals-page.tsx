@@ -558,7 +558,7 @@ export default function AgentReferralsPage() {
                       whileHover={{ y: -2 }}
                       className="group relative overflow-hidden rounded-lg sm:rounded-xl bg-muted/30 p-3 sm:p-4 md:p-6 border border-border hover:shadow-md transition-all duration-300"
                     >
-                      <div className="relative z-2">
+                      <div className="relative z-10">
                         <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
                           <div className="p-2 sm:p-3 md:p-4 rounded-lg sm:rounded-xl bg-blue-500/10">
                             <UserPlus className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-blue-600 dark:text-blue-400" />
@@ -665,7 +665,7 @@ export default function AgentReferralsPage() {
                       whileHover={{ y: -2 }}
                       className="group relative overflow-hidden rounded-lg sm:rounded-xl bg-muted/30 p-3 sm:p-4 md:p-6 border border-border hover:shadow-md transition-all duration-300"
                     >
-                      <div className="relative z-2">
+                      <div className="relative z-10">
                         <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
                           <div className="p-2 sm:p-3 md:p-4 rounded-lg sm:rounded-xl bg-purple-500/10">
                             <Crown className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-purple-600 dark:text-purple-400" />
@@ -818,14 +818,14 @@ export default function AgentReferralsPage() {
                 </CardHeader>
                 <CardContent className="p-3 sm:p-4 md:p-6 lg:p-8">
                   {/* Enhanced Filters and Search */}
-                  <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6 md:mb-8">
+                  <div className="flex flex-col gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6 md:mb-8">
                     <div className="relative flex-1">
                       <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 md:pl-4 flex items-center pointer-events-none">
                         <Search className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-muted-foreground" />
                       </div>
                       <Input
                         placeholder="Search referrals by name, email, or ID..."
-                        className="pl-8 sm:pl-10 md:pl-12 h-8 sm:h-10 md:h-12 bg-background border-border rounded-md sm:rounded-lg text-xs sm:text-sm md:text-base focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                        className="pl-8 sm:pl-10 md:pl-12 h-10 sm:h-11 md:h-12 bg-background border-border rounded-md sm:rounded-lg text-xs sm:text-sm md:text-base focus:ring-2 focus:ring-primary/20 focus:border-primary"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
@@ -844,9 +844,9 @@ export default function AgentReferralsPage() {
                         value={statusFilter}
                         onValueChange={setStatusFilter}
                       >
-                        <SelectTrigger className="w-full sm:w-40 md:w-48 h-8 sm:h-10 md:h-12 bg-background border-border rounded-md sm:rounded-lg text-xs sm:text-sm">
+                        <SelectTrigger className="w-full sm:w-auto sm:min-w-[140px] md:min-w-[160px] h-10 sm:h-11 md:h-12 bg-background border-border rounded-md sm:rounded-lg text-xs sm:text-sm">
                           <div className="flex items-center gap-1 sm:gap-2">
-                            <Filter className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-muted-foreground" />
+                            <Filter className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-muted-foreground flex-shrink-0" />
                             <SelectValue placeholder="Filter by status" />
                           </div>
                         </SelectTrigger>
@@ -858,9 +858,9 @@ export default function AgentReferralsPage() {
                         </SelectContent>
                       </Select>
                       <Select value={dateSort} onValueChange={setDateSort}>
-                        <SelectTrigger className="w-full sm:w-40 md:w-48 h-8 sm:h-10 md:h-12 bg-background border-border rounded-md sm:rounded-lg text-xs sm:text-sm">
+                        <SelectTrigger className="w-full sm:w-auto sm:min-w-[140px] md:min-w-[160px] h-10 sm:h-11 md:h-12 bg-background border-border rounded-md sm:rounded-lg text-xs sm:text-sm">
                           <div className="flex items-center gap-1 sm:gap-2">
-                            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-muted-foreground" />
+                            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-muted-foreground flex-shrink-0" />
                             <SelectValue placeholder="Sort by date" />
                           </div>
                         </SelectTrigger>
@@ -878,37 +878,49 @@ export default function AgentReferralsPage() {
                     onValueChange={setActiveTab}
                     className="w-full"
                   >
-                    <TabsList className="bg-muted p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-border mb-4 sm:mb-6 md:mb-8 grid w-full grid-cols-2 lg:grid-cols-4 gap-0.5 sm:gap-1">
-                      <TabsTrigger
-                        value="all"
-                        className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-1.5 sm:px-2 md:px-4 lg:px-6 py-1.5 sm:py-2 md:py-3 font-medium transition-all duration-200 text-xs sm:text-sm"
-                      >
-                        <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                        <span className="hidden sm:inline">All Referrals</span>
-                        <span className="sm:hidden">All</span>
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="active"
-                        className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-1.5 sm:px-2 md:px-4 lg:px-6 py-1.5 sm:py-2 md:py-3 font-medium transition-all duration-200 text-xs sm:text-sm"
-                      >
-                        <Zap className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                        Active
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="pending"
-                        className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-1.5 sm:px-2 md:px-4 lg:px-6 py-1.5 sm:py-2 md:py-3 font-medium transition-all duration-200 text-xs sm:text-sm"
-                      >
-                        <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                        Pending
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="analytics"
-                        className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-1.5 sm:px-2 md:px-4 lg:px-6 py-1.5 sm:py-2 md:py-3 font-medium transition-all duration-200 text-xs sm:text-sm"
-                      >
-                        <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                        <span className="hidden sm:inline">Analytics</span>
-                        <span className="sm:hidden">Stats</span>
-                      </TabsTrigger>
+                    <TabsList className="bg-muted p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-border mb-4 sm:mb-6 md:mb-8 w-full h-auto">
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-0.5 sm:gap-1 w-full">
+                        <TabsTrigger
+                          value="all"
+                          className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 font-medium transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2 min-h-[40px] sm:min-h-[44px]"
+                        >
+                          <Users className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                          <span className="hidden xs:inline sm:hidden lg:inline">
+                            All Referrals
+                          </span>
+                          <span className="xs:hidden sm:inline lg:hidden">
+                            All
+                          </span>
+                          <span className="sm:hidden">All</span>
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="active"
+                          className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 font-medium transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2 min-h-[40px] sm:min-h-[44px]"
+                        >
+                          <Zap className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                          <span>Active</span>
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="pending"
+                          className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 font-medium transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2 min-h-[40px] sm:min-h-[44px]"
+                        >
+                          <Clock className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                          <span>Pending</span>
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="analytics"
+                          className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 font-medium transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2 min-h-[40px] sm:min-h-[44px]"
+                        >
+                          <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                          <span className="hidden xs:inline sm:hidden lg:inline">
+                            Analytics
+                          </span>
+                          <span className="xs:hidden sm:inline lg:hidden">
+                            Stats
+                          </span>
+                          <span className="sm:hidden">Stats</span>
+                        </TabsTrigger>
+                      </div>
                     </TabsList>
 
                     <TabsContent value="all" className="mt-0">
@@ -1015,19 +1027,30 @@ export default function AgentReferralsPage() {
                               </div>
                               <div className="p-3 sm:p-4 rounded-md sm:rounded-lg bg-muted/50">
                                 <p className="text-xs sm:text-sm text-muted-foreground">
-                                  Avg. Earnings
+                                  Total Earnings
                                 </p>
                                 <p className="text-xl sm:text-2xl font-bold text-foreground">
-                                  ₦2.4k
+                                  {formatCurrency(stats?.totalEarnings || 0)}
                                 </p>
                               </div>
                             </div>
                             <div className="space-y-2 sm:space-y-3">
                               <div className="flex justify-between text-xs sm:text-sm">
-                                <span>Monthly Growth</span>
-                                <span className="font-medium">+24%</span>
+                                <span>Active Referrals</span>
+                                <span className="font-medium">
+                                  {stats?.activeReferrals || 0}
+                                </span>
                               </div>
-                              <Progress value={75} className="h-2" />
+                              <Progress
+                                value={
+                                  stats?.activeReferrals
+                                    ? (stats.activeReferrals /
+                                        (stats.totalReferrals || 1)) *
+                                      100
+                                    : 0
+                                }
+                                className="h-2"
+                              />
                             </div>
                           </CardContent>
                         </Card>
@@ -1038,38 +1061,59 @@ export default function AgentReferralsPage() {
                               <div className="p-1.5 sm:p-2 rounded-md sm:rounded-lg bg-primary/10">
                                 <Target className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                               </div>
-                              Goals & Targets
+                              Referral Overview
                             </CardTitle>
                           </CardHeader>
                           <CardContent className="space-y-4 sm:space-y-6">
                             <div className="p-3 sm:p-4 rounded-md sm:rounded-lg bg-muted/50">
                               <div className="flex justify-between items-center mb-2">
                                 <span className="text-xs sm:text-sm text-muted-foreground">
-                                  Monthly Target
+                                  Total Referrals
                                 </span>
                                 <span className="text-xs sm:text-sm font-medium">
-                                  8/15
+                                  {stats?.totalReferrals || 0}
                                 </span>
                               </div>
-                              <Progress value={53} className="h-2" />
+                              <Progress
+                                value={
+                                  stats?.totalReferrals
+                                    ? Math.min(
+                                        (stats.totalReferrals / 50) * 100,
+                                        100
+                                      )
+                                    : 0
+                                }
+                                className="h-2"
+                              />
                             </div>
                             <div className="space-y-2 sm:space-y-3">
                               <div className="flex justify-between">
                                 <span className="text-xs sm:text-sm">
-                                  This Month
+                                  Active Users
                                 </span>
                                 <span className="text-xs sm:text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                                  +8 referrals
+                                  {stats?.activeReferrals || 0}
                                 </span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-xs sm:text-sm">
-                                  Next Rank
+                                  Pending Users
                                 </span>
-                                <span className="text-xs sm:text-sm font-medium text-blue-600 dark:text-blue-400">
-                                  2 more needed
+                                <span className="text-xs sm:text-sm font-medium text-amber-600 dark:text-amber-400">
+                                  {(stats?.totalReferrals || 0) -
+                                    (stats?.activeReferrals || 0)}
                                 </span>
                               </div>
+                              {agentRankInfo && (
+                                <div className="flex justify-between">
+                                  <span className="text-xs sm:text-sm">
+                                    Next Rank Progress
+                                  </span>
+                                  <span className="text-xs sm:text-sm font-medium text-blue-600 dark:text-blue-400">
+                                    {agentRankInfo.progress}%
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           </CardContent>
                         </Card>
@@ -1196,6 +1240,7 @@ function EnhancedReferralCard({
                       src={
                         referral.referred.avatar ||
                         `/placeholder.svg?height=56&width=56&query=user` ||
+                        "/placeholder.svg" ||
                         "/placeholder.svg" ||
                         "/placeholder.svg"
                       }
