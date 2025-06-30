@@ -878,50 +878,82 @@ export default function AgentReferralsPage() {
                     onValueChange={setActiveTab}
                     className="w-full"
                   >
-                    <TabsList className="bg-muted p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-border mb-4 sm:mb-6 md:mb-8 w-full h-auto">
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-0.5 sm:gap-1 w-full">
-                        <TabsTrigger
-                          value="all"
-                          className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 font-medium transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2 min-h-[40px] sm:min-h-[44px]"
-                        >
-                          <Users className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                          <span className="hidden xs:inline sm:hidden lg:inline">
-                            All Referrals
-                          </span>
-                          <span className="xs:hidden sm:inline lg:hidden">
-                            All
-                          </span>
-                          <span className="sm:hidden">All</span>
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="active"
-                          className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 font-medium transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2 min-h-[40px] sm:min-h-[44px]"
-                        >
-                          <Zap className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                          <span>Active</span>
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="pending"
-                          className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 font-medium transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2 min-h-[40px] sm:min-h-[44px]"
-                        >
-                          <Clock className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                          <span>Pending</span>
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="analytics"
-                          className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 font-medium transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2 min-h-[40px] sm:min-h-[44px]"
-                        >
-                          <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                          <span className="hidden xs:inline sm:hidden lg:inline">
-                            Analytics
-                          </span>
-                          <span className="xs:hidden sm:inline lg:hidden">
-                            Stats
-                          </span>
-                          <span className="sm:hidden">Stats</span>
-                        </TabsTrigger>
+                    <div className="relative mb-4 sm:mb-6 md:mb-8">
+                      <TabsList className="bg-muted p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-border h-auto w-full lg:w-auto lg:grid lg:grid-cols-4 lg:gap-0.5 sm:gap-1">
+                        {/* Mobile: Horizontal scroll container */}
+                        <div className="flex lg:hidden overflow-x-auto scrollbar-hide gap-1 min-w-full">
+                          <TabsTrigger
+                            value="all"
+                            className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 font-medium transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2 min-h-[40px] sm:min-h-[44px] whitespace-nowrap flex-shrink-0 min-w-[120px]"
+                          >
+                            <Users className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                            <span>All Referrals</span>
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="active"
+                            className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 font-medium transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2 min-h-[40px] sm:min-h-[44px] whitespace-nowrap flex-shrink-0 min-w-[100px]"
+                          >
+                            <Zap className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                            <span>Active</span>
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="pending"
+                            className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 font-medium transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2 min-h-[40px] sm:min-h-[44px] whitespace-nowrap flex-shrink-0 min-w-[100px]"
+                          >
+                            <Clock className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                            <span>Pending</span>
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="analytics"
+                            className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 font-medium transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2 min-h-[40px] sm:min-h-[44px] whitespace-nowrap flex-shrink-0 min-w-[110px]"
+                          >
+                            <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                            <span>Analytics</span>
+                          </TabsTrigger>
+                        </div>
+
+                        {/* Desktop: Grid layout */}
+                        <div className="hidden lg:contents">
+                          <TabsTrigger
+                            value="all"
+                            className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 font-medium transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2 min-h-[40px] sm:min-h-[44px]"
+                          >
+                            <Users className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                            <span>All Referrals</span>
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="active"
+                            className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 font-medium transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2 min-h-[40px] sm:min-h-[44px]"
+                          >
+                            <Zap className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                            <span>Active</span>
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="pending"
+                            className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 font-medium transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2 min-h-[40px] sm:min-h-[44px]"
+                          >
+                            <Clock className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                            <span>Pending</span>
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="analytics"
+                            className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 font-medium transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2 min-h-[40px] sm:min-h-[44px]"
+                          >
+                            <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                            <span>Analytics</span>
+                          </TabsTrigger>
+                        </div>
+                      </TabsList>
+
+                      {/* Scroll indicator for mobile */}
+                      <div className="lg:hidden flex justify-center mt-2">
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 rounded-full bg-muted-foreground/30"></div>
+                          <div className="w-2 h-2 rounded-full bg-muted-foreground/30"></div>
+                          <div className="w-2 h-2 rounded-full bg-muted-foreground/30"></div>
+                        </div>
                       </div>
-                    </TabsList>
+                    </div>
 
                     <TabsContent value="all" className="mt-0">
                       <div className="space-y-3 sm:space-y-4">
@@ -1240,6 +1272,7 @@ function EnhancedReferralCard({
                       src={
                         referral.referred.avatar ||
                         `/placeholder.svg?height=56&width=56&query=user` ||
+                        "/placeholder.svg" ||
                         "/placeholder.svg" ||
                         "/placeholder.svg" ||
                         "/placeholder.svg"
