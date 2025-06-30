@@ -844,34 +844,34 @@ export default function AgentReferralsPage() {
                     onValueChange={setActiveTab}
                     className="w-full"
                   >
-                    <TabsList className="bg-muted p-1 rounded-xl border border-border mb-6 sm:mb-8 grid w-full grid-cols-2 lg:grid-cols-4">
+                    <TabsList className="bg-muted p-1 rounded-xl border border-border mb-6 sm:mb-8 grid w-full grid-cols-2 lg:grid-cols-4 gap-1">
                       <TabsTrigger
                         value="all"
-                        className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-lg px-3 sm:px-6 py-2 sm:py-3 font-medium transition-all duration-200"
+                        className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-lg px-2 sm:px-4 lg:px-6 py-2 sm:py-3 font-medium transition-all duration-200 text-xs sm:text-sm"
                       >
-                        <Users className="h-4 w-4 mr-2" />
+                        <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                         <span className="hidden sm:inline">All Referrals</span>
                         <span className="sm:hidden">All</span>
                       </TabsTrigger>
                       <TabsTrigger
                         value="active"
-                        className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-lg px-3 sm:px-6 py-2 sm:py-3 font-medium transition-all duration-200"
+                        className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-lg px-2 sm:px-4 lg:px-6 py-2 sm:py-3 font-medium transition-all duration-200 text-xs sm:text-sm"
                       >
-                        <Zap className="h-4 w-4 mr-2" />
+                        <Zap className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                         Active
                       </TabsTrigger>
                       <TabsTrigger
                         value="pending"
-                        className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-lg px-3 sm:px-6 py-2 sm:py-3 font-medium transition-all duration-200"
+                        className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-lg px-2 sm:px-4 lg:px-6 py-2 sm:py-3 font-medium transition-all duration-200 text-xs sm:text-sm"
                       >
-                        <Clock className="h-4 w-4 mr-2" />
+                        <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                         Pending
                       </TabsTrigger>
                       <TabsTrigger
                         value="analytics"
-                        className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-lg px-3 sm:px-6 py-2 sm:py-3 font-medium transition-all duration-200"
+                        className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-lg px-2 sm:px-4 lg:px-6 py-2 sm:py-3 font-medium transition-all duration-200 text-xs sm:text-sm"
                       >
-                        <BarChart3 className="h-4 w-4 mr-2" />
+                        <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                         <span className="hidden sm:inline">Analytics</span>
                         <span className="sm:hidden">Stats</span>
                       </TabsTrigger>
@@ -1158,6 +1158,7 @@ function EnhancedReferralCard({
                       src={
                         referral.referred.avatar ||
                         `/placeholder.svg?height=56&width=56&query=user` ||
+                        "/placeholder.svg" ||
                         "/placeholder.svg"
                       }
                       alt={`${referral.referred.firstName} ${referral.referred.lastName}`}
