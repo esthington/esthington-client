@@ -877,7 +877,7 @@ export default function AgentReferralsPage() {
                       </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="all" className="mt-0">
+                    <TabsContent value="all" className="mt-10 md:mt-0">
                       <div className="space-y-4">
                         {filteredReferrals.length > 0 ? (
                           filteredReferrals.map((referral) => (
