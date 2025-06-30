@@ -29,7 +29,7 @@ export default function TopNav() {
   // Debug user role
   useEffect(() => {
     console.log("Current user role:", user?.role);
-    setUserRole(user?.role);
+    setUserRole(user?.role ?? null);
   }, [user?.role]);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -87,12 +87,12 @@ export default function TopNav() {
 
       {/* Right side - Actions */}
       <div className="flex items-center gap-2 sm:gap-4">
-        <button
+        {/* <button
           type="button"
           className="p-1.5 sm:p-2 hover:bg-muted rounded-full transition-colors"
         >
           <Bell className="h-4 w-4 sm:h-5 sm:w-5 text-foreground/70" />
-        </button>
+        </button> */}
         <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger className="focus:outline-none">
@@ -726,7 +726,7 @@ function AdminSidebarContent() {
 
   useEffect(() => {
     console.log("Admin sidebar - Current user role:", user?.role);
-    setUserRole(user?.role);
+    setUserRole(user?.role ?? null);
   }, [user?.role]);
   const [expandedSections, setExpandedSections] = useState({
     dashboard: true,
