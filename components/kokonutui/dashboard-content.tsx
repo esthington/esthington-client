@@ -66,6 +66,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {useRouter} from "next/navigation"
 
 interface DashboardStats {
   // Common stats
@@ -255,6 +256,7 @@ export default function DashboardContentProfessional() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState("month");
+  const router = useRouter()
 
   useEffect(() => {
     fetchDashboardData();
@@ -830,6 +832,9 @@ export default function DashboardContentProfessional() {
                 <Button
                   size="sm"
                   className="flex-1 bg-emerald-600 hover:bg-emerald-700 py-2"
+                  onClick={() => {
+                    router.push("/fund-wallet");
+                  }}
                 >
                   <ArrowDownLeft className="h-3.5 w-3.5 mr-0.5" />
                   Fund
@@ -838,6 +843,9 @@ export default function DashboardContentProfessional() {
                   size="sm"
                   variant="outline"
                   className="flex-1 bg-gray-300 dark:bg-gray-500 py-2 border-gray-300"
+                  onClick={() => {
+                    router.push("/transfer-money")
+                  }}
                 >
                   <ArrowUpRight className="h-3.5 w-3.5 mr-0.5" />
                   Send
@@ -1148,6 +1156,9 @@ export default function DashboardContentProfessional() {
                 <Button
                   size="sm"
                   className="flex-1 bg-emerald-600 hover:bg-emerald-700 py-2"
+                  onClick={() => {
+                    router.push("/fund-wallet");
+                  }}
                 >
                   <ArrowDownLeft className="h-3.5 w-3.5 mr-0.5" />
                   Fund
@@ -1156,6 +1167,9 @@ export default function DashboardContentProfessional() {
                   size="sm"
                   variant="outline"
                   className="flex-1 bg-gray-300 dark:bg-gray-500 py-2 border-gray-300 "
+                  onClick={() => {
+                    router.push("/transfer-money");
+                  }}
                 >
                   <ArrowUpRight className="h-3.5 w-3.5 mr-0.5" />
                   Send
