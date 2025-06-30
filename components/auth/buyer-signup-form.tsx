@@ -128,9 +128,14 @@ export default function BuyerSignupForm() {
       <h1 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-2">
         Create Buyer Account
       </h1>
-      <p className="text-center text-gray-600 dark:text-gray-400 mb-6">
-        Join our real estate investment platform
-      </p>
+      <div className="flex flex-row items-center gap-1">
+        <p className="text-center text-gray-600 dark:text-gray-400 mb-6">
+          Sign Up as Agent?{" "}
+        </p>
+        <Link href="/agent/signup" className="text-blue-500 hover:underline">
+          Click here
+        </Link>
+      </div>
 
       <div className="">
         <form onSubmit={handleSubmit} className="space-y-4">
