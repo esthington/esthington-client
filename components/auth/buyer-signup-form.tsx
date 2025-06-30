@@ -129,7 +129,7 @@ export default function BuyerSignupForm() {
         Create Buyer Account
       </h1>
 
-      <p className="text-center text-gray-600 dark:text-gray-400 mb-6 flex flex-row items-center gap-1">
+      <p className="text-center text-gray-600 dark:text-gray-400 mb-6 flex flex-row items-center gap-1 justify-center">
         Sign Up as Agent?{" "}
         <Link href="/agent/signup" className="text-blue-500 hover:underline">
           Click here
