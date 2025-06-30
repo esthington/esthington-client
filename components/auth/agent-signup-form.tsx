@@ -129,18 +129,13 @@ export default function AgentSignupForm() {
       <h1 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-2">
         Create Agent Account
       </h1>
-      <div className="flex flex-row items-center gap-1">
-        <p className="text-center text-gray-600 dark:text-gray-400 mb-6">
+   
+        <p className="text-center text-gray-600 dark:text-gray-400 mb-6 flex flex-row items-center gap-1">
           Sign Up as Buyer?{" "}
-        </p>
-        <Link
-          href="/buyer/signup"
-          className="text-blue-500 hover:underline"
-        >
+        <Link href="/buyer/signup" className="text-blue-500 hover:underline">
           Click here
         </Link>
-      </div>
-
+        </p>
       <div className="">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
