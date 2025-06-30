@@ -16,6 +16,7 @@ import Profile01 from "./profile-01";
 import { ThemeToggle } from "../theme-toggle";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 
 interface BreadcrumbItem {
   label: string;
@@ -195,24 +196,24 @@ function BuyerSidebarContent() {
                   exit="closed"
                   variants={sectionVariants}
                 >
-                  <a
+                  <Link
                     href="/dashboard"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Overview</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/properties"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Properties</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/myproperties"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>My Properties</span>
-                  </a>
+                  </Link>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -240,42 +241,42 @@ function BuyerSidebarContent() {
                   exit="closed"
                   variants={sectionVariants}
                 >
-                  <a
+                  <Link
                     href="/dashboard/my-wallet"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>My Wallet</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/fund-wallet"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Fund Wallet</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/my-bank-account"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>My Bank Account</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/withdraw-money"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Withdraw Money</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/transfer-money"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Transfer Money</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/my-transactions"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>My Transactions</span>
-                  </a>
+                  </Link>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -303,18 +304,18 @@ function BuyerSidebarContent() {
                   exit="closed"
                   variants={sectionVariants}
                 >
-                  <a
+                  <Link
                     href="/dashboard/marketplace"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Marketplace</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/my-purchases"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>My Purchases</span>
-                  </a>
+                  </Link>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -342,18 +343,18 @@ function BuyerSidebarContent() {
                   exit="closed"
                   variants={sectionVariants}
                 >
-                  <a
+                  <Link
                     href="/dashboard/investments"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>All Investments</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/my-investments"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>My Investments</span>
-                  </a>
+                  </Link>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -464,24 +465,24 @@ function AgentSidebarContent() {
                   exit="closed"
                   variants={sectionVariants}
                 >
-                  <a
+                  <Link
                     href="/dashboard"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Overview</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/properties"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Properties</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/myproperties"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>My Properties</span>
-                  </a>
+                  </Link>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -509,42 +510,42 @@ function AgentSidebarContent() {
                   exit="closed"
                   variants={sectionVariants}
                 >
-                  <a
+                  <Link
                     href="/dashboard/my-wallet"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>My Wallet</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/fund-wallet"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Fund Wallet</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/transfer-money"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Transfer Money</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/withdraw-money"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Withdraw Money</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/my-bank-account"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>My Bank Account</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/my-transactions"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>My Transactions</span>
-                  </a>
+                  </Link>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -572,18 +573,18 @@ function AgentSidebarContent() {
                   exit="closed"
                   variants={sectionVariants}
                 >
-                  <a
+                  <Link
                     href="/dashboard/marketplace"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Marketplace</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/my-purchases"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>My Purchases</span>
-                  </a>
+                  </Link>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -611,18 +612,18 @@ function AgentSidebarContent() {
                   exit="closed"
                   variants={sectionVariants}
                 >
-                  <a
+                  <Link
                     href="/dashboard/investments"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>All Investments</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/my-investments"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>My Investments</span>
-                  </a>
+                  </Link>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -650,12 +651,12 @@ function AgentSidebarContent() {
                   exit="closed"
                   variants={sectionVariants}
                 >
-                  <a
+                  <Link
                     href="/dashboard/my-referrals"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>My Referrals</span>
-                  </a>
+                  </Link>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -683,12 +684,12 @@ function AgentSidebarContent() {
                   exit="closed"
                   variants={sectionVariants}
                 >
-                  <a
+                  <Link
                     href="/dashboard/settings/account"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Account</span>
-                  </a>
+                  </Link>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -806,30 +807,30 @@ function AdminSidebarContent() {
                   exit="closed"
                   variants={sectionVariants}
                 >
-                  <a
+                  <Link
                     href="/dashboard"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Overview</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/companies"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Companies</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/properties"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Properties</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/properties/create"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Add Property</span>
-                  </a>
+                  </Link>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -858,42 +859,42 @@ function AdminSidebarContent() {
                     exit="closed"
                     variants={sectionVariants}
                   >
-                    <a
+                    <Link
                       href="/dashboard/my-wallet"
                       className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                     >
                       <span>My Wallet</span>
-                    </a>
-                    <a
+                    </Link>
+                    <Link
                       href="/dashboard/fund-wallet"
                       className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                     >
                       <span>Fund Wallet</span>
-                    </a>
-                    <a
+                    </Link>
+                    <Link
                       href="/dashboard/transfer-money"
                       className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                     >
                       <span>Transfer Money</span>
-                    </a>
-                    <a
+                    </Link>
+                    <Link
                       href="/dashboard/withdraw-money"
                       className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                     >
                       <span>Withdraw Money</span>
-                    </a>
-                    <a
+                    </Link>
+                    <Link
                       href="/dashboard/my-bank-account"
                       className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                     >
                       <span>My Bank Account</span>
-                    </a>
-                    <a
+                    </Link>
+                    <Link
                       href="/dashboard/my-transactions"
                       className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                     >
                       <span>My Transactions</span>
-                    </a>
+                    </Link>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -922,36 +923,36 @@ function AdminSidebarContent() {
                   exit="closed"
                   variants={sectionVariants}
                 >
-                  <a
+                  <Link
                     href="/dashboard/users"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Manage Users</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/admins"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Manage Admins</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/transactions"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Transactions</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/investment-due"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Investment Due</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/approvals"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Payment Approvals</span>
-                  </a>
+                  </Link>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -979,18 +980,18 @@ function AdminSidebarContent() {
                   exit="closed"
                   variants={sectionVariants}
                 >
-                  <a
+                  <Link
                     href="/dashboard/marketplace"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>View Marketplace</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/marketplace/add"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Add Listing</span>
-                  </a>
+                  </Link>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -1018,18 +1019,18 @@ function AdminSidebarContent() {
                   exit="closed"
                   variants={sectionVariants}
                 >
-                  <a
+                  <Link
                     href="/dashboard/investments"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Manage Investments</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/dashboard/investments/create"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Create Investment</span>
-                  </a>
+                  </Link>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -1057,12 +1058,12 @@ function AdminSidebarContent() {
                   exit="closed"
                   variants={sectionVariants}
                 >
-                  <a
+                  <Link
                     href="/dashboard/settings/account"
                     className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-muted"
                   >
                     <span>Account</span>
-                  </a>
+                  </Link>
                 </motion.div>
               )}
             </AnimatePresence>
