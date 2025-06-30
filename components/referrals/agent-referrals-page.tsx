@@ -292,7 +292,11 @@ export default function AgentReferralsPage() {
                         size="sm"
                         variant="outline"
                         className="sm:size-default lg:size-lg transition-all duration-300 hover:scale-105 bg-transparent text-xs sm:text-sm"
-                        onClick={() => scrollToSection("referral-links")}
+                        onClick={() => {
+                          const section =
+                            document.getElementById("referral-links");
+                          section?.scrollIntoView({ behavior: "smooth" });
+                        }}
                       >
                         <Share2 className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5" />
                         <span className="hidden xs:inline">Share Links</span>
@@ -302,7 +306,9 @@ export default function AgentReferralsPage() {
                         size="sm"
                         className="sm:size-default lg:size-lg transition-all duration-300 hover:scale-105 text-xs sm:text-sm"
                         onClick={() => {
-                          scrollToSection("referral-analytics");
+                          const section =
+                            document.getElementById("referral-analytics");
+                          section?.scrollIntoView({ behavior: "smooth" });
                           setActiveTab("analytics");
                         }}
                       >
