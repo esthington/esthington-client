@@ -90,6 +90,22 @@ export default function AgentReferralsPage() {
   // Use the user's userName as the referral code
   const referralCode = user?.userName || "";
 
+  // Smooth scroll utility function
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      const headerOffset = 80; // Account for fixed header
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition =
+        elementPosition + window.pageYOffset - headerOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth",
+      });
+    }
+  };
+
   // Filter and sort referrals
   const filteredReferrals = referrals
     .filter((referral) => {
@@ -223,13 +239,13 @@ export default function AgentReferralsPage() {
   if (isLoading && referrals.length === 0) {
     return (
       <div className="flex justify-center items-center h-[60vh]">
-        <div className="flex flex-col items-center gap-6">
+        <div className="flex flex-col items-center gap-4 sm:gap-6">
           <div className="relative">
-            <div className="w-16 h-16 rounded-full bg-primary animate-pulse"></div>
-            <div className="absolute inset-0 w-16 h-16 rounded-full bg-primary animate-ping opacity-20"></div>
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary animate-pulse"></div>
+            <div className="absolute inset-0 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary animate-ping opacity-20"></div>
           </div>
           <div className="text-center space-y-2">
-            <p className="text-lg font-semibold text-foreground">
+            <p className="text-base sm:text-lg font-semibold text-foreground">
               Loading your referrals
             </p>
             <p className="text-sm text-muted-foreground">
@@ -245,22 +261,22 @@ export default function AgentReferralsPage() {
     <TooltipProvider>
       <PageTransition>
         <div className="min-h-screen bg-background">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-            <div className="flex flex-col space-y-6 sm:space-y-8">
+          <div className="mx-auto max-w-7xl px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+            <div className="flex flex-col space-y-4 sm:space-y-6 lg:space-y-8">
               {/* Enhanced Header */}
               <FadeIn>
-                <div className="relative overflow-hidden rounded-2xl bg-card border border-border p-6 sm:p-8 md:p-12">
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <div className="p-3 rounded-xl bg-primary/10">
-                          <Rocket className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+                <div className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-card border border-border p-4 sm:p-6 md:p-8 lg:p-12">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6">
+                    <div className="space-y-3 sm:space-y-4">
+                      <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-primary/10">
+                          <Rocket className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-primary" />
                         </div>
                         <div>
-                          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-2">
+                          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-foreground mb-1 sm:mb-2">
                             Referral Hub
                           </h1>
-                          <p className="text-sm sm:text-base lg:text-lg text-muted-foreground max-w-2xl">
+                          <p className="text-xs sm:text-sm md:text-base lg:text-lg text-muted-foreground max-w-2xl">
                             Transform connections into commissions. Track,
                             manage, and optimize your referral network with
                             enterprise-grade tools.
@@ -268,32 +284,28 @@ export default function AgentReferralsPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                       <Button
-                        size="lg"
+                        size="sm"
                         variant="outline"
-                        className="transition-all duration-300 hover:scale-105 bg-transparent"
-                        onClick={() => {
-                          const section =
-                            document.getElementById("referral-links");
-                          section?.scrollIntoView({ behavior: "smooth" });
-                        }}
+                        className="sm:size-default lg:size-lg transition-all duration-300 hover:scale-105 bg-transparent text-xs sm:text-sm"
+                        onClick={() => scrollToSection("referral-links")}
                       >
-                        <Share2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-                        Share Links
+                        <Share2 className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5" />
+                        <span className="hidden xs:inline">Share Links</span>
+                        <span className="xs:hidden">Share</span>
                       </Button>
                       <Button
-                        size="lg"
-                        className="transition-all duration-300 hover:scale-105"
+                        size="sm"
+                        className="sm:size-default lg:size-lg transition-all duration-300 hover:scale-105 text-xs sm:text-sm"
                         onClick={() => {
-                          const section =
-                            document.getElementById("referral-analytics");
-                          section?.scrollIntoView({ behavior: "smooth" });
+                          scrollToSection("referral-analytics");
                           setActiveTab("analytics");
                         }}
                       >
-                        <BarChart3 className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-                        View Analytics
+                        <BarChart3 className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5" />
+                        <span className="hidden xs:inline">View Analytics</span>
+                        <span className="xs:hidden">Analytics</span>
                       </Button>
                     </div>
                   </div>
@@ -303,99 +315,112 @@ export default function AgentReferralsPage() {
               {/* Agent Rank Progress Card */}
               {agentRankInfo && (
                 <FadeIn>
-                  <Card className="border-border">
-                    <CardHeader className="bg-muted/50 border-b border-border px-4 sm:px-6">
+                  <Card className="border-border" id="rank-progress">
+                    <CardHeader className="bg-muted/50 border-b border-border px-3 sm:px-4 md:px-6 py-3 sm:py-4 md:py-6">
                       <div className="flex items-center">
                         <div
-                          className={`p-3 rounded-full mr-4 ${
+                          className={`p-2 sm:p-3 rounded-full mr-3 sm:mr-4 ${
                             getRankColors(agentRankInfo.currentRank).bg
                           }`}
                         >
                           <Award
-                            className={`h-5 w-5 ${
+                            className={`h-4 w-4 sm:h-5 sm:w-5 ${
                               getRankColors(agentRankInfo.currentRank).text
                             }`}
                           />
                         </div>
                         <div>
-                          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                            Agent Rank Progress
+                          <CardTitle className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-sm sm:text-base md:text-lg">
+                            <span>Agent Rank Progress</span>
                             <Badge
                               className={`${
                                 getRankColors(agentRankInfo.currentRank).badge
-                              } text-white`}
+                              } text-white w-fit text-xs`}
                             >
                               <Sparkles className="h-3 w-3 mr-1" />
                               {agentRankInfo.currentRank}
                             </Badge>
                           </CardTitle>
-                          <CardDescription className="text-sm">
+                          <CardDescription className="text-xs sm:text-sm mt-1">
                             Your current rank and progress to the next level
                           </CardDescription>
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="p-4 sm:p-6">
-                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">
-                              Current Rank
-                            </span>
-                            <span className="font-medium">
-                              {agentRankInfo.currentRank}
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">
-                              Next Rank
-                            </span>
-                            <span className="font-medium">
-                              {agentRankInfo.nextRank}
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">
-                              Progress
-                            </span>
-                            <span className="font-medium">
-                              {agentRankInfo.progress}%
-                            </span>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">
-                              Current Referrals
-                            </span>
-                            <span className="font-medium">
-                              {agentRankInfo.currentReferrals}
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">
-                              Required for Next
-                            </span>
-                            <span className="font-medium">
-                              {agentRankInfo.requiredReferrals}
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">
-                              Remaining
-                            </span>
-                            <span className="font-medium">
-                              {Math.max(
-                                0,
-                                agentRankInfo.requiredReferrals -
-                                  agentRankInfo.currentReferrals
-                              )}
-                            </span>
+                    <CardContent className="p-3 sm:p-4 md:p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+                        <div className="space-y-2 sm:space-y-3">
+                          <h4 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2">
+                            Current Status
+                          </h4>
+                          <div className="space-y-1 sm:space-y-2">
+                            <div className="flex justify-between text-xs sm:text-sm">
+                              <span className="text-muted-foreground">
+                                Current Rank
+                              </span>
+                              <span className="font-medium">
+                                {agentRankInfo.currentRank}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-xs sm:text-sm">
+                              <span className="text-muted-foreground">
+                                Next Rank
+                              </span>
+                              <span className="font-medium">
+                                {agentRankInfo.nextRank}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-xs sm:text-sm">
+                              <span className="text-muted-foreground">
+                                Progress
+                              </span>
+                              <span className="font-medium">
+                                {agentRankInfo.progress}%
+                              </span>
+                            </div>
                           </div>
                         </div>
-                        <div className="space-y-4">
+                        <div className="space-y-2 sm:space-y-3">
+                          <h4 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2">
+                            Referral Count
+                          </h4>
+                          <div className="space-y-1 sm:space-y-2">
+                            <div className="flex justify-between text-xs sm:text-sm">
+                              <span className="text-muted-foreground">
+                                Current Referrals
+                              </span>
+                              <span className="font-medium">
+                                {agentRankInfo.currentReferrals}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-xs sm:text-sm">
+                              <span className="text-muted-foreground">
+                                Required for Next
+                              </span>
+                              <span className="font-medium">
+                                {agentRankInfo.requiredReferrals}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-xs sm:text-sm">
+                              <span className="text-muted-foreground">
+                                Remaining
+                              </span>
+                              <span className="font-medium">
+                                {Math.max(
+                                  0,
+                                  agentRankInfo.requiredReferrals -
+                                    agentRankInfo.currentReferrals
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-3 sm:space-y-4 md:col-span-2 lg:col-span-1">
+                          <h4 className="text-xs sm:text-sm font-medium text-muted-foreground">
+                            Progress to Next Rank
+                          </h4>
                           <div>
-                            <div className="flex justify-between text-sm mb-2">
+                            <div className="flex justify-between text-xs sm:text-sm mb-2">
                               <span className="font-medium">
                                 {agentRankInfo.currentRank}
                               </span>
@@ -405,11 +430,11 @@ export default function AgentReferralsPage() {
                             </div>
                             <Progress
                               value={agentRankInfo.progress}
-                              className="h-3"
+                              className="h-2 sm:h-3"
                             />
                           </div>
                           <div className="text-center">
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-xs sm:text-sm text-muted-foreground">
                               {agentRankInfo.progress === 100
                                 ? "Congratulations! You've reached the highest rank!"
                                 : `${100 - agentRankInfo.progress}% to go!`}
@@ -424,26 +449,31 @@ export default function AgentReferralsPage() {
 
               {/* Enhanced Stats Cards */}
               <StaggerChildren>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                <div
+                  className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6"
+                  id="stats-overview"
+                >
                   {statsData.map((stat, index) => (
                     <StaggerItem key={index}>
                       <motion.div
-                        whileHover={{ y: -4, scale: 1.02 }}
+                        whileHover={{ y: -2, scale: 1.02 }}
                         transition={{ duration: 0.2 }}
                       >
                         <Card className="border-border hover:shadow-md transition-all duration-300">
-                          <CardContent className="p-4 sm:p-6">
-                            <div className="flex items-start justify-between mb-4">
-                              <div className={`p-3 rounded-xl ${stat.iconBg}`}>
+                          <CardContent className="p-3 sm:p-4 md:p-6">
+                            <div className="flex items-start justify-between mb-3 sm:mb-4">
+                              <div
+                                className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${stat.iconBg}`}
+                              >
                                 <stat.icon
-                                  className={`h-5 w-5 sm:h-6 sm:w-6 ${stat.iconColor}`}
+                                  className={`h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 ${stat.iconColor}`}
                                 />
                               </div>
-                              <div className="flex items-center gap-1 text-sm font-medium">
+                              <div className="flex items-center gap-1 text-xs sm:text-sm font-medium">
                                 {stat.trendUp ? (
-                                  <TrendingUp className="h-4 w-4 text-emerald-500" />
+                                  <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-500" />
                                 ) : (
-                                  <TrendingDown className="h-4 w-4 text-red-500" />
+                                  <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
                                 )}
                                 <span
                                   className={
@@ -456,11 +486,11 @@ export default function AgentReferralsPage() {
                                 </span>
                               </div>
                             </div>
-                            <div className="space-y-2">
-                              <h3 className="text-sm font-medium text-muted-foreground">
+                            <div className="space-y-1 sm:space-y-2">
+                              <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">
                                 {stat.title}
                               </h3>
-                              <p className="text-2xl sm:text-3xl font-bold text-foreground">
+                              <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-foreground truncate">
                                 {stat.value}
                               </p>
                               <p className="text-xs text-muted-foreground">
@@ -477,36 +507,36 @@ export default function AgentReferralsPage() {
 
               {/* Enhanced Referral Links Section */}
               <Card className="border-border" id="referral-links">
-                <CardHeader className="bg-muted/50 border-b border-border px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 sm:p-4 rounded-xl bg-primary/10">
-                      <Globe className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+                <CardHeader className="bg-muted/50 border-b border-border px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 md:py-6">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="p-2 sm:p-3 md:p-4 rounded-lg sm:rounded-xl bg-primary/10">
+                      <Globe className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-primary" />
                     </div>
                     <div>
-                      <CardTitle className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">
+                      <CardTitle className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-foreground">
                         Referral Command Center
                       </CardTitle>
-                      <CardDescription className="text-sm sm:text-base text-muted-foreground">
+                      <CardDescription className="text-xs sm:text-sm md:text-base text-muted-foreground">
                         Deploy your referral arsenal and watch your network grow
                         exponentially
                       </CardDescription>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="p-4 sm:p-6 lg:p-8">
-                  <div className="mb-6 sm:mb-8 p-4 sm:p-6 rounded-xl bg-muted/50 border border-border">
-                    <div className="flex items-start gap-4">
+                <CardContent className="p-3 sm:p-4 md:p-6 lg:p-8">
+                  <div className="mb-4 sm:mb-6 md:mb-8 p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl bg-muted/50 border border-border">
+                    <div className="flex items-start gap-3 sm:gap-4">
                       <div className="flex-1">
-                        <h4 className="text-sm font-semibold text-foreground mb-2">
+                        <h4 className="text-xs sm:text-sm font-semibold text-foreground mb-2">
                           Your Unique Referral Code
                         </h4>
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                          <div className="flex-1 px-3 py-2 bg-background rounded-lg border border-border font-mono text-base sm:text-lg font-semibold text-foreground">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+                          <div className="flex-1 px-2 sm:px-3 py-2 bg-background rounded-md sm:rounded-lg border border-border font-mono text-sm sm:text-base md:text-lg font-semibold text-foreground">
                             {referralCode}
                           </div>
                           <Button
-                            size="lg"
-                            className="transition-all duration-300 hover:scale-105"
+                            size="sm"
+                            className="sm:size-default lg:size-lg transition-all duration-300 hover:scale-105 text-xs sm:text-sm"
                             onClick={() => {
                               navigator.clipboard.writeText(referralCode);
                               toast.success(
@@ -514,7 +544,7 @@ export default function AgentReferralsPage() {
                               );
                             }}
                           >
-                            <Copy className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                            <Copy className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2" />
                             Copy Code
                           </Button>
                         </div>
@@ -522,22 +552,22 @@ export default function AgentReferralsPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
                     {/* Enhanced Buyer Referral Link */}
                     <motion.div
                       whileHover={{ y: -2 }}
-                      className="group relative overflow-hidden rounded-xl bg-muted/30 p-4 sm:p-6 border border-border hover:shadow-md transition-all duration-300"
+                      className="group relative overflow-hidden rounded-lg sm:rounded-xl bg-muted/30 p-3 sm:p-4 md:p-6 border border-border hover:shadow-md transition-all duration-300"
                     >
-                      <div className="relative z-2">
-                        <div className="flex items-center gap-4 mb-6">
-                          <div className="p-3 sm:p-4 rounded-xl bg-blue-500/10">
-                            <UserPlus className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 dark:text-blue-400" />
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                          <div className="p-2 sm:p-3 md:p-4 rounded-lg sm:rounded-xl bg-blue-500/10">
+                            <UserPlus className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-blue-600 dark:text-blue-400" />
                           </div>
                           <div>
-                            <h3 className="text-base sm:text-lg font-bold text-foreground">
+                            <h3 className="text-sm sm:text-base md:text-lg font-bold text-foreground">
                               Buyer Referral
                             </h3>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-xs sm:text-sm text-muted-foreground">
                               Earn{" "}
                               <span className="font-semibold text-blue-600 dark:text-blue-400">
                                 2% commission
@@ -547,9 +577,9 @@ export default function AgentReferralsPage() {
                           </div>
                         </div>
 
-                        <div className="space-y-4">
-                          <div className="flex items-center bg-background border border-border rounded-lg overflow-hidden">
-                            <div className="flex-grow p-3 sm:p-4 overflow-hidden">
+                        <div className="space-y-3 sm:space-y-4">
+                          <div className="flex items-center bg-background border border-border rounded-md sm:rounded-lg overflow-hidden">
+                            <div className="flex-grow p-2 sm:p-3 md:p-4 overflow-hidden">
                               <input
                                 type="text"
                                 value={`${
@@ -557,7 +587,7 @@ export default function AgentReferralsPage() {
                                     ? window.location.origin
                                     : ""
                                 }/buyer/signup?ref=${referralCode}`}
-                                className="bg-transparent border-none text-sm w-full focus:outline-none truncate text-foreground"
+                                className="bg-transparent border-none text-xs sm:text-sm w-full focus:outline-none truncate text-foreground"
                                 readOnly
                               />
                             </div>
@@ -567,7 +597,7 @@ export default function AgentReferralsPage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-10 w-10 sm:h-12 sm:w-12 border-l border-border hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                                    className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 border-l border-border hover:bg-blue-50 dark:hover:bg-blue-950/30"
                                     onClick={() => {
                                       navigator.clipboard.writeText(
                                         `${
@@ -581,7 +611,7 @@ export default function AgentReferralsPage() {
                                       );
                                     }}
                                   >
-                                    <Copy className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
+                                    <Copy className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-blue-600 dark:text-blue-400" />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>Copy buyer link</TooltipContent>
@@ -591,7 +621,7 @@ export default function AgentReferralsPage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-10 w-10 sm:h-12 sm:w-12 border-l border-border hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                                    className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 border-l border-border hover:bg-blue-50 dark:hover:bg-blue-950/30"
                                     onClick={() => {
                                       if (navigator.share) {
                                         navigator.share({
@@ -617,7 +647,7 @@ export default function AgentReferralsPage() {
                                       }
                                     }}
                                   >
-                                    <Share2 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
+                                    <Share2 className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-blue-600 dark:text-blue-400" />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -633,18 +663,18 @@ export default function AgentReferralsPage() {
                     {/* Enhanced Agent Referral Link */}
                     <motion.div
                       whileHover={{ y: -2 }}
-                      className="group relative overflow-hidden rounded-xl bg-muted/30 p-4 sm:p-6 border border-border hover:shadow-md transition-all duration-300"
+                      className="group relative overflow-hidden rounded-lg sm:rounded-xl bg-muted/30 p-3 sm:p-4 md:p-6 border border-border hover:shadow-md transition-all duration-300"
                     >
                       <div className="relative z-10">
-                        <div className="flex items-center gap-4 mb-6">
-                          <div className="p-3 sm:p-4 rounded-xl bg-purple-500/10">
-                            <Crown className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600 dark:text-purple-400" />
+                        <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                          <div className="p-2 sm:p-3 md:p-4 rounded-lg sm:rounded-xl bg-purple-500/10">
+                            <Crown className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-purple-600 dark:text-purple-400" />
                           </div>
                           <div>
-                            <h3 className="text-base sm:text-lg font-bold text-foreground">
+                            <h3 className="text-sm sm:text-base md:text-lg font-bold text-foreground">
                               Agent Referral
                             </h3>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-xs sm:text-sm text-muted-foreground">
                               Earn{" "}
                               <span className="font-semibold text-purple-600 dark:text-purple-400">
                                 5% commission
@@ -654,9 +684,9 @@ export default function AgentReferralsPage() {
                           </div>
                         </div>
 
-                        <div className="space-y-4">
-                          <div className="flex items-center bg-background border border-border rounded-lg overflow-hidden">
-                            <div className="flex-grow p-3 sm:p-4 overflow-hidden">
+                        <div className="space-y-3 sm:space-y-4">
+                          <div className="flex items-center bg-background border border-border rounded-md sm:rounded-lg overflow-hidden">
+                            <div className="flex-grow p-2 sm:p-3 md:p-4 overflow-hidden">
                               <input
                                 type="text"
                                 value={`${
@@ -664,7 +694,7 @@ export default function AgentReferralsPage() {
                                     ? window.location.origin
                                     : ""
                                 }/agent/signup?ref=${referralCode}`}
-                                className="bg-transparent border-none text-sm w-full focus:outline-none truncate text-foreground"
+                                className="bg-transparent border-none text-xs sm:text-sm w-full focus:outline-none truncate text-foreground"
                                 readOnly
                               />
                             </div>
@@ -674,7 +704,7 @@ export default function AgentReferralsPage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-10 w-10 sm:h-12 sm:w-12 border-l border-border hover:bg-purple-50 dark:hover:bg-purple-950/30"
+                                    className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 border-l border-border hover:bg-purple-50 dark:hover:bg-purple-950/30"
                                     onClick={() => {
                                       navigator.clipboard.writeText(
                                         `${
@@ -688,7 +718,7 @@ export default function AgentReferralsPage() {
                                       );
                                     }}
                                   >
-                                    <Copy className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" />
+                                    <Copy className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-purple-600 dark:text-purple-400" />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>Copy agent link</TooltipContent>
@@ -698,7 +728,7 @@ export default function AgentReferralsPage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-10 w-10 sm:h-12 sm:w-12 border-l border-border hover:bg-purple-50 dark:hover:bg-purple-950/30"
+                                    className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 border-l border-border hover:bg-purple-50 dark:hover:bg-purple-950/30"
                                     onClick={() => {
                                       if (navigator.share) {
                                         navigator.share({
@@ -724,7 +754,7 @@ export default function AgentReferralsPage() {
                                       }
                                     }}
                                   >
-                                    <Share2 className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" />
+                                    <Share2 className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-purple-600 dark:text-purple-400" />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -738,26 +768,30 @@ export default function AgentReferralsPage() {
                     </motion.div>
                   </div>
                 </CardContent>
-                <CardFooter className="bg-muted/50 border-t border-border px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-4">
-                    <div className="flex items-center gap-3 text-muted-foreground">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <HelpCircle className="h-5 w-5 text-primary" />
+                <CardFooter className="bg-muted/50 border-t border-border px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 md:py-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-3 sm:gap-4">
+                    <div className="flex items-center gap-2 sm:gap-3 text-muted-foreground">
+                      <div className="p-1.5 sm:p-2 rounded-md sm:rounded-lg bg-primary/10">
+                        <HelpCircle className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                       </div>
                       <div>
-                        <p className="font-medium text-foreground">
+                        <p className="text-xs sm:text-sm font-medium text-foreground">
                           Need help with referrals?
                         </p>
                         <a
                           href="#"
-                          className="text-primary hover:text-primary/80 text-sm hover:underline"
+                          className="text-primary hover:text-primary/80 text-xs sm:text-sm hover:underline"
                         >
                           View our comprehensive referral guide →
                         </a>
                       </div>
                     </div>
-                    <Button className="transition-all duration-300 hover:scale-105">
-                      <BarChart3 className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                    <Button
+                      size="sm"
+                      className="sm:size-default transition-all duration-300 hover:scale-105 text-xs sm:text-sm"
+                      onClick={() => scrollToSection("referral-analytics")}
+                    >
+                      <BarChart3 className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5" />
                       Advanced Analytics
                     </Button>
                   </div>
@@ -766,53 +800,53 @@ export default function AgentReferralsPage() {
 
               {/* Enhanced Referrals Management */}
               <Card className="border-border" id="referral-analytics">
-                <CardHeader className="bg-muted/50 border-b border-border px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 sm:p-4 rounded-xl bg-primary/10">
-                      <Users className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+                <CardHeader className="bg-muted/50 border-b border-border px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 md:py-6">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="p-2 sm:p-3 md:p-4 rounded-lg sm:rounded-xl bg-primary/10">
+                      <Users className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-primary" />
                     </div>
                     <div>
-                      <CardTitle className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">
+                      <CardTitle className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-foreground">
                         Referral Management Suite
                       </CardTitle>
-                      <CardDescription className="text-sm sm:text-base text-muted-foreground">
+                      <CardDescription className="text-xs sm:text-sm md:text-base text-muted-foreground">
                         Monitor, analyze, and optimize your entire referral
                         ecosystem
                       </CardDescription>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="p-4 sm:p-6 lg:p-8">
+                <CardContent className="p-3 sm:p-4 md:p-6 lg:p-8">
                   {/* Enhanced Filters and Search */}
-                  <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 mb-6 sm:mb-8">
+                  <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6 md:mb-8">
                     <div className="relative flex-1">
-                      <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
-                        <Search className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+                      <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 md:pl-4 flex items-center pointer-events-none">
+                        <Search className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-muted-foreground" />
                       </div>
                       <Input
                         placeholder="Search referrals by name, email, or ID..."
-                        className="pl-10 sm:pl-12 h-10 sm:h-12 bg-background border-border rounded-lg text-sm sm:text-base focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                        className="pl-8 sm:pl-10 md:pl-12 h-8 sm:h-10 md:h-12 bg-background border-border rounded-md sm:rounded-lg text-xs sm:text-sm md:text-base focus:ring-2 focus:ring-primary/20 focus:border-primary"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
                       {searchQuery && (
                         <button
-                          className="absolute inset-y-0 right-0 pr-3 sm:pr-4 flex items-center"
+                          className="absolute inset-y-0 right-0 pr-2 sm:pr-3 md:pr-4 flex items-center"
                           onClick={() => setSearchQuery("")}
                         >
-                          <X className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground hover:text-foreground" />
+                          <X className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-muted-foreground hover:text-foreground" />
                         </button>
                       )}
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                       <Select
                         value={statusFilter}
                         onValueChange={setStatusFilter}
                       >
-                        <SelectTrigger className="w-full sm:w-48 h-10 sm:h-12 bg-background border-border rounded-lg">
-                          <div className="flex items-center gap-2">
-                            <Filter className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+                        <SelectTrigger className="w-full sm:w-40 md:w-48 h-8 sm:h-10 md:h-12 bg-background border-border rounded-md sm:rounded-lg text-xs sm:text-sm">
+                          <div className="flex items-center gap-1 sm:gap-2">
+                            <Filter className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-muted-foreground" />
                             <SelectValue placeholder="Filter by status" />
                           </div>
                         </SelectTrigger>
@@ -824,9 +858,9 @@ export default function AgentReferralsPage() {
                         </SelectContent>
                       </Select>
                       <Select value={dateSort} onValueChange={setDateSort}>
-                        <SelectTrigger className="w-full sm:w-48 h-10 sm:h-12 bg-background border-border rounded-lg">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+                        <SelectTrigger className="w-full sm:w-40 md:w-48 h-8 sm:h-10 md:h-12 bg-background border-border rounded-md sm:rounded-lg text-xs sm:text-sm">
+                          <div className="flex items-center gap-1 sm:gap-2">
+                            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-muted-foreground" />
                             <SelectValue placeholder="Sort by date" />
                           </div>
                         </SelectTrigger>
@@ -844,10 +878,10 @@ export default function AgentReferralsPage() {
                     onValueChange={setActiveTab}
                     className="w-full"
                   >
-                    <TabsList className="bg-muted p-1 rounded-xl border border-border mb-6 sm:mb-8 grid w-full grid-cols-2 lg:grid-cols-4 gap-1">
+                    <TabsList className="bg-muted p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-border mb-4 sm:mb-6 md:mb-8 grid w-full grid-cols-2 lg:grid-cols-4 gap-0.5 sm:gap-1">
                       <TabsTrigger
                         value="all"
-                        className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-lg px-2 sm:px-4 lg:px-6 py-2 sm:py-3 font-medium transition-all duration-200 text-xs sm:text-sm"
+                        className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-1.5 sm:px-2 md:px-4 lg:px-6 py-1.5 sm:py-2 md:py-3 font-medium transition-all duration-200 text-xs sm:text-sm"
                       >
                         <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                         <span className="hidden sm:inline">All Referrals</span>
@@ -855,21 +889,21 @@ export default function AgentReferralsPage() {
                       </TabsTrigger>
                       <TabsTrigger
                         value="active"
-                        className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-lg px-2 sm:px-4 lg:px-6 py-2 sm:py-3 font-medium transition-all duration-200 text-xs sm:text-sm"
+                        className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-1.5 sm:px-2 md:px-4 lg:px-6 py-1.5 sm:py-2 md:py-3 font-medium transition-all duration-200 text-xs sm:text-sm"
                       >
                         <Zap className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                         Active
                       </TabsTrigger>
                       <TabsTrigger
                         value="pending"
-                        className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-lg px-2 sm:px-4 lg:px-6 py-2 sm:py-3 font-medium transition-all duration-200 text-xs sm:text-sm"
+                        className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-1.5 sm:px-2 md:px-4 lg:px-6 py-1.5 sm:py-2 md:py-3 font-medium transition-all duration-200 text-xs sm:text-sm"
                       >
                         <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                         Pending
                       </TabsTrigger>
                       <TabsTrigger
                         value="analytics"
-                        className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-lg px-2 sm:px-4 lg:px-6 py-2 sm:py-3 font-medium transition-all duration-200 text-xs sm:text-sm"
+                        className="data-[state=active]:bg-background data-[state=active]:text-foreground rounded-md sm:rounded-lg px-1.5 sm:px-2 md:px-4 lg:px-6 py-1.5 sm:py-2 md:py-3 font-medium transition-all duration-200 text-xs sm:text-sm"
                       >
                         <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                         <span className="hidden sm:inline">Analytics</span>
@@ -877,8 +911,8 @@ export default function AgentReferralsPage() {
                       </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="all" className="mt-10 md:mt-0">
-                      <div className="space-y-4">
+                    <TabsContent value="all" className="mt-0">
+                      <div className="space-y-3 sm:space-y-4">
                         {filteredReferrals.length > 0 ? (
                           filteredReferrals.map((referral) => (
                             <EnhancedReferralCard
@@ -907,7 +941,7 @@ export default function AgentReferralsPage() {
                     </TabsContent>
 
                     <TabsContent value="active" className="mt-0">
-                      <div className="space-y-4">
+                      <div className="space-y-3 sm:space-y-4">
                         {filteredReferrals.filter((r) => r.status === "active")
                           .length > 0 ? (
                           filteredReferrals
@@ -933,7 +967,7 @@ export default function AgentReferralsPage() {
                     </TabsContent>
 
                     <TabsContent value="pending" className="mt-0">
-                      <div className="space-y-4">
+                      <div className="space-y-3 sm:space-y-4">
                         {filteredReferrals.filter((r) => r.status === "pending")
                           .length > 0 ? (
                           filteredReferrals
@@ -959,37 +993,37 @@ export default function AgentReferralsPage() {
                     </TabsContent>
 
                     <TabsContent value="analytics" className="mt-0">
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
                         <Card className="border-border">
-                          <CardHeader className="pb-4">
-                            <CardTitle className="flex items-center gap-3">
-                              <div className="p-2 rounded-lg bg-primary/10">
-                                <BarChart3 className="h-5 w-5 text-primary" />
+                          <CardHeader className="pb-3 sm:pb-4">
+                            <CardTitle className="flex items-center gap-2 sm:gap-3 text-sm sm:text-base">
+                              <div className="p-1.5 sm:p-2 rounded-md sm:rounded-lg bg-primary/10">
+                                <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                               </div>
                               Performance Metrics
                             </CardTitle>
                           </CardHeader>
-                          <CardContent className="space-y-6">
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="p-4 rounded-lg bg-muted/50">
-                                <p className="text-sm text-muted-foreground">
+                          <CardContent className="space-y-4 sm:space-y-6">
+                            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                              <div className="p-3 sm:p-4 rounded-md sm:rounded-lg bg-muted/50">
+                                <p className="text-xs sm:text-sm text-muted-foreground">
                                   Conversion Rate
                                 </p>
-                                <p className="text-2xl font-bold text-foreground">
+                                <p className="text-xl sm:text-2xl font-bold text-foreground">
                                   {stats?.conversionRate || 0}%
                                 </p>
                               </div>
-                              <div className="p-4 rounded-lg bg-muted/50">
-                                <p className="text-sm text-muted-foreground">
+                              <div className="p-3 sm:p-4 rounded-md sm:rounded-lg bg-muted/50">
+                                <p className="text-xs sm:text-sm text-muted-foreground">
                                   Avg. Earnings
                                 </p>
-                                <p className="text-2xl font-bold text-foreground">
+                                <p className="text-xl sm:text-2xl font-bold text-foreground">
                                   ₦2.4k
                                 </p>
                               </div>
                             </div>
-                            <div className="space-y-3">
-                              <div className="flex justify-between text-sm">
+                            <div className="space-y-2 sm:space-y-3">
+                              <div className="flex justify-between text-xs sm:text-sm">
                                 <span>Monthly Growth</span>
                                 <span className="font-medium">+24%</span>
                               </div>
@@ -999,36 +1033,40 @@ export default function AgentReferralsPage() {
                         </Card>
 
                         <Card className="border-border">
-                          <CardHeader className="pb-4">
-                            <CardTitle className="flex items-center gap-3">
-                              <div className="p-2 rounded-lg bg-primary/10">
-                                <Target className="h-5 w-5 text-primary" />
+                          <CardHeader className="pb-3 sm:pb-4">
+                            <CardTitle className="flex items-center gap-2 sm:gap-3 text-sm sm:text-base">
+                              <div className="p-1.5 sm:p-2 rounded-md sm:rounded-lg bg-primary/10">
+                                <Target className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                               </div>
                               Goals & Targets
                             </CardTitle>
                           </CardHeader>
-                          <CardContent className="space-y-6">
-                            <div className="p-4 rounded-lg bg-muted/50">
+                          <CardContent className="space-y-4 sm:space-y-6">
+                            <div className="p-3 sm:p-4 rounded-md sm:rounded-lg bg-muted/50">
                               <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm text-muted-foreground">
+                                <span className="text-xs sm:text-sm text-muted-foreground">
                                   Monthly Target
                                 </span>
-                                <span className="text-sm font-medium">
+                                <span className="text-xs sm:text-sm font-medium">
                                   8/15
                                 </span>
                               </div>
                               <Progress value={53} className="h-2" />
                             </div>
-                            <div className="space-y-3">
+                            <div className="space-y-2 sm:space-y-3">
                               <div className="flex justify-between">
-                                <span className="text-sm">This Month</span>
-                                <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                                <span className="text-xs sm:text-sm">
+                                  This Month
+                                </span>
+                                <span className="text-xs sm:text-sm font-medium text-emerald-600 dark:text-emerald-400">
                                   +8 referrals
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-sm">Next Rank</span>
-                                <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                                <span className="text-xs sm:text-sm">
+                                  Next Rank
+                                </span>
+                                <span className="text-xs sm:text-sm font-medium text-blue-600 dark:text-blue-400">
                                   2 more needed
                                 </span>
                               </div>
@@ -1040,9 +1078,9 @@ export default function AgentReferralsPage() {
                   </Tabs>
                 </CardContent>
                 {filteredReferrals.length > 0 && (
-                  <CardFooter className="bg-muted/50 border-t border-border px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-                    <div className="flex flex-col sm:flex-row items-center justify-between w-full gap-4">
-                      <div className="text-muted-foreground text-sm">
+                  <CardFooter className="bg-muted/50 border-t border-border px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 md:py-6">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full gap-3 sm:gap-4">
+                      <div className="text-muted-foreground text-xs sm:text-sm">
                         Showing{" "}
                         <span className="font-semibold">
                           {filteredReferrals.length}
@@ -1058,7 +1096,7 @@ export default function AgentReferralsPage() {
                           variant="outline"
                           size="sm"
                           disabled
-                          className="rounded-lg bg-transparent"
+                          className="rounded-md sm:rounded-lg bg-transparent text-xs"
                         >
                           Previous
                         </Button>
@@ -1066,7 +1104,7 @@ export default function AgentReferralsPage() {
                           variant="outline"
                           size="sm"
                           disabled
-                          className="rounded-lg bg-transparent"
+                          className="rounded-md sm:rounded-lg bg-transparent text-xs"
                         >
                           Next
                         </Button>
@@ -1111,19 +1149,19 @@ function EnhancedReferralCard({
     active: {
       color:
         "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-800",
-      icon: <CheckCircle className="h-4 w-4 mr-2" />,
+      icon: <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />,
       dot: "bg-emerald-500",
     },
     pending: {
       color:
         "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-800",
-      icon: <Clock className="h-4 w-4 mr-2" />,
+      icon: <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />,
       dot: "bg-amber-500",
     },
     inactive: {
       color:
         "bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800/20 dark:text-slate-400 dark:border-slate-700",
-      icon: <AlertCircle className="h-4 w-4 mr-2" />,
+      icon: <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />,
       dot: "bg-slate-400",
     },
   };
@@ -1147,13 +1185,13 @@ function EnhancedReferralCard({
       <Card className="border-border hover:shadow-md transition-all duration-300 overflow-hidden group">
         <CardContent className="p-0">
           <div
-            className="p-4 sm:p-6 cursor-pointer hover:bg-muted/50 transition-colors"
+            className="p-3 sm:p-4 md:p-6 cursor-pointer hover:bg-muted/50 transition-colors"
             onClick={onToggle}
           >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
                 <div className="relative">
-                  <Avatar className="h-12 w-12 sm:h-14 sm:w-14 border-2 border-background shadow-sm">
+                  <Avatar className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 border-2 border-background shadow-sm">
                     <AvatarImage
                       src={
                         referral.referred.avatar ||
@@ -1165,53 +1203,55 @@ function EnhancedReferralCard({
                     />
                   </Avatar>
                   <div
-                    className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-background ${
+                    className={`absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 border-background ${
                       statusConfig[referral.status].dot
                     }`}
                   ></div>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h4 className="text-base sm:text-lg font-semibold text-foreground truncate">
+                  <h4 className="text-sm sm:text-base md:text-lg font-semibold text-foreground truncate">
                     {referral.referred.firstName} {referral.referred.lastName}
                   </h4>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Mail className="h-4 w-4 flex-shrink-0" />
-                    <span className="text-sm truncate">
+                  <div className="flex items-center gap-1 sm:gap-2 text-muted-foreground">
+                    <Mail className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                    <span className="text-xs sm:text-sm truncate">
                       {referral.referred.email}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <span className="text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1 sm:gap-2 mt-1">
+                    <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+                    <span className="text-xs sm:text-sm text-muted-foreground">
                       Joined {new Date(referral.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-row sm:flex-col items-center sm:items-end gap-4 sm:gap-2">
+              <div className="flex flex-row sm:flex-col items-center sm:items-end gap-3 sm:gap-2">
                 <Badge
                   className={`${
                     statusConfig[referral.status].color
-                  } px-3 py-1.5 font-medium flex-shrink-0`}
+                  } px-2 sm:px-3 py-1 sm:py-1.5 font-medium flex-shrink-0 text-xs`}
                 >
                   {statusConfig[referral.status].icon}
                   <span className="capitalize">{referral.status}</span>
                 </Badge>
                 {referral.earnings > 0 && (
                   <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Earnings</p>
-                    <p className="text-lg font-bold text-foreground">
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      Earnings
+                    </p>
+                    <p className="text-sm sm:text-base md:text-lg font-bold text-foreground">
                       {formatCurrency(referral.earnings)}
                     </p>
                   </div>
                 )}
-                <div className="w-6 flex justify-center">
+                <div className="w-5 sm:w-6 flex justify-center">
                   <motion.div
                     animate={{ rotate: isExpanded ? 180 : 0 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                    <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                   </motion.div>
                 </div>
               </div>
@@ -1227,23 +1267,23 @@ function EnhancedReferralCard({
                 transition={{ duration: 0.3 }}
                 className="border-t border-border"
               >
-                <div className="p-4 sm:p-6 bg-muted/30">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-                    <div className="p-4 rounded-lg bg-background border border-border">
-                      <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center">
-                        <User className="h-4 w-4 mr-2" />
+                <div className="p-3 sm:p-4 md:p-6 bg-muted/30">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+                    <div className="p-3 sm:p-4 rounded-md sm:rounded-lg bg-background border border-border">
+                      <h4 className="text-xs sm:text-sm font-semibold text-foreground mb-2 sm:mb-3 flex items-center">
+                        <User className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                         User Status
                       </h4>
-                      <div className="space-y-3">
+                      <div className="space-y-2 sm:space-y-3">
                         <Badge
                           className={`${
                             statusConfig[referral.status].color
-                          } w-fit`}
+                          } w-fit text-xs`}
                         >
                           {statusConfig[referral.status].icon}
                           <span className="capitalize">{referral.status}</span>
                         </Badge>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xs sm:text-sm text-muted-foreground">
                           {referral.status === "active"
                             ? "User has made purchases and is actively engaged"
                             : referral.status === "pending"
@@ -1251,8 +1291,8 @@ function EnhancedReferralCard({
                             : "User account is currently inactive"}
                         </p>
                         {referral.status === "active" && (
-                          <div className="mt-3">
-                            <div className="flex justify-between text-xs mb-2">
+                          <div className="mt-2 sm:mt-3">
+                            <div className="flex justify-between text-xs mb-1 sm:mb-2">
                               <span className="text-muted-foreground">
                                 Activity Score
                               </span>
@@ -1260,23 +1300,23 @@ function EnhancedReferralCard({
                                 High (85%)
                               </span>
                             </div>
-                            <Progress value={85} className="h-2" />
+                            <Progress value={85} className="h-1.5 sm:h-2" />
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="p-4 rounded-lg bg-background border border-border">
-                      <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center">
-                        <FileText className="h-4 w-4 mr-2" />
+                    <div className="p-3 sm:p-4 rounded-md sm:rounded-lg bg-background border border-border">
+                      <h4 className="text-xs sm:text-sm font-semibold text-foreground mb-2 sm:mb-3 flex items-center">
+                        <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                         Referral Details
                       </h4>
-                      <div className="space-y-3">
+                      <div className="space-y-2 sm:space-y-3">
                         <div>
                           <p className="text-xs text-muted-foreground">
                             Referral ID
                           </p>
-                          <p className="text-sm font-mono text-foreground">
+                          <p className="text-xs sm:text-sm font-mono text-foreground">
                             {referral._id.substring(0, 12)}...
                           </p>
                         </div>
@@ -1284,7 +1324,7 @@ function EnhancedReferralCard({
                           <p className="text-xs text-muted-foreground">
                             Join Date
                           </p>
-                          <p className="text-sm font-medium text-foreground">
+                          <p className="text-xs sm:text-sm font-medium text-foreground">
                             {new Date(referral.createdAt).toLocaleDateString(
                               "en-US",
                               {
@@ -1300,7 +1340,7 @@ function EnhancedReferralCard({
                             <p className="text-xs text-muted-foreground">
                               Username
                             </p>
-                            <p className="text-sm font-medium text-foreground">
+                            <p className="text-xs sm:text-sm font-medium text-foreground">
                               @{referral.referred.userName}
                             </p>
                           </div>
@@ -1308,21 +1348,21 @@ function EnhancedReferralCard({
                       </div>
                     </div>
 
-                    <div className="p-4 rounded-lg bg-background border border-border">
-                      <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center">
-                        <DollarSign className="h-4 w-4 mr-2" />
+                    <div className="p-3 sm:p-4 rounded-md sm:rounded-lg bg-background border border-border">
+                      <h4 className="text-xs sm:text-sm font-semibold text-foreground mb-2 sm:mb-3 flex items-center">
+                        <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                         Commission Details
                       </h4>
-                      <div className="space-y-3">
+                      <div className="space-y-2 sm:space-y-3">
                         <div>
                           <p className="text-xs text-muted-foreground">
                             Total Earned
                           </p>
-                          <p className="text-2xl font-bold text-foreground">
+                          <p className="text-lg sm:text-xl md:text-2xl font-bold text-foreground">
                             {formatCurrency(referral.earnings)}
                           </p>
                         </div>
-                        <div className="flex justify-between text-sm">
+                        <div className="flex justify-between text-xs sm:text-sm">
                           <span className="text-muted-foreground">
                             Commission Rate
                           </span>
@@ -1347,26 +1387,36 @@ function EnhancedReferralCard({
 function EnhancedEmptyState({ message = "No referrals found" }) {
   return (
     <Card className="border-border">
-      <CardContent className="flex flex-col items-center justify-center p-8 sm:p-12">
-        <div className="mb-6 sm:mb-8 p-4 sm:p-6 rounded-full bg-primary/10">
-          <Users className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
+      <CardContent className="flex flex-col items-center justify-center p-6 sm:p-8 md:p-12">
+        <div className="mb-4 sm:mb-6 md:mb-8 p-3 sm:p-4 md:p-6 rounded-full bg-primary/10">
+          <Users className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 text-primary" />
         </div>
-        <CardTitle className="text-xl sm:text-2xl font-bold text-foreground mb-4 text-center">
+        <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold text-foreground mb-3 sm:mb-4 text-center">
           {message}
         </CardTitle>
-        <CardDescription className="text-base sm:text-lg text-muted-foreground text-center max-w-2xl mb-6 sm:mb-8">
+        <CardDescription className="text-sm sm:text-base md:text-lg text-muted-foreground text-center max-w-2xl mb-4 sm:mb-6 md:mb-8">
           Invite your network to join our platform and start earning commissions
           on their transactions. Share your referral link to get started!
         </CardDescription>
         <Button
-          size="lg"
-          className="transition-all duration-300 hover:scale-105"
+          size="sm"
+          className="sm:size-default lg:size-lg transition-all duration-300 hover:scale-105 text-xs sm:text-sm"
           onClick={() => {
             const section = document.getElementById("referral-links");
-            section?.scrollIntoView({ behavior: "smooth" });
+            if (section) {
+              const headerOffset = 80;
+              const elementPosition = section.getBoundingClientRect().top;
+              const offsetPosition =
+                elementPosition + window.pageYOffset - headerOffset;
+
+              window.scrollTo({
+                top: offsetPosition,
+                behavior: "smooth",
+              });
+            }
           }}
         >
-          <Share2 className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+          <Share2 className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2" />
           Share Referral Links
         </Button>
       </CardContent>
