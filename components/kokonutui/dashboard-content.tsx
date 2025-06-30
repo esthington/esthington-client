@@ -833,7 +833,7 @@ export default function DashboardContentProfessional() {
                   size="sm"
                   className="flex-1 bg-emerald-600 hover:bg-emerald-700 py-2"
                   onClick={() => {
-                    router.push("/fund-wallet");
+                    router.push("dashboard/fund-wallet");
                   }}
                 >
                   <ArrowDownLeft className="h-3.5 w-3.5 mr-0.5" />
@@ -844,7 +844,7 @@ export default function DashboardContentProfessional() {
                   variant="outline"
                   className="flex-1 bg-gray-300 dark:bg-gray-500 py-2 border-gray-300"
                   onClick={() => {
-                    router.push("/transfer-money")
+                    router.push("dashboard/transfer-money")
                   }}
                 >
                   <ArrowUpRight className="h-3.5 w-3.5 mr-0.5" />
@@ -1157,7 +1157,7 @@ export default function DashboardContentProfessional() {
                   size="sm"
                   className="flex-1 bg-emerald-600 hover:bg-emerald-700 py-2"
                   onClick={() => {
-                    router.push("/fund-wallet");
+                    router.push("dashboard/fund-wallet");
                   }}
                 >
                   <ArrowDownLeft className="h-3.5 w-3.5 mr-0.5" />
@@ -1168,7 +1168,7 @@ export default function DashboardContentProfessional() {
                   variant="outline"
                   className="flex-1 bg-gray-300 dark:bg-gray-500 py-2 border-gray-300 "
                   onClick={() => {
-                    router.push("/transfer-money");
+                    router.push("dashboard/transfer-money");
                   }}
                 >
                   <ArrowUpRight className="h-3.5 w-3.5 mr-0.5" />
