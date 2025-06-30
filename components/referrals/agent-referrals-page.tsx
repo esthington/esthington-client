@@ -273,7 +273,7 @@ export default function AgentReferralsPage() {
                           <Rocket className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-primary" />
                         </div>
                         <div>
-                          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-foreground mb-1 sm:mb-2">
+                          <h1 className="text-2xl xl:text-5xl font-bold text-foreground mb-1 sm:mb-2">
                             Referral Hub
                           </h1>
                           <p className="text-xs sm:text-sm md:text-base lg:text-lg text-muted-foreground max-w-2xl">
