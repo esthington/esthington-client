@@ -207,10 +207,15 @@ export function ProfileCompletionModal() {
       // Create FormData for multipart/form-data submission
       const submitFormData = new FormData();
 
-      // Add all text fields to FormData
+      // Add only filled text fields to FormData
       Object.entries(formData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== "") {
-          submitFormData.append(key, value.toString());
+        if (
+          value !== undefined &&
+          value !== null &&
+          value !== "" &&
+          value.toString().trim() !== ""
+        ) {
+          submitFormData.append(key, value.toString().trim());
         }
       });
 
@@ -221,6 +226,16 @@ export function ProfileCompletionModal() {
 
       if (validIDFile) {
         submitFormData.append("validID", validIDFile);
+      }
+
+      // Only proceed if we have data to submit
+      const hasData = Array.from(submitFormData.keys()).length > 0;
+
+      if (!hasData) {
+        toast.error(
+          "Please fill in at least some information to update your profile"
+        );
+        return;
       }
 
       console.log("Submitting form data with files:");
@@ -447,6 +462,19 @@ export function ProfileCompletionModal() {
               onChange={handleInputChange}
             />
           </div>
+          {/* Address Field - Add this after the city field */}
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="address">Address</Label>
+            <Textarea
+              id="address"
+              name="address"
+              placeholder="Enter your full address"
+              value={formData.address}
+              onChange={handleInputChange}
+              rows={3}
+              className="resize-none"
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="validID">Valid ID</Label>
             <div className="mt-1 flex flex-col items-center space-y-2">
@@ -489,7 +517,7 @@ export function ProfileCompletionModal() {
         </div>
 
         {/* Address Field - Added here */}
-        <div className="space-y-2">
+        {/* <div className="space-y-2">
           <Label htmlFor="address">Address</Label>
           <Textarea
             id="address"
@@ -500,7 +528,7 @@ export function ProfileCompletionModal() {
             rows={3}
             className="resize-none"
           />
-        </div>
+        </div> */}
       </div>
 
       {/* Next of Kin Information */}

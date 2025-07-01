@@ -1,17 +1,13 @@
 "use client";
 
 import type React from "react";
-
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { User, Mail, Phone, MapPin, Save, Upload } from "lucide-react";
+import { User, Save } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { AnimatedCard } from "@/components/ui/animated-card";
 import { AnimatedButton } from "@/components/ui/animated-button";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Breadcrumb,
@@ -22,22 +18,6 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import FadeIn from "@/components/animations/fade-in";
-import { successToast, errorToast } from "@/lib/toast";
-import { ProfileCompletionModal } from "../profile/profile-completion-modal";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerDescription,
-} from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -67,7 +47,7 @@ export default function AccountSettingsForm() {
   const [validIDFile, setValidIDFile] = useState<File | null>(null);
   const [validIDPreview, setValidIDPreview] = useState<string | null>(null);
 
-  // Update the formData state to include all required fields and handle the location object correctly
+  // Update the formData state to include all required fields including address
   const [formData, setFormData] = useState<Partial<UserProfile>>({
     firstName: user?.firstName || "",
     lastName: user?.lastName || "",
@@ -75,9 +55,8 @@ export default function AccountSettingsForm() {
     country: user?.country || "",
     stateOfOrigin: user?.stateOfOrigin || "",
     phone: user?.phone || "",
-    // Use city from either direct property or location object
+    address: user?.address || "", // Add address field
     city: user?.city || "",
-    // Add next of kin information
     nextOfKinName: user?.nextOfKinName || "",
     nextOfKinAddress: user?.nextOfKinAddress || "",
     nextOfKinPhone: user?.nextOfKinPhone || "",
@@ -111,7 +90,6 @@ export default function AccountSettingsForm() {
       }
 
       setValidIDFile(file);
-
       // Create a preview URL
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -137,7 +115,7 @@ export default function AccountSettingsForm() {
         country: user.country || "",
         stateOfOrigin: user.stateOfOrigin || "",
         phone: user.phone || "",
-        // Use city from either direct property or location object
+        address: user.address || "", // Add address field
         city: user.city || "",
         nextOfKinName: user?.nextOfKinName || "",
         nextOfKinAddress: user?.nextOfKinAddress || "",
@@ -169,7 +147,10 @@ export default function AccountSettingsForm() {
     setOpen(newOpen);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Updated to handle both input and textarea
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -198,7 +179,6 @@ export default function AccountSettingsForm() {
       }
 
       setImageFile(file);
-
       // Create a preview URL
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -208,7 +188,7 @@ export default function AccountSettingsForm() {
     }
   };
 
-  // Update the handleSubmit function to handle both location structures
+  // Updated handleSubmit function to properly handle file uploads and only submit filled fields
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -221,34 +201,113 @@ export default function AccountSettingsForm() {
     setIsSubmitting(true);
 
     try {
-      // Create a copy of the form data
-      const profileData = { ...formData };
+      // Check if we have files to upload
+      const hasFiles = imageFile || validIDFile;
 
-      // Handle profile image upload if there's a new image
-      if (imageFile) {
-        profileData.avatar = profileImage || undefined;
-      }
+      if (hasFiles) {
+        // Create FormData for multipart/form-data submission
+        const submitFormData = new FormData();
 
-      // Handle validID upload if there's a new file
-      if (validIDFile) {
-        // In a real implementation, you would upload the file to your server
-        // and get back a URL to store in the user profile
-        profileData.validID = validIDPreview || undefined;
-      }
+        // Add only filled text fields to FormData
+        Object.entries(formData).forEach(([key, value]) => {
+          if (
+            value !== undefined &&
+            value !== null &&
+            value !== "" &&
+            value.toString().trim() !== ""
+          ) {
+            submitFormData.append(key, value.toString().trim());
+          }
+        });
 
-      console.log("new profile data", profileData);
+        // Add files to FormData if they exist
+        if (imageFile) {
+          submitFormData.append("profileImage", imageFile);
+        }
 
-      const success = await updateProfile(profileData);
+        if (validIDFile) {
+          submitFormData.append("validID", validIDFile);
+        }
 
-      if (success) {
-        toast.success("Profile updated successfully");
-        setOpen(false);
+        // Only proceed if we have data to submit
+        const hasData = Array.from(submitFormData.keys()).length > 0;
+
+        if (!hasData) {
+          toast.error(
+            "Please fill in at least some information to update your profile"
+          );
+          return;
+        }
+
+        console.log("Submitting form data with files:");
+        // Log FormData contents for debugging
+        for (const [key, value] of submitFormData.entries()) {
+          if (value instanceof File) {
+            console.log(`${key}: File - ${value.name} (${value.size} bytes)`);
+          } else {
+            console.log(`${key}: ${value}`);
+          }
+        }
+
+        // Call updateProfile with FormData
+        const success = await updateProfile(submitFormData);
+
+        if (success) {
+          toast.success("Profile updated successfully");
+          // Reset file states
+          setImageFile(null);
+          setValidIDFile(null);
+        } else {
+          toast.error("Failed to update profile");
+        }
       } else {
-        toast.error("Failed to update profile");
+        // No files, send regular object with only filled fields
+        const filteredFormData: Partial<UserProfile> = {};
+
+        Object.entries(formData).forEach(([key, value]) => {
+          if (
+            value !== undefined &&
+            value !== null &&
+            value !== "" &&
+            value.toString().trim() !== ""
+          ) {
+            filteredFormData[key as keyof UserProfile] = value
+              .toString()
+              .trim() as any;
+          }
+        });
+
+        // Only proceed if we have data to submit
+        if (Object.keys(filteredFormData).length === 0) {
+          toast.error(
+            "Please fill in at least some information to update your profile"
+          );
+          return;
+        }
+
+        console.log("Submitting profile data without files:", filteredFormData);
+
+        const success = await updateProfile(filteredFormData);
+
+        if (success) {
+          toast.success("Profile updated successfully");
+        } else {
+          toast.error("Failed to update profile");
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating profile:", error);
-      toast.error("An error occurred while updating your profile");
+
+      // Handle specific error types
+      if (error.response?.status === 401) {
+        toast.error("Session expired. Please log in again.");
+      } else if (error.response?.status === 400) {
+        toast.error(error.response.data.message || "Invalid data provided");
+      } else if (error.response?.status === 413) {
+        toast.error("File size too large. Please choose smaller files.");
+      } else {
+        toast.error("An error occurred while updating your profile");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -419,7 +478,6 @@ export default function AccountSettingsForm() {
                           required
                         />
                       </div>
-
                       <div className="space-y-2">
                         <Label htmlFor="lastName">
                           Last Name <span className="text-red-500">*</span>
@@ -454,7 +512,6 @@ export default function AccountSettingsForm() {
                           </SelectContent>
                         </Select>
                       </div>
-
                       <div className="space-y-2">
                         <Label htmlFor="phone">Phone Number</Label>
                         <Input
@@ -478,7 +535,6 @@ export default function AccountSettingsForm() {
                           onChange={handleInputChange}
                         />
                       </div>
-
                       <div className="space-y-2">
                         <Label htmlFor="stateOfOrigin">State of Origin</Label>
                         <Input
@@ -502,7 +558,6 @@ export default function AccountSettingsForm() {
                           onChange={handleInputChange}
                         />
                       </div>
-
                       <div className="space-y-2">
                         <Label htmlFor="validID">Valid ID</Label>
                         <div className="mt-1 flex flex-col items-center space-y-2">
@@ -543,6 +598,20 @@ export default function AccountSettingsForm() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Address Field - Added here */}
+                    <div className="space-y-2">
+                      <Label htmlFor="address">Address</Label>
+                      <Textarea
+                        id="address"
+                        name="address"
+                        placeholder="Enter your full address"
+                        value={formData.address}
+                        onChange={handleInputChange}
+                        rows={3}
+                        className="resize-none"
+                      />
+                    </div>
                   </div>
 
                   {/* Next of Kin Information */}
@@ -561,7 +630,6 @@ export default function AccountSettingsForm() {
                           onChange={handleInputChange}
                         />
                       </div>
-
                       <div className="space-y-2">
                         <Label htmlFor="nextOfKinPhone">
                           Next of Kin Phone
@@ -575,17 +643,18 @@ export default function AccountSettingsForm() {
                         />
                       </div>
                     </div>
-
                     <div className="space-y-2">
                       <Label htmlFor="nextOfKinAddress">
                         Next of Kin Address
                       </Label>
-                      <Input
+                      <Textarea
                         id="nextOfKinAddress"
                         name="nextOfKinAddress"
                         placeholder="Enter next of kin address"
                         value={formData.nextOfKinAddress}
                         onChange={handleInputChange}
+                        rows={3}
+                        className="resize-none"
                       />
                     </div>
                   </div>
@@ -601,7 +670,7 @@ export default function AccountSettingsForm() {
                         Updating...
                       </>
                     ) : (
-                      "Complete Profile"
+                      "Update Profile"
                     )}
                   </Button>
                 </form>
@@ -633,23 +702,7 @@ export default function AccountSettingsForm() {
                         />
                       </div>
                     </div>
-                    {/* <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                          SMS Notifications
-                        </h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Receive SMS notifications for important updates
-                        </p>
-                      </div>
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          id="smsNotifications"
-                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                      </div>
-                    </div> */}
+
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="text-sm font-medium text-gray-900 dark:text-white">
