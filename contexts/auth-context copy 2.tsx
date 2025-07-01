@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+
 import {
   createContext,
   useContext,
@@ -31,7 +32,7 @@ export type UserProfile = {
   role: UserRole;
   isEmailVerified: boolean;
   hasSeenSplash: boolean;
-  status: UserStatus;
+  status: UserStatus,
   onboardingCompleted: boolean;
   isActive: boolean;
   createdAt: string;
@@ -116,6 +117,7 @@ type AuthContextType = {
   isAuthenticated: boolean;
   isLoading: boolean;
   isSubmitting: boolean;
+
   // Auth actions
   login: (credentials: LoginCredentials) => Promise<boolean>;
   register: (data: RegisterData) => Promise<boolean>;
@@ -124,13 +126,13 @@ type AuthContextType = {
   resetPassword: (data: ResetPasswordData) => Promise<boolean>;
   verifyEmail: (token: string) => Promise<boolean>;
   resendVerificationEmail: () => Promise<boolean>;
-  // Updated to accept both FormData and Partial<UserProfile>
-  updateProfile: (data: FormData | Partial<UserProfile>) => Promise<boolean>;
+  updateProfile: (data: Partial<UserProfile>) => Promise<boolean>;
   changePassword: (
     currentPassword: string,
     newPassword: string
   ) => Promise<boolean>;
   resetUserPassword: (userId: string) => Promise<{ tempPassword: string }>;
+
   // User management
   users: UserProfile[];
   usersLoading: boolean;
@@ -150,6 +152,7 @@ type AuthContextType = {
   unblacklistUser: (id: string) => Promise<boolean>;
   suspendUser: (id: string) => Promise<boolean>;
   activateUser: (id: string) => Promise<boolean>;
+
   // Admin management
   admins: UserProfile[];
   adminsLoading: boolean;
@@ -167,6 +170,7 @@ type AuthContextType = {
   deleteAdmin: (id: string) => Promise<boolean>;
   suspendAdmin: (id: string) => Promise<boolean>;
   activateAdmin: (id: string) => Promise<boolean>;
+
   // Role checks
   isBuyer: boolean;
   isAgent: boolean;
@@ -225,9 +229,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const filteredUsers = useMemo(() => {
     if (!users) return [];
     let filtered = [...users];
-
     console.log("filtered", filtered);
-
     // Filter by search term
     if (userFilter.search) {
       const searchLower = userFilter.search.toLowerCase();
@@ -265,7 +267,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Filter admins based on current filter
   const filteredAdmins = useMemo(() => {
-    if (!users) return [];
+        if (!users) return [];
     let filtered = [...admins];
 
     // Filter by search term
@@ -300,6 +302,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         // Check for token in cookies
         const token = cookie.get("esToken");
+
         if (token) {
           // Validate token and get user data
           try {
@@ -344,12 +347,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (response.status === 200) {
         setUser(response.data.user);
+
         // Check if email is verified
         if (!response.data.user.isEmailVerified) {
           router.push("/account-verify");
         } else {
           router.push("/dashboard");
         }
+
         toast.success("Login successful");
         return true;
       } else {
@@ -406,9 +411,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async (): Promise<void> => {
     try {
       await apiConfig.post("/auth/logout", {}, { withCredentials: true });
+
       // Clear user state and cookie
       setUser(null);
       cookie.remove("esToken");
+
       // Redirect to login
       router.push("/signin");
       toast.success("Logout successful");
@@ -512,6 +519,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (user) {
           setUser({ ...user, isEmailVerified: true });
         }
+
         toast.success("Email verification successful.");
         return true;
       } else {
@@ -566,14 +574,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Updated updateProfile function to handle both FormData and regular objects
+  // Update profile
   const updateProfile = async (
-    data: FormData | Partial<UserProfile>
+    data: Partial<UserProfile>
   ): Promise<boolean> => {
     setIsSubmitting(true);
     try {
-      // Use apiConfigFile for both FormData and regular objects
-      // apiConfigFile should be configured to handle multipart/form-data
       const response = await apiConfigFile.put("/users/profile", data, {
         withCredentials: true,
       });
@@ -583,6 +589,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (user) {
           setUser(response.data.user);
         }
+
         toast.success("Profile updated successfully.");
         return true;
       } else {
@@ -734,8 +741,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Add user (admin function)
   const addUser = async (data: Partial<UserProfile>): Promise<boolean> => {
     if (!isAdmin) return false;
-
     setIsSubmitting(true);
+
     try {
       const response = await apiConfig.post("/admin/users", data, {
         withCredentials: true,
@@ -764,8 +771,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     data: Partial<UserProfile>
   ): Promise<boolean> => {
     if (!isAdmin) return false;
-
     setIsSubmitting(true);
+
     try {
       const response = await apiConfig.put(`/admin/users/${id}`, data, {
         withCredentials: true,
@@ -793,8 +800,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const deleteUser = async (id: string): Promise<boolean> => {
     if (!isSuperAdmin) return false;
-
     setIsSubmitting(true);
+
     try {
       const response = await apiConfig.delete(`/admin/users/${id}`, {
         withCredentials: true,
@@ -820,8 +827,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const blacklistUser = async (id: string): Promise<boolean> => {
     if (!isAdmin) return false;
-
     setIsSubmitting(true);
+
     try {
       const response = await apiConfig.put(
         `/admin/users/${id}/blacklist`,
@@ -853,8 +860,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const unblacklistUser = async (id: string): Promise<boolean> => {
     if (!isAdmin) return false;
-
     setIsSubmitting(true);
+
     try {
       const response = await apiConfig.put(
         `/admin/users/${id}/unblacklist`,
@@ -888,8 +895,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const suspendUser = async (id: string): Promise<boolean> => {
     if (!isAdmin) return false;
-
     setIsSubmitting(true);
+
     try {
       const response = await apiConfig.put(
         `/admin/users/${id}/suspend`,
@@ -921,8 +928,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const activateUser = async (id: string): Promise<boolean> => {
     if (!isAdmin) return false;
-
     setIsSubmitting(true);
+
     try {
       const response = await apiConfig.put(
         `/admin/users/${id}/activate`,
@@ -1016,8 +1023,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const addAdmin = async (data: AdminData): Promise<boolean> => {
     if (!isSuperAdmin) return false;
-
     setIsSubmitting(true);
+
     try {
       const response = await apiConfig.post("/admin/admins", data, {
         withCredentials: true,
@@ -1046,8 +1053,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     data: Partial<AdminData>
   ): Promise<boolean> => {
     if (!isSuperAdmin) return false;
-
     setIsSubmitting(true);
+
     try {
       const response = await apiConfig.put(`/admin/admins/${id}`, data, {
         withCredentials: true,
@@ -1075,8 +1082,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const deleteAdmin = async (id: string): Promise<boolean> => {
     if (!isSuperAdmin) return false;
-
     setIsSubmitting(true);
+
     try {
       const response = await apiConfig.delete(`/admin/admins/${id}`, {
         withCredentials: true,
@@ -1102,8 +1109,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const suspendAdmin = async (id: string): Promise<boolean> => {
     if (!isSuperAdmin) return false;
-
     setIsSubmitting(true);
+
     try {
       const response = await apiConfig.put(
         `/admin/admins/${id}/suspend`,
@@ -1135,8 +1142,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const activateAdmin = async (id: string): Promise<boolean> => {
     if (!isSuperAdmin) return false;
-
     setIsSubmitting(true);
+
     try {
       const response = await apiConfig.put(
         `/admin/admins/${id}/activate`,
@@ -1243,6 +1250,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     unblacklistUser,
     suspendUser,
     activateUser,
+
     // Admin management
     admins,
     adminsLoading,
@@ -1258,6 +1266,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     deleteAdmin,
     suspendAdmin,
     activateAdmin,
+
     // Role checks
     isBuyer,
     isAgent,

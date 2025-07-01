@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+
 import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
@@ -19,7 +20,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -93,6 +93,7 @@ export function ProfileCompletionModal() {
       }
 
       setValidIDFile(file);
+
       // Create a preview URL
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -118,7 +119,6 @@ export function ProfileCompletionModal() {
         country: user.country || "",
         stateOfOrigin: user.stateOfOrigin || "",
         phone: user.phone || "",
-        address: user.address || "",
         // Use city from either direct property or location object
         city: user.city || "",
         nextOfKinName: user?.nextOfKinName || "",
@@ -151,9 +151,7 @@ export function ProfileCompletionModal() {
     setOpen(newOpen);
   };
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -182,6 +180,7 @@ export function ProfileCompletionModal() {
       }
 
       setImageFile(file);
+
       // Create a preview URL
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -191,7 +190,7 @@ export function ProfileCompletionModal() {
     }
   };
 
-  // Updated handleSubmit function to send actual files instead of base64
+  // Update the handleSubmit function to handle both location structures
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -204,37 +203,24 @@ export function ProfileCompletionModal() {
     setIsSubmitting(true);
 
     try {
-      // Create FormData for multipart/form-data submission
-      const submitFormData = new FormData();
+      // Create a copy of the form data
+      const profileData = { ...formData };
 
-      // Add all text fields to FormData
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== "") {
-          submitFormData.append(key, value.toString());
-        }
-      });
-
-      // Add files to FormData if they exist
+      // Handle profile image upload if there's a new image
       if (imageFile) {
-        submitFormData.append("profileImage", imageFile);
+        profileData.avatar = profileImage || undefined;
       }
 
+      // Handle validID upload if there's a new file
       if (validIDFile) {
-        submitFormData.append("validID", validIDFile);
+        // In a real implementation, you would upload the file to your server
+        // and get back a URL to store in the user profile
+        profileData.validID = validIDPreview || undefined;
       }
 
-      console.log("Submitting form data with files:");
-      // Log FormData contents for debugging
-      for (const [key, value] of submitFormData.entries()) {
-        if (value instanceof File) {
-          console.log(`${key}: File - ${value.name} (${value.size} bytes)`);
-        } else {
-          console.log(`${key}: ${value}`);
-        }
-      }
+      console.log("new profile data", profileData);
 
-      // Call updateProfile with FormData instead of regular object
-      const success = await updateProfile(submitFormData);
+      const success = await updateProfile(profileData);
 
       if (success) {
         toast.success("Profile updated successfully");
@@ -242,19 +228,9 @@ export function ProfileCompletionModal() {
       } else {
         toast.error("Failed to update profile");
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error updating profile:", error);
-
-      // Handle specific error types
-      if (error.response?.status === 401) {
-        toast.error("Session expired. Please log in again.");
-      } else if (error.response?.status === 400) {
-        toast.error(error.response.data.message || "Invalid data provided");
-      } else if (error.response?.status === 413) {
-        toast.error("File size too large. Please choose smaller files.");
-      } else {
-        toast.error("An error occurred while updating your profile");
-      }
+      toast.error("An error occurred while updating your profile");
     } finally {
       setIsSubmitting(false);
     }
@@ -369,6 +345,7 @@ export function ProfileCompletionModal() {
               required
             />
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="lastName">
               Last Name <span className="text-red-500">*</span>
@@ -401,6 +378,7 @@ export function ProfileCompletionModal() {
               </SelectContent>
             </Select>
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="phone">Phone Number</Label>
             <Input
@@ -424,6 +402,7 @@ export function ProfileCompletionModal() {
               onChange={handleInputChange}
             />
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="stateOfOrigin">State of Origin</Label>
             <Input
@@ -447,6 +426,7 @@ export function ProfileCompletionModal() {
               onChange={handleInputChange}
             />
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="validID">Valid ID</Label>
             <div className="mt-1 flex flex-col items-center space-y-2">
@@ -487,20 +467,6 @@ export function ProfileCompletionModal() {
             </div>
           </div>
         </div>
-
-        {/* Address Field - Added here */}
-        <div className="space-y-2">
-          <Label htmlFor="address">Address</Label>
-          <Textarea
-            id="address"
-            name="address"
-            placeholder="Enter your full address"
-            value={formData.address}
-            onChange={handleInputChange}
-            rows={3}
-            className="resize-none"
-          />
-        </div>
       </div>
 
       {/* Next of Kin Information */}
@@ -517,6 +483,7 @@ export function ProfileCompletionModal() {
               onChange={handleInputChange}
             />
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="nextOfKinPhone">Next of Kin Phone</Label>
             <Input
@@ -528,16 +495,15 @@ export function ProfileCompletionModal() {
             />
           </div>
         </div>
+
         <div className="space-y-2">
           <Label htmlFor="nextOfKinAddress">Next of Kin Address</Label>
-          <Textarea
+          <Input
             id="nextOfKinAddress"
             name="nextOfKinAddress"
             placeholder="Enter next of kin address"
             value={formData.nextOfKinAddress}
             onChange={handleInputChange}
-            rows={3}
-            className="resize-none"
           />
         </div>
       </div>
