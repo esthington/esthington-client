@@ -77,7 +77,7 @@ export default function TopNav() {
   return (
     <nav className="px-3 sm:px-6 flex items-center justify-between bg-background border-b border-border h-full top-0 z-50">
       {/* Left side - Mobile menu button */}
-      <div className="flex items-center gap-2 sm:gap-4">
+      <div className="flex items-center gap-2 sm:gap-2">
         {isMobile && (
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
@@ -120,7 +120,7 @@ export default function TopNav() {
               alt="User avatar"
               width={20}
               height={20}
-              className="rounded-full ring-2 ring-border cursor-pointer size-6 object-cover hover:ring-foreground transition-colors"
+              className="rounded-full ring-2 ring-border cursor-pointer size-8 object-cover"
             />
           </DropdownMenuTrigger>
           <DropdownMenuContent
