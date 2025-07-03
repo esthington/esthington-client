@@ -83,7 +83,7 @@ export default function TopNav() {
             <SheetTrigger asChild>
               <button
                 type="button"
-                className="lg:hidden p-2 hover:bg-muted rounded-lg transition-colors mr-2"
+                className="lg:hidden p-2 hover:bg-muted rounded-lg transition-colors"
               >
                 <Menu className="h-5 w-5 text-foreground/70" />
               </button>
