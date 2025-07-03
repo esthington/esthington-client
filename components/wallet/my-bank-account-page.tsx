@@ -51,7 +51,7 @@ import FadeIn from "@/components/animations/fade-in";
 import { useWallet } from "@/contexts/wallet-context";
 import { toast } from "sonner";
 
-// Bank data array
+// Bank data array new
 const bankData = [
   { name: "9mobile 9Payment Service Bank", code: "120001" },
   { name: "Abbey Mortgage Bank", code: "404" },
