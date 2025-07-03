@@ -63,9 +63,9 @@ export default function Profile01() {
                   "https://ferf1mheo22r9ira.public.blob.vercel-storage.com/avatar-02-albo9B0tWOSLXCVZh9rX9KFxXIVWMr.png"
                 }
                 alt={user?.userName || "User avatar"}
-                width={72}
-                height={72}
-                className="rounded-full ring-white dark:ring-zinc-900 object-cover"
+                width={20}
+                height={20}
+                className="rounded-full ring-white dark:ring-zinc-900 object-cover size-20"
               />
               <div className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-zinc-900" />
             </div>
@@ -81,7 +81,7 @@ export default function Profile01() {
                   {user?.userName}
                 </h2>
               )}
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 truncate w-20 md:w-full">
                 {user?.email}
               </p>
             

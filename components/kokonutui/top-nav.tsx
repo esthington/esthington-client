@@ -77,7 +77,7 @@ export default function TopNav() {
   return (
     <nav className="px-3 sm:px-6 flex items-center justify-between bg-background border-b border-border h-full top-0 z-50">
       {/* Left side - Mobile menu button */}
-      <div className="flex items-center">
+      <div className="flex items-center gap-2 sm:gap-4">
         {isMobile && (
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
@@ -93,6 +93,13 @@ export default function TopNav() {
             </SheetContent>
           </Sheet>
         )}
+        <Image
+          src="/logo.svg"
+          alt="Esthington"
+          width={32}
+          height={32}
+          className="flex-shrink-0 rounded-md flex lg:hidden"
+        />
       </div>
 
       {/* Right side - Actions */}
@@ -109,7 +116,7 @@ export default function TopNav() {
         <DropdownMenu>
           <DropdownMenuTrigger className="focus:outline-none">
             <Image
-              src="https://ferf1mheo22r9ira.public.blob.vercel-storage.com/avatar-01-n0x8HFv8EUetf9z6ht0wScJKoTHqf8.png"
+              src={user?.profileImage || "/default-avatar.png"}
               alt="User avatar"
               width={32}
               height={32}

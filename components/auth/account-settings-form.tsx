@@ -415,7 +415,7 @@ export default function AccountSettingsForm() {
                     >
                       <Avatar className="h-24 w-24 border-2 border-primary/20 object-cover">
                         <AvatarImage
-                          src={profileImage || undefined}
+                          src={user?.profileImage || undefined}
                           alt={user?.userName || "User"}
                           className="object-cover"
                         />
