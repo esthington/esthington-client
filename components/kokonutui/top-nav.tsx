@@ -120,7 +120,7 @@ export default function TopNav() {
               alt="User avatar"
               width={20}
               height={20}
-              className="rounded-full ring-2 ring-border cursor-pointer size-20 object-cover hover:ring-foreground transition-colors"
+              className="rounded-full ring-2 ring-border cursor-pointer size-6 object-cover hover:ring-foreground transition-colors"
             />
           </DropdownMenuTrigger>
           <DropdownMenuContent

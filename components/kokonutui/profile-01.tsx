@@ -65,7 +65,7 @@ export default function Profile01() {
                 alt={user?.userName || "User avatar"}
                 width={20}
                 height={20}
-                className="rounded-full ring-white dark:ring-zinc-900 object-cover size-20"
+                className="rounded-full ring-white dark:ring-zinc-900 object-cover size-10"
               />
               <div className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-zinc-900" />
             </div>
