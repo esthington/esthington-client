@@ -118,9 +118,9 @@ export default function TopNav() {
             <Image
               src={user?.profileImage || "/default-avatar.png"}
               alt="User avatar"
-              width={32}
-              height={32}
-              className="rounded-full ring-2 ring-border cursor-pointer"
+              width={20}
+              height={20}
+              className="rounded-full ring-2 ring-border cursor-pointer size-20 object-cover hover:ring-foreground transition-colors"
             />
           </DropdownMenuTrigger>
           <DropdownMenuContent
