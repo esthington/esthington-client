@@ -675,7 +675,7 @@ export default function ReferralManagementPage() {
                                             className="text-xs"
                                           >
                                             {referral.referrer.agentRank ||
-                                              "Bronze"}
+                                              "Basic"}
                                           </Badge>
                                         </div>
                                       </div>
@@ -1451,10 +1451,10 @@ export default function ReferralManagementPage() {
             </h4>
             <p className="text-sm text-violet-700 dark:text-violet-400">
               You'll earn up to{" "}
-              {commissionRates?.[agentRankInfo?.currentRank || "Bronze"]
+              {commissionRates?.[agentRankInfo?.currentRank || "Basic"]
                 ?.investment || 5}
               % commission on investments and{" "}
-              {commissionRates?.[agentRankInfo?.currentRank || "Bronze"]
+              {commissionRates?.[agentRankInfo?.currentRank || "Basic"]
                 ?.property || 2.5}
               % on property purchases.
             </p>

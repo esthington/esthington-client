@@ -20,10 +20,12 @@ export enum ReferralStatus {
 }
 
 export enum AgentRank {
-  BRONZE = "Bronze",
-  SILVER = "Silver",
-  GOLD = "Gold",
-  PLATINUM = "Platinum",
+  BASIC = "Basic",
+  STAR = "Star",
+  LEADER = "Leader",
+  MANAGER = "Manager",
+  CHIEF = "Chief",
+  AMBASSADOR = "Ambassador",
 }
 
 export interface Referral {

@@ -184,7 +184,7 @@ export default function ViewMarketplaceListingPage() {
 
         // Redirect to success page or dashboard
         setTimeout(() => {
-          router.push("/dashboard/purchases");
+          router.push("/dashboard/my-purchases");
         }, 1500);
       } else {
         setError("Payment failed. Please try again.");

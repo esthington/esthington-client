@@ -15,7 +15,7 @@ import { apiConfig, apiConfigFile } from "@/lib/api";
 
 // Types for authentication
 export type UserRole = "buyer" | "agent" | "admin" | "super_admin";
-export type AgentRank = "Bronze" | "Silver" | "Gold" | "Platinum";
+export type AgentRank = "Basic" | "Star" | "Leader" | "Manager" | "Chief" | "Ambassador";
 export type Gender = "male" | "female" | "other";
 
 export type UserProfile = {

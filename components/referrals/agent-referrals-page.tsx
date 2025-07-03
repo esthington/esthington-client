@@ -157,33 +157,47 @@ export default function AgentReferralsPage() {
   // Get rank colors
   const getRankColors = (rank: AgentRank) => {
     switch (rank) {
-      case AgentRank.BRONZE:
+      case AgentRank.BASIC:
         return {
           bg: "bg-amber-50 dark:bg-amber-950/20",
           text: "text-amber-700 dark:text-amber-300",
           border: "border-amber-200 dark:border-amber-800",
           badge: "bg-amber-500 hover:bg-amber-600",
         };
-      case AgentRank.SILVER:
+      case AgentRank.STAR:
         return {
           bg: "bg-slate-50 dark:bg-slate-800/20",
           text: "text-slate-700 dark:text-slate-300",
           border: "border-slate-200 dark:border-slate-700",
           badge: "bg-slate-400 hover:bg-slate-500",
         };
-      case AgentRank.GOLD:
+      case AgentRank.LEADER:
         return {
           bg: "bg-yellow-50 dark:bg-yellow-950/20",
           text: "text-yellow-700 dark:text-yellow-300",
           border: "border-yellow-200 dark:border-yellow-800",
           badge: "bg-yellow-500 hover:bg-yellow-600",
         };
-      case AgentRank.PLATINUM:
+      case AgentRank.MANAGER:
         return {
           bg: "bg-cyan-50 dark:bg-cyan-950/20",
           text: "text-cyan-700 dark:text-cyan-300",
           border: "border-cyan-200 dark:border-cyan-800",
           badge: "bg-cyan-500 hover:bg-cyan-600",
+        };
+      case AgentRank.CHIEF:
+        return {
+          bg: "bg-blue-50 dark:bg-blue-950/20",
+          text: "text-cyan-700 dark:text-cyan-300",
+          border: "border-cyan-200 dark:border-cyan-800",
+          badge: "bg-cyan-500 hover:bg-cyan-600",
+        };
+      case AgentRank.AMBASSADOR:
+        return {
+          bg: "bg-green-50 dark:bg-green-950/20",
+          text: "text-green-700 dark:text-green-300",
+          border: "border-green-200 dark:border-green-800",
+          badge: "bg-green-500 hover:bg-green-600",
         };
       default:
         return {

@@ -225,6 +225,10 @@ export default function PropertyDetailPage() {
 
         // Refresh wallet data
         await refreshWalletData();
+
+        setTimeout(() => {
+          router.push("/dashboard/myproperties");
+        }, 1500);
       } else {
         setError("Payment failed. Please try again.");
       }

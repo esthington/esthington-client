@@ -1,8 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { motion } from "framer-motion"
-import { Save, Award } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Save, Award, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,43 +12,104 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
-import { PageTransition } from "@/components/animations/page-transition"
-import { FadeIn } from "@/components/animations/fade-in"
-import { StaggerChildren } from "@/components/animations/stagger-children"
-import { StaggerItem } from "@/components/animations/stagger-item"
+import Link from "next/link"
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
+  BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
+import { useReferrals, AgentRank } from "@/contexts/referrals-context"
+import { apiConfig } from "@/lib/api"
 
-// Mock data for referral program settings
-const initialSettings = {
+// Updated settings interface to match new AgentRank enum
+interface AdminReferralSettings {
   commissionRates: {
-    Bronze: {
+    [AgentRank.BASIC]: {
+      investment: number
+      property: number
+    }
+    [AgentRank.STAR]: {
+      investment: number
+      property: number
+    }
+    [AgentRank.LEADER]: {
+      investment: number
+      property: number
+    }
+    [AgentRank.MANAGER]: {
+      investment: number
+      property: number
+    }
+    [AgentRank.CHIEF]: {
+      investment: number
+      property: number
+    }
+    [AgentRank.AMBASSADOR]: {
+      investment: number
+      property: number
+    }
+  }
+  rankThresholds: {
+    [AgentRank.BASIC]: { min: number; max: number }
+    [AgentRank.STAR]: { min: number; max: number }
+    [AgentRank.LEADER]: { min: number; max: number }
+    [AgentRank.MANAGER]: { min: number; max: number }
+    [AgentRank.CHIEF]: { min: number; max: number }
+    [AgentRank.AMBASSADOR]: { min: number; max: number }
+  }
+  payoutSettings: {
+    minimumAmount: number
+    frequency: string
+    processingDays: number
+    autoApprove: boolean
+  }
+  programSettings: {
+    enabled: boolean
+    allowMultiLevel: boolean
+    maxReferralDepth: number
+    referralLinkExpiry: number
+    requireVerification: boolean
+  }
+}
+
+// Updated initial settings with new AgentRank enum
+const initialSettings: AdminReferralSettings = {
+  commissionRates: {
+    [AgentRank.BASIC]: {
       investment: 2.5,
       property: 1.0,
     },
-    Silver: {
+    [AgentRank.STAR]: {
       investment: 3.5,
       property: 1.5,
     },
-    Gold: {
+    [AgentRank.LEADER]: {
       investment: 5.0,
       property: 2.0,
     },
-    Platinum: {
-      investment: 7.5,
+    [AgentRank.MANAGER]: {
+      investment: 6.5,
+      property: 2.5,
+    },
+    [AgentRank.CHIEF]: {
+      investment: 8.0,
       property: 3.0,
+    },
+    [AgentRank.AMBASSADOR]: {
+      investment: 10.0,
+      property: 4.0,
     },
   },
   rankThresholds: {
-    Bronze: { min: 0, max: 9 },
-    Silver: { min: 10, max: 24 },
-    Gold: { min: 25, max: 49 },
-    Platinum: { min: 50, max: Number.POSITIVE_INFINITY },
+    [AgentRank.BASIC]: { min: 0, max: 4 },
+    [AgentRank.STAR]: { min: 5, max: 14 },
+    [AgentRank.LEADER]: { min: 15, max: 29 },
+    [AgentRank.MANAGER]: { min: 30, max: 49 },
+    [AgentRank.CHIEF]: { min: 50, max: 99 },
+    [AgentRank.AMBASSADOR]: { min: 100, max: Number.POSITIVE_INFINITY },
   },
   payoutSettings: {
     minimumAmount: 50,
@@ -59,28 +119,52 @@ const initialSettings = {
   },
   programSettings: {
     enabled: true,
-    allowMultiLevel: false,
-    maxReferralDepth: 1,
+    allowMultiLevel: true, // Enable multi-level since backend supports 3 levels
+    maxReferralDepth: 3, // Updated to match backend 3-level system
     referralLinkExpiry: 0, // 0 means never expires
     requireVerification: true,
   },
 }
 
-export default function ReferralSettingsPage() {
+export default function AdminReferralSettingsPage() {
+  const { commissionRates, isLoading: contextLoading } = useReferrals()
   const [settings, setSettings] = useState(initialSettings)
   const [activeTab, setActiveTab] = useState("commission")
   const [isSaving, setIsSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Load settings from API
+  useEffect(() => {
+    const loadSettings = async () => {
+      setIsLoading(true)
+      try {
+        const response = await apiConfig.get("/admin/referrals/settings", {
+          withCredentials: true,
+        })
+        if (response.status === 200) {
+          setSettings({ ...initialSettings, ...response.data.data })
+        }
+      } catch (error) {
+        console.error("Error loading admin settings:", error)
+        toast.error("Failed to load settings")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadSettings()
+  }, [])
 
   // Update commission rates
-  const updateCommissionRate = (rank, type, value) => {
+  const updateCommissionRate = (rank: AgentRank, type: "investment" | "property", value: number) => {
     setSettings((prev) => ({
       ...prev,
       commissionRates: {
         ...prev.commissionRates,
         [rank]: {
           ...prev.commissionRates[rank],
-          [type]: Number.parseFloat(value),
+          [type]: Number.parseFloat(value.toString()),
         },
       },
     }))
@@ -88,14 +172,14 @@ export default function ReferralSettingsPage() {
   }
 
   // Update rank thresholds
-  const updateRankThreshold = (rank, field, value) => {
+  const updateRankThreshold = (rank: AgentRank, field: "min" | "max", value: number) => {
     setSettings((prev) => ({
       ...prev,
       rankThresholds: {
         ...prev.rankThresholds,
         [rank]: {
           ...prev.rankThresholds[rank],
-          [field]: Number.parseInt(value),
+          [field]: Number.parseInt(value.toString()),
         },
       },
     }))
@@ -103,7 +187,7 @@ export default function ReferralSettingsPage() {
   }
 
   // Update payout settings
-  const updatePayoutSetting = (field, value) => {
+  const updatePayoutSetting = (field: keyof AdminReferralSettings["payoutSettings"], value: any) => {
     setSettings((prev) => ({
       ...prev,
       payoutSettings: {
@@ -115,7 +199,7 @@ export default function ReferralSettingsPage() {
   }
 
   // Update program settings
-  const updateProgramSetting = (field, value) => {
+  const updateProgramSetting = (field: keyof AdminReferralSettings["programSettings"], value: any) => {
     setSettings((prev) => ({
       ...prev,
       programSettings: {
@@ -129,20 +213,14 @@ export default function ReferralSettingsPage() {
   // Save settings
   const saveSettings = async () => {
     setIsSaving(true)
-
     try {
-      // In a real app, this would be an API call
-      // await fetch('/api/admin/referral-settings', {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(settings)
-      // })
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      toast.success("Referral program settings saved successfully")
-      setHasChanges(false)
+      const response = await apiConfig.put("/admin/referrals/settings", settings, {
+        withCredentials: true,
+      })
+      if (response.status === 200) {
+        toast.success("Referral program settings saved successfully")
+        setHasChanges(false)
+      }
     } catch (error) {
       toast.error("Failed to save settings")
       console.error(error)
@@ -151,42 +229,82 @@ export default function ReferralSettingsPage() {
     }
   }
 
+  // Helper function to get color based on rank
+  const getRankColor = (rank: AgentRank): string => {
+    switch (rank) {
+      case AgentRank.BASIC:
+        return "slate"
+      case AgentRank.STAR:
+        return "amber"
+      case AgentRank.LEADER:
+        return "yellow"
+      case AgentRank.MANAGER:
+        return "cyan"
+      case AgentRank.CHIEF:
+        return "blue"
+      case AgentRank.AMBASSADOR:
+        return "purple"
+      default:
+        return "slate"
+    }
+  }
+
+  if (isLoading || contextLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading admin settings...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <PageTransition>
-      <div className="container mx-auto p-4 max-w-6xl">
-        <div className="flex flex-col space-y-8">
-          <div>
-            <Breadcrumb className="mb-2">
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/dashboard/admin/referrals">Referrals</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/dashboard/admin/referrals/settings">Settings</BreadcrumbLink>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <FadeIn>
-                <div>
-                  <h1 className="text-2xl font-bold text-white">Referral Program Settings</h1>
-                  <p className="text-gray-400">Configure commission rates, rank thresholds, and program settings</p>
-                </div>
-              </FadeIn>
-
+    <div className="container mx-auto p-4 max-w-6xl">
+      <div className="flex flex-col space-y-8">
+        <div>
+          <Breadcrumb className="mb-2">
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/dashboard/admin">Admin</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/dashboard/admin/referrals">Referrals</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Settings</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold">Admin Referral Program Settings</h1>
+              <p className="text-muted-foreground">Configure commission rates, rank thresholds, and program settings</p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" asChild>
+                <Link href="/dashboard/admin/referrals">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Referrals
+                </Link>
+              </Button>
               <Button
                 onClick={saveSettings}
                 disabled={!hasChanges || isSaving}
                 className="bg-primary hover:bg-primary/90"
               >
                 {isSaving ? (
-                  <>Saving...</>
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Saving...
+                  </>
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
@@ -196,412 +314,324 @@ export default function ReferralSettingsPage() {
               </Button>
             </div>
           </div>
+        </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="bg-[#1F1F23]/50 border border-[#2A2A30] p-1 rounded-lg">
-              <TabsTrigger value="commission" className="data-[state=active]:bg-primary data-[state=active]:text-white">
-                Commission Rates
-              </TabsTrigger>
-              <TabsTrigger value="ranks" className="data-[state=active]:bg-primary data-[state=active]:text-white">
-                Rank Thresholds
-              </TabsTrigger>
-              <TabsTrigger value="payouts" className="data-[state=active]:bg-primary data-[state=active]:text-white">
-                Payout Settings
-              </TabsTrigger>
-              <TabsTrigger value="program" className="data-[state=active]:bg-primary data-[state=active]:text-white">
-                Program Settings
-              </TabsTrigger>
-            </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="bg-muted p-1 rounded-lg">
+            <TabsTrigger value="commission" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              Commission Rates
+            </TabsTrigger>
+            <TabsTrigger value="ranks" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              Rank Thresholds
+            </TabsTrigger>
+            <TabsTrigger value="payouts" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              Payout Settings
+            </TabsTrigger>
+            <TabsTrigger value="program" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              Program Settings
+            </TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="commission" className="mt-4">
-              <StaggerChildren>
-                <Card className="bg-[#1F1F23]/50 backdrop-blur-sm border-[#2A2A30]">
-                  <CardHeader>
-                    <CardTitle className="text-white">Commission Rates</CardTitle>
-                    <CardDescription>
-                      Configure commission rates for different agent ranks and transaction types
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-6">
-                      {Object.entries(settings.commissionRates).map(([rank, rates], index) => (
-                        <StaggerItem key={rank}>
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                          >
-                            <div className="space-y-4">
-                              <div className="flex items-center">
-                                <Award className={`h-5 w-5 mr-2 text-${getRankColor(rank)}-500`} />
-                                <h3 className="text-lg font-medium text-white">{rank} Rank</h3>
-                              </div>
-
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                  <div className="flex justify-between">
-                                    <Label htmlFor={`${rank}-investment`} className="text-gray-400">
-                                      Investment Commission (%)
-                                    </Label>
-                                    <span className="text-white font-medium">{rates.investment}%</span>
-                                  </div>
-                                  <div className="flex items-center gap-4">
-                                    <Slider
-                                      id={`${rank}-investment`}
-                                      min={0}
-                                      max={10}
-                                      step={0.5}
-                                      value={[rates.investment]}
-                                      onValueChange={([value]) => updateCommissionRate(rank, "investment", value)}
-                                      className="flex-1"
-                                    />
-                                    <Input
-                                      type="number"
-                                      value={rates.investment}
-                                      onChange={(e) => updateCommissionRate(rank, "investment", e.target.value)}
-                                      min={0}
-                                      max={10}
-                                      step={0.5}
-                                      className="w-20 bg-[#2A2A30] border-[#3A3A40] text-white"
-                                    />
-                                  </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                  <div className="flex justify-between">
-                                    <Label htmlFor={`${rank}-property`} className="text-gray-400">
-                                      Property Commission (%)
-                                    </Label>
-                                    <span className="text-white font-medium">{rates.property}%</span>
-                                  </div>
-                                  <div className="flex items-center gap-4">
-                                    <Slider
-                                      id={`${rank}-property`}
-                                      min={0}
-                                      max={5}
-                                      step={0.5}
-                                      value={[rates.property]}
-                                      onValueChange={([value]) => updateCommissionRate(rank, "property", value)}
-                                      className="flex-1"
-                                    />
-                                    <Input
-                                      type="number"
-                                      value={rates.property}
-                                      onChange={(e) => updateCommissionRate(rank, "property", e.target.value)}
-                                      min={0}
-                                      max={5}
-                                      step={0.5}
-                                      className="w-20 bg-[#2A2A30] border-[#3A3A40] text-white"
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            {index < Object.entries(settings.commissionRates).length - 1 && (
-                              <Separator className="my-6 bg-[#2A2A30]" />
-                            )}
-                          </motion.div>
-                        </StaggerItem>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </StaggerChildren>
-            </TabsContent>
-
-            <TabsContent value="ranks" className="mt-4">
-              <StaggerChildren>
-                <Card className="bg-[#1F1F23]/50 backdrop-blur-sm border-[#2A2A30]">
-                  <CardHeader>
-                    <CardTitle className="text-white">Rank Thresholds</CardTitle>
-                    <CardDescription>Configure the number of referrals required to achieve each rank</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-6">
-                      {Object.entries(settings.rankThresholds).map(([rank, threshold], index) => (
-                        <StaggerItem key={rank}>
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                          >
-                            <div className="space-y-4">
-                              <div className="flex items-center">
-                                <Award className={`h-5 w-5 mr-2 text-${getRankColor(rank)}-500`} />
-                                <h3 className="text-lg font-medium text-white">{rank} Rank</h3>
-                              </div>
-
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                  <Label htmlFor={`${rank}-min`} className="text-gray-400">
-                                    Minimum Referrals
-                                  </Label>
-                                  <Input
-                                    id={`${rank}-min`}
-                                    type="number"
-                                    value={threshold.min}
-                                    onChange={(e) => updateRankThreshold(rank, "min", e.target.value)}
-                                    min={0}
-                                    className="bg-[#2A2A30] border-[#3A3A40] text-white"
-                                    disabled={rank === "Bronze"} // Bronze always starts at 0
-                                  />
-                                </div>
-
-                                <div className="space-y-2">
-                                  <Label htmlFor={`${rank}-max`} className="text-gray-400">
-                                    Maximum Referrals
-                                  </Label>
-                                  <Input
-                                    id={`${rank}-max`}
-                                    type="number"
-                                    value={rank !== "Platinum" ? threshold.max : "∞"}
-                                    onChange={(e) => updateRankThreshold(rank, "max", e.target.value)}
-                                    min={threshold.min + 1}
-                                    className="bg-[#2A2A30] border-[#3A3A40] text-white"
-                                    disabled={rank === "Platinum"} // Platinum has no upper limit
-                                  />
-                                </div>
-                              </div>
-                            </div>
-
-                            {index < Object.entries(settings.rankThresholds).length - 1 && (
-                              <Separator className="my-6 bg-[#2A2A30]" />
-                            )}
-                          </motion.div>
-                        </StaggerItem>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </StaggerChildren>
-            </TabsContent>
-
-            <TabsContent value="payouts" className="mt-4">
-              <StaggerChildren>
-                <Card className="bg-[#1F1F23]/50 backdrop-blur-sm border-[#2A2A30]">
-                  <CardHeader>
-                    <CardTitle className="text-white">Payout Settings</CardTitle>
-                    <CardDescription>Configure how and when referral commissions are paid out</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-6">
-                      <StaggerItem>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div className="space-y-2">
-                            <Label htmlFor="minimum-amount" className="text-gray-400">
-                              Minimum Payout Amount ($)
-                            </Label>
-                            <Input
-                              id="minimum-amount"
-                              type="number"
-                              value={settings.payoutSettings.minimumAmount}
-                              onChange={(e) => updatePayoutSetting("minimumAmount", Number.parseInt(e.target.value))}
-                              min={0}
-                              className="bg-[#2A2A30] border-[#3A3A40] text-white"
-                            />
-                            <p className="text-xs text-gray-500">
-                              Minimum amount required before commission is paid out
-                            </p>
+          <TabsContent value="commission" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Commission Rates</CardTitle>
+                <CardDescription>
+                  Configure commission rates for different agent ranks and transaction types
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {Object.entries(settings.commissionRates).map(([rank, rates]) => (
+                    <div key={rank} className="space-y-4">
+                      <div className="flex items-center">
+                        <Award className={`h-5 w-5 mr-2 text-${getRankColor(rank as AgentRank)}-500`} />
+                        <h3 className="text-lg font-medium">{rank} Rank</h3>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <Label htmlFor={`${rank}-investment`}>Investment Commission (%)</Label>
+                            <span className="font-medium">{rates.investment}%</span>
                           </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="payout-frequency" className="text-gray-400">
-                              Payout Frequency
-                            </Label>
-                            <Select
-                              value={settings.payoutSettings.frequency}
-                              onValueChange={(value) => updatePayoutSetting("frequency", value)}
-                            >
-                              <SelectTrigger id="payout-frequency" className="bg-[#2A2A30] border-[#3A3A40] text-white">
-                                <SelectValue placeholder="Select frequency" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-[#1F1F23] border-[#2A2A30] text-white">
-                                <SelectItem value="weekly">Weekly</SelectItem>
-                                <SelectItem value="biweekly">Bi-weekly</SelectItem>
-                                <SelectItem value="monthly">Monthly</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <p className="text-xs text-gray-500">How often commissions are paid out</p>
+                          <div className="flex items-center gap-4">
+                            <Slider
+                              id={`${rank}-investment`}
+                              min={0}
+                              max={15}
+                              step={0.5}
+                              value={[rates.investment]}
+                              onValueChange={([value]) => updateCommissionRate(rank as AgentRank, "investment", value)}
+                              className="flex-1"
+                            />
+                            <Input
+                              type="number"
+                              value={rates.investment}
+                              onChange={(e) =>
+                                updateCommissionRate(rank as AgentRank, "investment", Number.parseFloat(e.target.value))
+                              }
+                              min={0}
+                              max={15}
+                              step={0.5}
+                              className="w-20"
+                            />
                           </div>
                         </div>
-                      </StaggerItem>
-
-                      <Separator className="my-6 bg-[#2A2A30]" />
-
-                      <StaggerItem>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div className="space-y-2">
-                            <Label htmlFor="processing-days" className="text-gray-400">
-                              Processing Days
-                            </Label>
-                            <Input
-                              id="processing-days"
-                              type="number"
-                              value={settings.payoutSettings.processingDays}
-                              onChange={(e) => updatePayoutSetting("processingDays", Number.parseInt(e.target.value))}
-                              min={0}
-                              max={30}
-                              className="bg-[#2A2A30] border-[#3A3A40] text-white"
-                            />
-                            <p className="text-xs text-gray-500">
-                              Number of days to process payouts after the end of the period
-                            </p>
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <Label htmlFor={`${rank}-property`}>Property Commission (%)</Label>
+                            <span className="font-medium">{rates.property}%</span>
                           </div>
-
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor="auto-approve" className="text-gray-400">
-                                Auto-approve Commissions
-                              </Label>
-                              <Switch
-                                id="auto-approve"
-                                checked={settings.payoutSettings.autoApprove}
-                                onCheckedChange={(checked) => updatePayoutSetting("autoApprove", checked)}
-                              />
-                            </div>
-                            <p className="text-xs text-gray-500">
-                              Automatically approve commissions without manual review
-                            </p>
+                          <div className="flex items-center gap-4">
+                            <Slider
+                              id={`${rank}-property`}
+                              min={0}
+                              max={10}
+                              step={0.5}
+                              value={[rates.property]}
+                              onValueChange={([value]) => updateCommissionRate(rank as AgentRank, "property", value)}
+                              className="flex-1"
+                            />
+                            <Input
+                              type="number"
+                              value={rates.property}
+                              onChange={(e) =>
+                                updateCommissionRate(rank as AgentRank, "property", Number.parseFloat(e.target.value))
+                              }
+                              min={0}
+                              max={10}
+                              step={0.5}
+                              className="w-20"
+                            />
                           </div>
                         </div>
-                      </StaggerItem>
+                      </div>
+                      {rank !== AgentRank.AMBASSADOR && <Separator className="my-6" />}
                     </div>
-                  </CardContent>
-                </Card>
-              </StaggerChildren>
-            </TabsContent>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-            <TabsContent value="program" className="mt-4">
-              <StaggerChildren>
-                <Card className="bg-[#1F1F23]/50 backdrop-blur-sm border-[#2A2A30]">
-                  <CardHeader>
-                    <CardTitle className="text-white">Program Settings</CardTitle>
-                    <CardDescription>Configure general settings for the referral program</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-6">
-                      <StaggerItem>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <Label htmlFor="program-enabled" className="text-white font-medium">
-                              Enable Referral Program
-                            </Label>
-                            <p className="text-sm text-gray-400">Turn the entire referral program on or off</p>
-                          </div>
-                          <Switch
-                            id="program-enabled"
-                            checked={settings.programSettings.enabled}
-                            onCheckedChange={(checked) => updateProgramSetting("enabled", checked)}
+          <TabsContent value="ranks" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Rank Thresholds</CardTitle>
+                <CardDescription>Configure the number of referrals required to achieve each rank</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {Object.entries(settings.rankThresholds).map(([rank, threshold]) => (
+                    <div key={rank} className="space-y-4">
+                      <div className="flex items-center">
+                        <Award className={`h-5 w-5 mr-2 text-${getRankColor(rank as AgentRank)}-500`} />
+                        <h3 className="text-lg font-medium">{rank} Rank</h3>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label htmlFor={`${rank}-min`}>Minimum Referrals</Label>
+                          <Input
+                            id={`${rank}-min`}
+                            type="number"
+                            value={threshold.min}
+                            onChange={(e) =>
+                              updateRankThreshold(rank as AgentRank, "min", Number.parseInt(e.target.value))
+                            }
+                            min={0}
+                            disabled={rank === AgentRank.BASIC} // Basic always starts at 0
                           />
                         </div>
-                      </StaggerItem>
-
-                      <Separator className="my-6 bg-[#2A2A30]" />
-
-                      <StaggerItem>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor="multi-level" className="text-gray-400">
-                                Allow Multi-level Referrals
-                              </Label>
-                              <Switch
-                                id="multi-level"
-                                checked={settings.programSettings.allowMultiLevel}
-                                onCheckedChange={(checked) => updateProgramSetting("allowMultiLevel", checked)}
-                              />
-                            </div>
-                            <p className="text-xs text-gray-500">Allow agents to earn from sub-referrals</p>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="max-depth" className="text-gray-400">
-                              Maximum Referral Depth
-                            </Label>
-                            <Input
-                              id="max-depth"
-                              type="number"
-                              value={settings.programSettings.maxReferralDepth}
-                              onChange={(e) =>
-                                updateProgramSetting("maxReferralDepth", Number.parseInt(e.target.value))
-                              }
-                              min={1}
-                              max={5}
-                              disabled={!settings.programSettings.allowMultiLevel}
-                              className="bg-[#2A2A30] border-[#3A3A40] text-white"
-                            />
-                            <p className="text-xs text-gray-500">
-                              Maximum levels of sub-referrals (if multi-level is enabled)
-                            </p>
-                          </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`${rank}-max`}>Maximum Referrals</Label>
+                          <Input
+                            id={`${rank}-max`}
+                            type="number"
+                            value={rank !== AgentRank.AMBASSADOR ? threshold.max : "∞"}
+                            onChange={(e) =>
+                              updateRankThreshold(rank as AgentRank, "max", Number.parseInt(e.target.value))
+                            }
+                            min={threshold.min + 1}
+                            disabled={rank === AgentRank.AMBASSADOR} // Ambassador has no upper limit
+                          />
                         </div>
-                      </StaggerItem>
-
-                      <Separator className="my-6 bg-[#2A2A30]" />
-
-                      <StaggerItem>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div className="space-y-2">
-                            <Label htmlFor="link-expiry" className="text-gray-400">
-                              Referral Link Expiry (Days)
-                            </Label>
-                            <Input
-                              id="link-expiry"
-                              type="number"
-                              value={settings.programSettings.referralLinkExpiry}
-                              onChange={(e) =>
-                                updateProgramSetting("referralLinkExpiry", Number.parseInt(e.target.value))
-                              }
-                              min={0}
-                              className="bg-[#2A2A30] border-[#3A3A40] text-white"
-                            />
-                            <p className="text-xs text-gray-500">
-                              Number of days before a referral link expires (0 for never)
-                            </p>
-                          </div>
-
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor="require-verification" className="text-gray-400">
-                                Require Verification
-                              </Label>
-                              <Switch
-                                id="require-verification"
-                                checked={settings.programSettings.requireVerification}
-                                onCheckedChange={(checked) => updateProgramSetting("requireVerification", checked)}
-                              />
-                            </div>
-                            <p className="text-xs text-gray-500">
-                              Require referred users to verify their account before commission is earned
-                            </p>
-                          </div>
-                        </div>
-                      </StaggerItem>
+                      </div>
+                      {rank !== AgentRank.AMBASSADOR && <Separator className="my-6" />}
                     </div>
-                  </CardContent>
-                </Card>
-              </StaggerChildren>
-            </TabsContent>
-          </Tabs>
-        </div>
-      </div>
-    </PageTransition>
-  )
-}
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-// Helper function to get color based on rank
-function getRankColor(rank: string): string {
-  switch (rank) {
-    case "Bronze":
-      return "yellow"
-    case "Silver":
-      return "blue"
-    case "Gold":
-      return "yellow"
-    case "Platinum":
-      return "purple"
-    default:
-      return "blue"
-  }
+          <TabsContent value="payouts" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Payout Settings</CardTitle>
+                <CardDescription>Configure how and when referral commissions are paid out</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="minimum-amount">Minimum Payout Amount ($)</Label>
+                      <Input
+                        id="minimum-amount"
+                        type="number"
+                        value={settings.payoutSettings.minimumAmount}
+                        onChange={(e) => updatePayoutSetting("minimumAmount", Number.parseInt(e.target.value))}
+                        min={0}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Minimum amount required before commission is paid out
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="payout-frequency">Payout Frequency</Label>
+                      <Select
+                        value={settings.payoutSettings.frequency}
+                        onValueChange={(value) => updatePayoutSetting("frequency", value)}
+                      >
+                        <SelectTrigger id="payout-frequency">
+                          <SelectValue placeholder="Select frequency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="biweekly">Bi-weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">How often commissions are paid out</p>
+                    </div>
+                  </div>
+
+                  <Separator className="my-6" />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="processing-days">Processing Days</Label>
+                      <Input
+                        id="processing-days"
+                        type="number"
+                        value={settings.payoutSettings.processingDays}
+                        onChange={(e) => updatePayoutSetting("processingDays", Number.parseInt(e.target.value))}
+                        min={0}
+                        max={30}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Number of days to process payouts after the end of the period
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="auto-approve">Auto-approve Commissions</Label>
+                        <Switch
+                          id="auto-approve"
+                          checked={settings.payoutSettings.autoApprove}
+                          onCheckedChange={(checked) => updatePayoutSetting("autoApprove", checked)}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Automatically approve commissions without manual review
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="program" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Program Settings</CardTitle>
+                <CardDescription>Configure general settings for the referral program</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="program-enabled" className="font-medium">
+                        Enable Referral Program
+                      </Label>
+                      <p className="text-sm text-muted-foreground">Turn the entire referral program on or off</p>
+                    </div>
+                    <Switch
+                      id="program-enabled"
+                      checked={settings.programSettings.enabled}
+                      onCheckedChange={(checked) => updateProgramSetting("enabled", checked)}
+                    />
+                  </div>
+
+                  <Separator className="my-6" />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="multi-level">Allow Multi-level Referrals</Label>
+                        <Switch
+                          id="multi-level"
+                          checked={settings.programSettings.allowMultiLevel}
+                          onCheckedChange={(checked) => updateProgramSetting("allowMultiLevel", checked)}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Allow agents to earn from sub-referrals (3 levels deep)
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="max-depth">Maximum Referral Depth</Label>
+                      <Input
+                        id="max-depth"
+                        type="number"
+                        value={settings.programSettings.maxReferralDepth}
+                        onChange={(e) => updateProgramSetting("maxReferralDepth", Number.parseInt(e.target.value))}
+                        min={1}
+                        max={3}
+                        disabled={!settings.programSettings.allowMultiLevel}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Maximum levels of sub-referrals (if multi-level is enabled)
+                      </p>
+                    </div>
+                  </div>
+
+                  <Separator className="my-6" />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="link-expiry">Referral Link Expiry (Days)</Label>
+                      <Input
+                        id="link-expiry"
+                        type="number"
+                        value={settings.programSettings.referralLinkExpiry}
+                        onChange={(e) => updateProgramSetting("referralLinkExpiry", Number.parseInt(e.target.value))}
+                        min={0}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Number of days before a referral link expires (0 for never)
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="require-verification">Require Verification</Label>
+                        <Switch
+                          id="require-verification"
+                          checked={settings.programSettings.requireVerification}
+                          onCheckedChange={(checked) => updateProgramSetting("requireVerification", checked)}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Require referred users to verify their account before commission is earned
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  )
 }

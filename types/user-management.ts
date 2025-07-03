@@ -6,12 +6,12 @@ export enum UserRole {
 }
 
 export enum AgentRank {
-  BRONZE = "Bronze",
-  SILVER = "Silver",
-  GOLD = "Gold",
-  PLATINUM = "Platinum",
-  DIAMOND = "Diamond",
-  MASTER = "Master",
+  BASIC = "Basic",
+  STAR = "Star",
+  LEADER = "Leader",
+  MANAGER = "Manager",
+  CHIEF = "Chief",
+  AMBASSADOR = "Ambassador",
 }
 
 export enum UserStatus {
