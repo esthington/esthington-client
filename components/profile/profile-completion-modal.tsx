@@ -33,6 +33,7 @@ import type { UserProfile } from "@/contexts/auth-context";
 import { Camera, Loader2, User } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useMediaQuery } from "../admin/referral-management-page";
+import { nigerianStates, getLGAsForState } from "../../data/nigerian-states";
 
 export function ProfileCompletionModal() {
   const { user, updateProfile } = useAuth();
@@ -40,26 +41,28 @@ export function ProfileCompletionModal() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Add a new ref for the validID file input
   const validIDFileInputRef = useRef<HTMLInputElement>(null);
-
-  // Add state for validID file and preview
   const [validIDFile, setValidIDFile] = useState<File | null>(null);
   const [validIDPreview, setValidIDPreview] = useState<string | null>(null);
 
-  // Update the formData state to include all required fields and handle the location object correctly
-  const [formData, setFormData] = useState<Partial<UserProfile>>({
+  // Add selectedState to track which state is selected for LGA filtering
+  const [selectedState, setSelectedState] = useState<string>("");
+  // Add selectedStateAlias state after the existing selectedState
+  const [selectedStateAlias, setSelectedStateAlias] = useState<string>("");
+
+  // Update the formData state to include LGA field
+  const [formData, setFormData] = useState<
+    Partial<UserProfile & { lga: string }>
+  >({
     firstName: user?.firstName || "",
     lastName: user?.lastName || "",
     gender: user?.gender || undefined,
-    country: user?.country || "",
+    country: "Nigeria", // Default to Nigeria
     stateOfOrigin: user?.stateOfOrigin || "",
+    lga: "", // Add LGA field
     phone: user?.phone || "",
     address: user?.address || "",
-    // Use city from either direct property or location object
     city: user?.city || "",
-    // Add next of kin information
     nextOfKinName: user?.nextOfKinName || "",
     nextOfKinAddress: user?.nextOfKinAddress || "",
     nextOfKinPhone: user?.nextOfKinPhone || "",
@@ -68,11 +71,8 @@ export function ProfileCompletionModal() {
 
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [open, setOpen] = useState(false);
-
-  // Check if profile is incomplete
   const isProfileIncomplete = !user?.firstName || !user?.lastName;
 
-  // Add a handler for validID file selection
   const handleValidIDClick = () => {
     validIDFileInputRef.current?.click();
   };
@@ -80,20 +80,15 @@ export function ProfileCompletionModal() {
   const handleValidIDChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Check file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast.error("ID image size should be less than 5MB");
         return;
       }
-
-      // Check file type
       if (!file.type.startsWith("image/")) {
         toast.error("Please upload an image file for your ID");
         return;
       }
-
       setValidIDFile(file);
-      // Create a preview URL
       const reader = new FileReader();
       reader.onload = (event) => {
         setValidIDPreview(event.target?.result as string);
@@ -102,24 +97,20 @@ export function ProfileCompletionModal() {
     }
   };
 
-  // Update the useEffect to handle both location structures
   useEffect(() => {
-    // Open modal if profile is incomplete
     if (isProfileIncomplete) {
       setOpen(true);
     }
-
-    // Update form data when user changes
     if (user) {
       setFormData({
         firstName: user.firstName || "",
         lastName: user.lastName || "",
         gender: user.gender || undefined,
-        country: user.country || "",
+        country: "Nigeria", // Always set to Nigeria
         stateOfOrigin: user.stateOfOrigin || "",
+        lga: "", // Reset LGA when user changes
         phone: user.phone || "",
         address: user.address || "",
-        // Use city from either direct property or location object
         city: user.city || "",
         nextOfKinName: user?.nextOfKinName || "",
         nextOfKinAddress: user?.nextOfKinAddress || "",
@@ -127,24 +118,30 @@ export function ProfileCompletionModal() {
         validID: user?.validID || "",
       });
 
-      // Set profile image if available
+      // Set selected state if user has stateOfOrigin
+      if (user.stateOfOrigin) {
+        const stateEntry = Object.values(nigerianStates).find(
+          (state) => state.state === user.stateOfOrigin
+        );
+        if (stateEntry) {
+          setSelectedState(stateEntry.alias);
+          setSelectedStateAlias(stateEntry.alias); // Add this line
+        }
+      }
+
       if (user.avatar) {
         setProfileImage(user.avatar);
       } else if (user.profileImage) {
         setProfileImage(user.profileImage);
       }
-
-      // Set validID preview if available
       if (user.validID) {
         setValidIDPreview(user.validID);
       }
     }
   }, [user, isProfileIncomplete]);
 
-  // Prevent closing the modal if profile is incomplete
   const handleOpenChange = (newOpen: boolean) => {
     if (isProfileIncomplete && !newOpen) {
-      // Don't allow closing if profile is incomplete
       toast.error("Please complete your profile information");
       return;
     }
@@ -160,6 +157,23 @@ export function ProfileCompletionModal() {
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // If state is being changed, update selectedStateAlias and reset LGA
+    if (name === "stateOfOrigin") {
+      const stateEntry = Object.values(nigerianStates).find(
+        (state) => state.state === value
+      );
+      if (stateEntry) {
+        setSelectedState(stateEntry.alias);
+        setSelectedStateAlias(stateEntry.alias); // Add this line
+        setFormData((prev) => ({ ...prev, lga: "" })); // Reset LGA when state changes
+      }
+    }
+
+    // Explicitly handle LGA selection
+    if (name === "lga") {
+      console.log("LGA selected:", value); // Debug log
+    }
   };
 
   const handleImageClick = () => {
@@ -169,20 +183,15 @@ export function ProfileCompletionModal() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Check file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast.error("Image size should be less than 5MB");
         return;
       }
-
-      // Check file type
       if (!file.type.startsWith("image/")) {
         toast.error("Please upload an image file");
         return;
       }
-
       setImageFile(file);
-      // Create a preview URL
       const reader = new FileReader();
       reader.onload = (event) => {
         setProfileImage(event.target?.result as string);
@@ -191,23 +200,16 @@ export function ProfileCompletionModal() {
     }
   };
 
-  // Updated handleSubmit function to send actual files instead of base64
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validate required fields
     if (!formData.firstName || !formData.lastName) {
       toast.error("First name and last name are required");
       return;
     }
 
     setIsSubmitting(true);
-
     try {
-      // Create FormData for multipart/form-data submission
       const submitFormData = new FormData();
-
-      // Add only filled text fields to FormData
       Object.entries(formData).forEach(([key, value]) => {
         if (
           value !== undefined &&
@@ -216,21 +218,21 @@ export function ProfileCompletionModal() {
           value.toString().trim() !== ""
         ) {
           submitFormData.append(key, value.toString().trim());
+          // Add debug logging for LGA
+          if (key === "lga") {
+            console.log("Submitting LGA:", value);
+          }
         }
       });
 
-      // Add files to FormData if they exist
       if (imageFile) {
         submitFormData.append("profileImage", imageFile);
       }
-
       if (validIDFile) {
         submitFormData.append("validID", validIDFile);
       }
 
-      // Only proceed if we have data to submit
       const hasData = Array.from(submitFormData.keys()).length > 0;
-
       if (!hasData) {
         toast.error(
           "Please fill in at least some information to update your profile"
@@ -238,19 +240,7 @@ export function ProfileCompletionModal() {
         return;
       }
 
-      console.log("Submitting form data with files:");
-      // Log FormData contents for debugging
-      for (const [key, value] of submitFormData.entries()) {
-        if (value instanceof File) {
-          console.log(`${key}: File - ${value.name} (${value.size} bytes)`);
-        } else {
-          console.log(`${key}: ${value}`);
-        }
-      }
-
-      // Call updateProfile with FormData instead of regular object
       const success = await updateProfile(submitFormData);
-
       if (success) {
         toast.success("Profile updated successfully");
         setOpen(false);
@@ -259,8 +249,6 @@ export function ProfileCompletionModal() {
       }
     } catch (error: any) {
       console.error("Error updating profile:", error);
-
-      // Handle specific error types
       if (error.response?.status === 401) {
         toast.error("Session expired. Please log in again.");
       } else if (error.response?.status === 400) {
@@ -275,7 +263,11 @@ export function ProfileCompletionModal() {
     }
   };
 
-  // Update the form content to include all fields
+  // Replace the existing availableLGAs line with:
+  const availableLGAs = selectedStateAlias
+    ? getLGAsForState(selectedStateAlias)
+    : [];
+
   const content = (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Profile Image Section */}
@@ -434,24 +426,59 @@ export function ProfileCompletionModal() {
             <Input
               id="country"
               name="country"
-              placeholder="Enter your country"
-              value={formData.country}
-              onChange={handleInputChange}
+              value="Nigeria"
+              readOnly
+              className="bg-background/50 cursor-not-allowed"
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="stateOfOrigin">State of Origin</Label>
-            <Input
-              id="stateOfOrigin"
-              name="stateOfOrigin"
-              placeholder="Enter your state of origin"
+            <Select
               value={formData.stateOfOrigin}
-              onChange={handleInputChange}
-            />
+              onValueChange={(value) =>
+                handleSelectChange("stateOfOrigin", value)
+              }
+            >
+              <SelectTrigger id="stateOfOrigin">
+                <SelectValue placeholder="Select your state" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.values(nigerianStates).map((state) => (
+                  <SelectItem key={state.alias} value={state.state}>
+                    {state.state}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="lga">Local Government Area</Label>
+            <Select
+              value={formData.lga}
+              onValueChange={(value) => handleSelectChange("lga", value)}
+              disabled={!selectedStateAlias} // Change from selectedState to selectedStateAlias
+            >
+              <SelectTrigger id="lga">
+                <SelectValue
+                  placeholder={
+                    selectedStateAlias
+                      ? "Select your LGA"
+                      : "Select state first" // Change from selectedState to selectedStateAlias
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {availableLGAs.map((lga) => (
+                  <SelectItem key={lga} value={lga}>
+                    {lga}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="city">City</Label>
             <Input
@@ -462,62 +489,9 @@ export function ProfileCompletionModal() {
               onChange={handleInputChange}
             />
           </div>
-          {/* Address Field - Add this after the city field */}
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="address">Address</Label>
-            <Textarea
-              id="address"
-              name="address"
-              placeholder="Enter your full address"
-              value={formData.address}
-              onChange={handleInputChange}
-              rows={3}
-              className="resize-none"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="validID">Valid ID</Label>
-            <div className="mt-1 flex flex-col items-center space-y-2">
-              <div
-                onClick={handleValidIDClick}
-                className="relative flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg cursor-pointer hover:border-primary/50 transition-colors"
-              >
-                {validIDPreview ? (
-                  <div className="relative w-full h-full">
-                    <img
-                      src={validIDPreview || "/placeholder.svg"}
-                      alt="ID Preview"
-                      className="w-full h-full object-contain rounded-lg"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity rounded-lg">
-                      <Camera className="h-8 w-8 text-white" />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <Camera className="mx-auto h-8 w-8 text-muted-foreground" />
-                    <span className="mt-2 block text-sm text-muted-foreground">
-                      Click to upload your ID
-                    </span>
-                  </div>
-                )}
-              </div>
-              <input
-                type="file"
-                ref={validIDFileInputRef}
-                className="hidden"
-                accept="image/*"
-                onChange={handleValidIDChange}
-              />
-              <p className="text-xs text-muted-foreground">
-                Upload a clear image of your government-issued ID
-              </p>
-            </div>
-          </div>
         </div>
 
-        {/* Address Field - Added here */}
-        {/* <div className="space-y-2">
+        <div className="space-y-2">
           <Label htmlFor="address">Address</Label>
           <Textarea
             id="address"
@@ -528,7 +502,47 @@ export function ProfileCompletionModal() {
             rows={3}
             className="resize-none"
           />
-        </div> */}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="validID">Valid ID</Label>
+          <div className="mt-1 flex flex-col items-center space-y-2">
+            <div
+              onClick={handleValidIDClick}
+              className="relative flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg cursor-pointer hover:border-primary/50 transition-colors"
+            >
+              {validIDPreview ? (
+                <div className="relative w-full h-full">
+                  <img
+                    src={validIDPreview || "/placeholder.svg"}
+                    alt="ID Preview"
+                    className="w-full h-full object-contain rounded-lg"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity rounded-lg">
+                    <Camera className="h-8 w-8 text-white" />
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <Camera className="mx-auto h-8 w-8 text-muted-foreground" />
+                  <span className="mt-2 block text-sm text-muted-foreground">
+                    Click to upload your ID
+                  </span>
+                </div>
+              )}
+            </div>
+            <input
+              type="file"
+              ref={validIDFileInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={handleValidIDChange}
+            />
+            <p className="text-xs text-muted-foreground">
+              Upload a clear image of your government-issued ID
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Next of Kin Information */}
@@ -583,7 +597,6 @@ export function ProfileCompletionModal() {
     </form>
   );
 
-  // Use Dialog for desktop and Drawer for mobile
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={handleOpenChange} modal={true}>

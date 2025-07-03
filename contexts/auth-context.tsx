@@ -45,6 +45,7 @@ export type UserProfile = {
   gender?: Gender;
   country?: string;
   stateOfOrigin?: string;
+  lga?: string;
   city?: string;
   validID?: string;
   nextOfKinName?: string;

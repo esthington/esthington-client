@@ -680,7 +680,7 @@ export default function FundWalletPage() {
                               </span>
                               <div className="flex items-center">
                                 <span className="text-sm font-medium">
-                                  EST-{localStorage.getItem("userId") || "USER"}
+                                  REF-{user?.userName}
                                 </span>
                                 <TooltipProvider>
                                   <Tooltip>
@@ -692,10 +692,7 @@ export default function FundWalletPage() {
                                         className="h-6 w-6 p-0 ml-1"
                                         onClick={(e) =>
                                           copyToClipboard(
-                                            `EST-${
-                                              localStorage.getItem("userId") ||
-                                              "USER"
-                                            }`,
+                                            `REF-${user?.userName}`,
                                             e
                                           )
                                         }

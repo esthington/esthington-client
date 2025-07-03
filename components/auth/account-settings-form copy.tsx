@@ -32,7 +32,6 @@ import type { UserProfile } from "@/contexts/auth-context";
 import { Camera, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useMediaQuery } from "../admin/referral-management-page";
-import { nigerianStates, getLGAsForState } from "../../data/nigerian-states";
 
 export default function AccountSettingsForm() {
   const { user, updateProfile } = useAuth();
@@ -48,9 +47,6 @@ export default function AccountSettingsForm() {
   const [validIDFile, setValidIDFile] = useState<File | null>(null);
   const [validIDPreview, setValidIDPreview] = useState<string | null>(null);
 
-  // Add a new state to track the selected state alias:
-  const [selectedStateAlias, setSelectedStateAlias] = useState<string>("");
-
   // Update the formData state to include all required fields including address
   const [formData, setFormData] = useState<Partial<UserProfile>>({
     firstName: user?.firstName || "",
@@ -58,7 +54,6 @@ export default function AccountSettingsForm() {
     gender: user?.gender || undefined,
     country: user?.country || "",
     stateOfOrigin: user?.stateOfOrigin || "",
-    lga: user?.lga || "",
     phone: user?.phone || "",
     address: user?.address || "", // Add address field
     city: user?.city || "",
@@ -67,12 +62,6 @@ export default function AccountSettingsForm() {
     nextOfKinPhone: user?.nextOfKinPhone || "",
     validID: user?.validID || "",
   });
-
-  // State for selected state and available LGAs
-  const selectedState = formData.stateOfOrigin || "";
-  const availableLGAs = selectedStateAlias
-    ? getLGAsForState(selectedStateAlias)
-    : [];
 
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [open, setOpen] = useState(false);
@@ -125,7 +114,6 @@ export default function AccountSettingsForm() {
         gender: user.gender || undefined,
         country: user.country || "",
         stateOfOrigin: user.stateOfOrigin || "",
-        lga: user.lga || "",
         phone: user.phone || "",
         address: user.address || "", // Add address field
         city: user.city || "",
@@ -134,16 +122,6 @@ export default function AccountSettingsForm() {
         nextOfKinPhone: user?.nextOfKinPhone || "",
         validID: user?.validID || "",
       });
-
-      // Set selected state alias if user has stateOfOrigin
-      if (user.stateOfOrigin) {
-        const stateEntry = Object.values(nigerianStates).find(
-          (state) => state.state === user.stateOfOrigin
-        );
-        if (stateEntry) {
-          setSelectedStateAlias(stateEntry.alias);
-        }
-      }
 
       // Set profile image if available
       if (user.avatar) {
@@ -179,22 +157,6 @@ export default function AccountSettingsForm() {
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
-
-    // If state is being changed, update selectedStateAlias and reset LGA
-    if (name === "stateOfOrigin") {
-      const stateEntry = Object.values(nigerianStates).find(
-        (state) => state.state === value
-      );
-      if (stateEntry) {
-        setSelectedStateAlias(stateEntry.alias);
-        setFormData((prev) => ({ ...prev, lga: "" })); // Reset LGA when state changes
-      }
-    }
-
-    // Explicitly handle LGA selection
-    if (name === "lga") {
-      console.log("LGA selected:", value); // Debug log
-    }
   };
 
   const handleImageClick = () => {
@@ -255,10 +217,6 @@ export default function AccountSettingsForm() {
             value.toString().trim() !== ""
           ) {
             submitFormData.append(key, value.toString().trim());
-            // Add debug logging for LGA
-            if (key === "lga") {
-              console.log("Submitting LGA:", value);
-            }
           }
         });
 
@@ -316,10 +274,6 @@ export default function AccountSettingsForm() {
             filteredFormData[key as keyof UserProfile] = value
               .toString()
               .trim() as any;
-            // Add debug logging for LGA
-            if (key === "lga") {
-              console.log("Submitting LGA (no files):", value);
-            }
           }
         });
 
@@ -576,68 +530,18 @@ export default function AccountSettingsForm() {
                         <Input
                           id="country"
                           name="country"
-                          value="Nigeria"
-                          readOnly
-                          className="bg-background/50 cursor-not-allowed"
+                          placeholder="Enter your country"
+                          value={formData.country}
+                          onChange={handleInputChange}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="stateOfOrigin">State of Origin</Label>
-                        <Select
-                          value={formData.stateOfOrigin}
-                          onValueChange={(value) =>
-                            handleSelectChange("stateOfOrigin", value)
-                          }
-                        >
-                          <SelectTrigger id="stateOfOrigin">
-                            <SelectValue placeholder="Select your state" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.values(nigerianStates).map((state) => (
-                              <SelectItem key={state.alias} value={state.state}>
-                                {state.state}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="lga">Local Government Area</Label>
-                        <Select
-                          value={formData.lga}
-                          onValueChange={(value) =>
-                            handleSelectChange("lga", value)
-                          }
-                          disabled={!selectedStateAlias}
-                        >
-                          <SelectTrigger id="lga">
-                            <SelectValue
-                              placeholder={
-                                selectedStateAlias
-                                  ? "Select your LGA"
-                                  : "Select state first"
-                              }
-                            />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableLGAs.map((lga) => (
-                              <SelectItem key={lga} value={lga}>
-                                {lga}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="city">City</Label>
                         <Input
-                          id="city"
-                          name="city"
-                          placeholder="Enter your city"
-                          value={formData.city}
+                          id="stateOfOrigin"
+                          name="stateOfOrigin"
+                          placeholder="Enter your state of origin"
+                          value={formData.stateOfOrigin}
                           onChange={handleInputChange}
                         />
                       </div>
