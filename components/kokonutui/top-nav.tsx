@@ -116,7 +116,8 @@ export default function TopNav() {
         <DropdownMenu>
           <DropdownMenuTrigger className="focus:outline-none">
             <Image
-              src={user?.profileImage || "/default-avatar.png"}
+              src={user?.profileImage ||
+                  "https://ferf1mheo22r9ira.public.blob.vercel-storage.com/avatar-02-albo9B0tWOSLXCVZh9rX9KFxXIVWMr.png"}
               alt="User avatar"
               width={20}
               height={20}
