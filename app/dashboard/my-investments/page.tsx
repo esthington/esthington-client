@@ -188,7 +188,7 @@ export default function MyInvestmentsPage() {
               My Investments
             </h1>
             <p className="text-muted-foreground mt-1">
-              Track and manage your real estate investments
+              Track and manage your real estate assets
             </p>
           </div>
           <Button

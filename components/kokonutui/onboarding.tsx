@@ -18,7 +18,7 @@ const AUTOPLAY_INTERVAL = 5000 // 5 seconds per slide
 const onboardingSteps = [
   {
     title: "Welcome to Esthington",
-    description: "Your real estate investment platform to discover, invest, and grow your portfolio.",
+    description: "Your real estate management platform to discover, invest, and grow your portfolio.",
     illustration: WelcomeIllustration,
   },
   {
