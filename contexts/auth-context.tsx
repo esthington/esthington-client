@@ -15,7 +15,13 @@ import { apiConfig, apiConfigFile } from "@/lib/api";
 
 // Types for authentication
 export type UserRole = "buyer" | "agent" | "admin" | "super_admin";
-export type AgentRank = "Basic" | "Star" | "Leader" | "Manager" | "Chief" | "Ambassador";
+export type AgentRank =
+  | "Basic"
+  | "Star"
+  | "Leader"
+  | "Manager"
+  | "Chief"
+  | "Ambassador";
 export type Gender = "male" | "female" | "other";
 
 export type UserProfile = {
@@ -645,8 +651,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   ): Promise<{ tempPassword: string }> => {
     setIsSubmitting(true);
     try {
-      const response = await apiConfig.post(
-        `/admin/users/${userId}/reset-password`,
+      const response = await apiConfig.patch(
+        `/admin-management/${userId}/reset-password`,
         {},
         {
           withCredentials: true,
@@ -655,7 +661,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (response.status === 200) {
         toast.success("Password reset successfully.");
-        return { tempPassword: response.data.tempPassword };
+        return { tempPassword: response.data.data.tempPassword };
       } else {
         toast.error(response.data?.message || "Failed to reset password.");
         throw new Error("Failed to reset password");
@@ -718,7 +724,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isAdmin) return null;
 
     try {
-      const response = await apiConfig.get(`/admin/users/${id}`, {
+      const response = await apiConfig.get(`/admin-management/users/${id}`, {
         withCredentials: true,
       });
 
@@ -738,7 +744,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setIsSubmitting(true);
     try {
-      const response = await apiConfig.post("/admin/users", data, {
+      const response = await apiConfig.post("/admin-management/users", data, {
         withCredentials: true,
       });
 
@@ -768,9 +774,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setIsSubmitting(true);
     try {
-      const response = await apiConfig.put(`/admin/users/${id}`, data, {
-        withCredentials: true,
-      });
+      const response = await apiConfig.put(
+        `/admin-management/users/${id}`,
+        data,
+        {
+          withCredentials: true,
+        }
+      );
 
       if (response.status === 200) {
         // Update local state
@@ -797,7 +807,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setIsSubmitting(true);
     try {
-      const response = await apiConfig.delete(`/admin/users/${id}`, {
+      const response = await apiConfig.delete(`/admin-management/users/${id}`, {
         withCredentials: true,
       });
 
@@ -825,7 +835,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsSubmitting(true);
     try {
       const response = await apiConfig.put(
-        `/admin/users/${id}/blacklist`,
+        `/admin-management/users/${id}/blacklist`,
         {},
         {
           withCredentials: true,
@@ -858,7 +868,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsSubmitting(true);
     try {
       const response = await apiConfig.put(
-        `/admin/users/${id}/unblacklist`,
+        `/admin-management/users/${id}/unblacklist`,
         {},
         {
           withCredentials: true,
@@ -893,7 +903,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsSubmitting(true);
     try {
       const response = await apiConfig.put(
-        `/admin/users/${id}/suspend`,
+        `/admin-management/users/${id}/suspend`,
         {},
         {
           withCredentials: true,
@@ -926,7 +936,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsSubmitting(true);
     try {
       const response = await apiConfig.put(
-        `/admin/users/${id}/activate`,
+        `/admin-management/users/${id}/activate`,
         {},
         {
           withCredentials: true,
@@ -975,15 +985,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         params.append("limit", adminFilter.limit.toString());
 
       const response = await apiConfig.get(
-        `/user-management?${params.toString()}`,
+        `/admin-management?${params.toString()}`,
         {
           withCredentials: true,
         }
       );
 
       if (response.status === 200) {
-        setAdmins(response?.data?.data?.users);
-        setTotalAdmins(response?.data?.total);
+        setAdmins(response?.data?.data?.admins);
+        setTotalAdmins(response?.data?.pagination?.total);
       } else {
         setAdminsError("Failed to fetch admins");
       }
@@ -1001,12 +1011,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isAdmin) return null;
 
     try {
-      const response = await apiConfig.get(`/admin/admins/${id}`, {
+      const response = await apiConfig.get(`/admin-management/${id}`, {
         withCredentials: true,
       });
 
       if (response.status === 200) {
-        return response.data.admin;
+        return response.data.data.admin;
       }
       return null;
     } catch (error) {
@@ -1020,13 +1030,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setIsSubmitting(true);
     try {
-      const response = await apiConfig.post("/admin/admins", data, {
+      const response = await apiConfig.post("/admin-management", data, {
         withCredentials: true,
       });
 
       if (response.status === 201) {
         // Update local state
-        setAdmins((prevAdmins) => [...prevAdmins, response.data.admin]);
+        setAdmins((prevAdmins) => [...prevAdmins, response.data.data.admin]);
         toast.success("Admin added successfully");
         return true;
       } else {
@@ -1050,7 +1060,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setIsSubmitting(true);
     try {
-      const response = await apiConfig.put(`/admin/admins/${id}`, data, {
+      const response = await apiConfig.patch(`/admin-management/${id}`, data, {
         withCredentials: true,
       });
 
@@ -1079,11 +1089,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setIsSubmitting(true);
     try {
-      const response = await apiConfig.delete(`/admin/admins/${id}`, {
+      const response = await apiConfig.delete(`/admin-management/${id}`, {
         withCredentials: true,
       });
 
-      if (response.status === 200) {
+      if (response.status === 204) {
         // Update local state
         setAdmins((prevAdmins) => prevAdmins.filter((a) => a._id !== id));
         toast.success("Admin deleted successfully");
@@ -1106,8 +1116,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setIsSubmitting(true);
     try {
-      const response = await apiConfig.put(
-        `/admin/admins/${id}/suspend`,
+      const response = await apiConfig.patch(
+        `/admin-management/${id}/suspend`,
         {},
         {
           withCredentials: true,
@@ -1117,7 +1127,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.status === 200) {
         // Update local state
         setAdmins((prevAdmins) =>
-          prevAdmins.map((a) => (a._id === id ? { ...a, isActive: false } : a))
+          prevAdmins.map((a) =>
+            a._id === id
+              ? { ...a, status: UserStatus.INACTIVE, isActive: false }
+              : a
+          )
         );
         toast.success("Admin suspended successfully");
         return true;
@@ -1139,8 +1153,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setIsSubmitting(true);
     try {
-      const response = await apiConfig.put(
-        `/admin/admins/${id}/activate`,
+      const response = await apiConfig.patch(
+        `/admin-management/${id}/activate`,
         {},
         {
           withCredentials: true,
@@ -1150,7 +1164,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.status === 200) {
         // Update local state
         setAdmins((prevAdmins) =>
-          prevAdmins.map((a) => (a._id === id ? { ...a, isActive: true } : a))
+          prevAdmins.map((a) =>
+            a._id === id
+              ? { ...a, status: UserStatus.ACTIVE, isActive: true }
+              : a
+          )
         );
         toast.success("Admin activated successfully");
         return true;

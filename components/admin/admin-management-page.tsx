@@ -113,6 +113,19 @@ export default function AdminManagementPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [tempPassword, setTempPassword] = useState("");
 
+  // Add missing callback functions to prevent runtime errors
+  const onBeforeLoad = useCallback(() => {
+    // No-op function to prevent runtime errors
+  }, []);
+
+  const onStatusChange = useCallback(() => {
+    // No-op function to prevent runtime errors
+  }, []);
+
+  const onLoad = useCallback(() => {
+    // No-op function to prevent runtime errors
+  }, []);
+
   // Form for adding new admins
   const addForm = useForm<AdminFormData>({
     resolver: zodResolver(adminFormSchema),
@@ -154,7 +167,8 @@ export default function AdminManagementPage() {
       filtered = filtered.filter((admin) => admin.role === "admin");
     } else if (activeTab === "suspended") {
       filtered = filtered.filter(
-        (admin) => admin.status === UserStatus.INACTIVE
+        (admin) =>
+          admin.status === UserStatus.INACTIVE || admin.isActive === false
       );
     }
 
@@ -172,10 +186,12 @@ export default function AdminManagementPage() {
 
     return {
       total: adminUsers.length,
-      active: adminUsers.filter((admin) => admin.status === UserStatus.ACTIVE)
-        .length,
+      active: adminUsers.filter(
+        (admin) => admin.status === UserStatus.ACTIVE || admin.isActive === true
+      ).length,
       suspended: adminUsers.filter(
-        (admin) => admin.status === UserStatus.INACTIVE
+        (admin) =>
+          admin.status === UserStatus.INACTIVE || admin.isActive === false
       ).length,
       superAdmins: adminUsers.filter((admin) => admin.role === "super_admin")
         .length,
@@ -264,7 +280,11 @@ export default function AdminManagementPage() {
     if (!selectedAdmin) return;
 
     try {
-      if (selectedAdmin.status === UserStatus.INACTIVE) {
+      const isCurrentlyActive =
+        selectedAdmin.status === UserStatus.ACTIVE ||
+        selectedAdmin.isActive === true;
+
+      if (!isCurrentlyActive) {
         await activateAdmin(selectedAdmin._id);
         toast({
           title: "Success",
@@ -385,8 +405,11 @@ export default function AdminManagementPage() {
     }
   };
 
-  const getStatusBadge = (status: UserStatus) => {
-    if (status === UserStatus.ACTIVE) {
+  const getStatusBadge = (status: UserStatus, isActive?: boolean) => {
+    // Check both status and isActive fields
+    const isUserActive = status === UserStatus.ACTIVE || isActive === true;
+
+    if (isUserActive) {
       return (
         <Badge className="bg-green-100 text-green-800 border-green-200">
           <UserCheck className="mr-1 h-3 w-3" />
@@ -443,7 +466,8 @@ export default function AdminManagementPage() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => handleSuspendAdmin(admin)}>
                     <Ban className="mr-2 h-4 w-4" />
-                    {admin.status === UserStatus.INACTIVE
+                    {admin.status === UserStatus.INACTIVE ||
+                    admin.isActive === false
                       ? "Activate"
                       : "Suspend"}
                   </DropdownMenuItem>
@@ -464,7 +488,7 @@ export default function AdminManagementPage() {
                 {getRoleBadge(admin.role)}
               </div>
               <div className="flex items-center gap-2">
-                {getStatusBadge(admin.status)}
+                {getStatusBadge(admin.status, admin.isActive)}
               </div>
             </div>
 
@@ -583,7 +607,9 @@ export default function AdminManagementPage() {
                         </div>
                       </TableCell>
                       <TableCell>{getRoleBadge(admin.role)}</TableCell>
-                      <TableCell>{getStatusBadge(admin.status)}</TableCell>
+                      <TableCell>
+                        {getStatusBadge(admin.status, admin.isActive)}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -634,7 +660,8 @@ export default function AdminManagementPage() {
                               onClick={() => handleSuspendAdmin(admin)}
                             >
                               <Ban className="mr-2 h-4 w-4" />
-                              {admin.status === UserStatus.INACTIVE
+                              {admin.status === UserStatus.INACTIVE ||
+                              admin.isActive === false
                                 ? "Activate Admin"
                                 : "Suspend Admin"}
                             </DropdownMenuItem>
@@ -855,7 +882,10 @@ export default function AdminManagementPage() {
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       {getRoleBadge(selectedAdmin.role)}
-                      {getStatusBadge(selectedAdmin.status)}
+                      {getStatusBadge(
+                        selectedAdmin.status,
+                        selectedAdmin.isActive
+                      )}
                     </div>
                   </div>
                 </div>
@@ -943,7 +973,8 @@ export default function AdminManagementPage() {
 
                 <Button
                   variant={
-                    selectedAdmin.status === UserStatus.INACTIVE
+                    selectedAdmin.status === UserStatus.INACTIVE ||
+                    selectedAdmin.isActive === false
                       ? "default"
                       : "secondary"
                   }
@@ -951,7 +982,8 @@ export default function AdminManagementPage() {
                   className="w-full sm:w-auto"
                 >
                   <Ban className="mr-2 h-4 w-4" />
-                  {selectedAdmin.status === UserStatus.INACTIVE
+                  {selectedAdmin.status === UserStatus.INACTIVE ||
+                  selectedAdmin.isActive === false
                     ? "Activate Admin"
                     : "Suspend Admin"}
                 </Button>
@@ -976,12 +1008,14 @@ export default function AdminManagementPage() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>
-                  {selectedAdmin.status === UserStatus.INACTIVE
+                  {selectedAdmin.status === UserStatus.INACTIVE ||
+                  selectedAdmin.isActive === false
                     ? "Activate Admin"
                     : "Suspend Admin"}
                 </DialogTitle>
                 <DialogDescription>
-                  {selectedAdmin.status === UserStatus.INACTIVE
+                  {selectedAdmin.status === UserStatus.INACTIVE ||
+                  selectedAdmin.isActive === false
                     ? "Are you sure you want to activate this admin? They will regain access to the admin panel."
                     : "Are you sure you want to suspend this admin? They will lose access to the admin panel."}
                 </DialogDescription>
@@ -1020,7 +1054,8 @@ export default function AdminManagementPage() {
                 >
                   {isSubmitting
                     ? "Processing..."
-                    : selectedAdmin.status === UserStatus.INACTIVE
+                    : selectedAdmin.status === UserStatus.INACTIVE ||
+                      selectedAdmin.isActive === false
                     ? "Activate Admin"
                     : "Suspend Admin"}
                 </Button>
