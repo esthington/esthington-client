@@ -107,6 +107,16 @@ export default function EditMarketplaceListingPage() {
     downloadUrl: "",
   });
 
+  // Add body class to hide scrollbar when form is active
+  useEffect(() => {
+    document.body.classList.add("property-form-active");
+
+    // Cleanup function to remove the class when component unmounts
+    return () => {
+      document.body.classList.remove("property-form-active");
+    };
+  }, []);
+
   // Fetch listing data and companies on component mount
   useEffect(() => {
     const fetchData = async () => {

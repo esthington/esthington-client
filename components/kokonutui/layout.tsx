@@ -96,7 +96,7 @@ function DashboardLayout({ children }: LayoutProps) {
   return (
     <div className={`min-h-screen ${theme === "dark" ? "dark" : "light"}`}>
       {/* Desktop Layout */}
-      <div className="hidden lg:flex h-screen">
+      <div className="hidden lg:flex h-screen lg:overflow-y-hidden">
         {/* Sticky Sidebar */}
         <aside className="sticky top-0 h-screen overflow-y-auto border-r border-border bg-background">
           {renderSidebar()}

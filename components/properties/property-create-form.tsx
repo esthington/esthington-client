@@ -63,7 +63,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import JoditEditor from "jodit-react";
 
 export default function PropertyCreateForm() {
-    const editor = useRef(null);
+  const editor = useRef(null);
   const router = useRouter();
   const { createProperty, isLoading, getCompanies } = useProperty();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -107,6 +107,16 @@ export default function PropertyCreateForm() {
     }),
     []
   );
+
+  // Add body class to hide scrollbar when form is active
+  useEffect(() => {
+    document.body.classList.add("property-form-active");
+
+    // Cleanup function to remove the class when component unmounts
+    return () => {
+      document.body.classList.remove("property-form-active");
+    };
+  }, []);
 
   // Fetch companies on component mount
   useEffect(() => {
@@ -598,7 +608,6 @@ export default function PropertyCreateForm() {
                       Description
                     </Label>
                     <div className="min-h-fit rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 overflow-hidden">
-                     
                       <JoditEditor
                         ref={editor}
                         value={formData.description}

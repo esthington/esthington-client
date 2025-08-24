@@ -151,6 +151,16 @@ export default function PropertyEditForm({
 
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
 
+  // Add body class to hide scrollbar when form is active
+  useEffect(() => {
+    document.body.classList.add("property-form-active");
+
+    // Cleanup function to remove the class when component unmounts
+    return () => {
+      document.body.classList.remove("property-form-active");
+    };
+  }, []);
+
   // Fetch property data on component mount
   useEffect(() => {
     const fetchPropertyData = async () => {

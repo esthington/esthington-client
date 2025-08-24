@@ -206,6 +206,16 @@ export function CreateInvestmentPage() {
     location: "",
   });
 
+  // Add body class to hide scrollbar when form is active
+  useEffect(() => {
+    document.body.classList.add("property-form-active");
+
+    // Cleanup function to remove the class when component unmounts
+    return () => {
+      document.body.classList.remove("property-form-active");
+    };
+  }, []);
+
   // Fetch available properties on component mount
   useEffect(() => {
     fetchAvailableProperties();
@@ -1179,7 +1189,7 @@ export function CreateInvestmentPage() {
                           </div>
                         )}
 
-                        <div className="grid grid-cols-1 gap-4">
+                        <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto pr-2 scrollbar-thin">
                           {filteredProperties.length > 0 ? (
                             filteredProperties.map((property) => (
                               <div
@@ -2201,7 +2211,7 @@ export function CreateInvestmentPage() {
                                 key={index}
                                 className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/30 overflow-hidden"
                               >
-                                <div className="absolute top-0 left-0 h-full w-1 bg-gradient-to-b from-emerald-500 to-cyan-600"></div>
+                                
                                 <CardHeader className="py-3 px-4">
                                   <div className="flex justify-between items-center">
                                     <CardTitle className="text-base font-medium">
@@ -2518,7 +2528,6 @@ export function CreateInvestmentPage() {
           </div>
         </div>
       </form>
-
     </div>
   );
 }

@@ -104,6 +104,16 @@ export default function AddMarketplaceListingPage() {
 
   // Dynamically import Jodit Editor
 
+  // Add body class to hide scrollbar when form is active
+  useEffect(() => {
+    document.body.classList.add("property-form-active");
+
+    // Cleanup function to remove the class when component unmounts
+    return () => {
+      document.body.classList.remove("property-form-active");
+    };
+  }, []);
+
   // Fetch companies on component mount
   useEffect(() => {
     const fetchCompanies = async () => {
@@ -329,8 +339,6 @@ export default function AddMarketplaceListingPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-   
 
     if (!validateForm()) {
       return;

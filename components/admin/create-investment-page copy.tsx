@@ -1995,7 +1995,7 @@ export function CreateInvestmentPage() {
                               key={index}
                               className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/30 overflow-hidden"
                             >
-                              <div className="absolute top-0 left-0 h-full w-1 bg-gradient-to-b from-emerald-500 to-cyan-600"></div>
+                              
                               <CardHeader className="py-3 px-4">
                                 <div className="flex justify-between items-center">
                                   <CardTitle className="text-base font-medium">
