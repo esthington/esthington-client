@@ -5,6 +5,7 @@ import {
   useContext,
   useState,
   useEffect,
+  useCallback,
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
@@ -178,6 +179,13 @@ type InvestmentContextType = {
   // Loading states
   isLoading: boolean;
   isSubmitting: boolean;
+
+  // Pagination
+  currentPage: number;
+  totalPages: number;
+  totalCount: number;
+  itemsPerPage: number;
+  handlePageChange: (page: number) => Promise<void>;
 };
 
 // Default filter values
@@ -218,6 +226,12 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [itemsPerPage] = useState(100);
+
   // Initialize with data
   useEffect(() => {
     fetchInvestments();
@@ -226,16 +240,30 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
+  // Refetch data when page changes
+  useEffect(() => {
+    if (currentPage > 1) {
+      fetchInvestments();
+    }
+  }, [currentPage]);
+
   // Fetch all investments
   const fetchInvestments = async () => {
     setIsLoading(true);
     try {
       const response = await apiConfig.get("/investments", {
+        params: {
+          page: currentPage,
+          limit: itemsPerPage,
+        },
         withCredentials: true,
       });
 
       if (response.status === 200) {
         setInvestments(response.data.data || []);
+        setTotalPages(response.data.totalPages || 1);
+        setTotalCount(response.data.total || 0);
+        setCurrentPage(response.data.currentPage || 1);
       }
     } catch (error) {
       console.error("Failed to fetch investments:", error);
@@ -833,6 +861,11 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Handle page change
+  const handlePageChange = useCallback(async (page: number) => {
+    setCurrentPage(page);
+  }, []);
+
   // Include getProperties in the context value
   const value = {
     // State
@@ -870,6 +903,13 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
     // Loading states
     isLoading,
     isSubmitting,
+
+    // Pagination
+    currentPage,
+    totalPages,
+    totalCount,
+    itemsPerPage,
+    handlePageChange,
   };
 
   return (

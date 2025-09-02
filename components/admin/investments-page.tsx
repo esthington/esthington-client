@@ -17,6 +17,8 @@ import {
   Edit,
   Trash2,
   Eye,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -67,6 +69,12 @@ export default function InvestmentsPage() {
     setFilters,
     fetchInvestments,
     deleteInvestment, // Get the deleteInvestment function from context
+    // Pagination
+    currentPage,
+    totalPages,
+    totalCount,
+    itemsPerPage,
+    handlePageChange,
   } = useInvestment();
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -641,6 +649,55 @@ export default function InvestmentsPage() {
           </StaggerChildren>
         )}
       </FadeIn>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <FadeIn delay={0.4}>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
+            <div className="text-sm text-muted-foreground">
+              Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+              {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount}{" "}
+              investments
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const page = i + 1;
+                  return (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handlePageChange(page)}
+                    >
+                      {page}
+                    </Button>
+                  );
+                })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </FadeIn>
+      )}
+
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px] bg-background border-border">

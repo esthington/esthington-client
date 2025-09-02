@@ -149,6 +149,13 @@ interface PropertyContextType {
   getAmenities: () => Promise<string[]>;
   refreshPropertyData: () => Promise<void>;
 
+  // Pagination
+  currentPage: number;
+  totalPages: number;
+  totalCount: number;
+  itemsPerPage: number;
+  handlePageChange: (page: number) => Promise<void>;
+
   // User properties
   userProperties: UserProperty[];
   userPropertiesLoading: boolean;
@@ -192,6 +199,12 @@ export function PropertyProvider({ children }: PropertyProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isPurchasing, setIsPurchasing] = useState(false); // Separate loading state for purchases
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [itemsPerPage] = useState(100);
+
   // State for filters
   const [searchQuery, setSearchQuery] = useState("");
   const [locationFilter, setLocationFilter] = useState("all");
@@ -216,6 +229,13 @@ export function PropertyProvider({ children }: PropertyProviderProps) {
     refreshPropertyData();
     fetchUserProperties();
   }, []);
+
+  // Refetch data when page changes
+  useEffect(() => {
+    if (currentPage > 1) {
+      refreshPropertyData();
+    }
+  }, [currentPage]);
 
   // Apply filters and sorting
   useEffect(() => {
@@ -274,14 +294,20 @@ export function PropertyProvider({ children }: PropertyProviderProps) {
   const refreshPropertyData = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     try {
-      const response = await getProperties({ limit: 20 });
+      const response = await getProperties({
+        page: currentPage,
+        limit: itemsPerPage,
+      });
       setProperties(response.properties);
+      setTotalPages(response.totalPages);
+      setTotalCount(response.totalCount);
+      setCurrentPage(response.currentPage);
     } catch (error) {
       console.error("Error fetching properties:", error);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [currentPage, itemsPerPage]);
 
   // Get properties with pagination and filters
   const getProperties = useCallback(
@@ -894,6 +920,11 @@ export function PropertyProvider({ children }: PropertyProviderProps) {
     setSelectedProperty(property);
   }, []);
 
+  // Handle page change
+  const handlePageChange = useCallback(async (page: number) => {
+    setCurrentPage(page);
+  }, []);
+
   // Filter operations with useCallback
   const setSearchQueryCallback = useCallback((query: string) => {
     setSearchQuery(query);
@@ -1048,6 +1079,13 @@ export function PropertyProvider({ children }: PropertyProviderProps) {
     getCompanies,
     getAmenities,
     refreshPropertyData,
+
+    // Pagination
+    currentPage,
+    totalPages,
+    totalCount,
+    itemsPerPage,
+    handlePageChange,
 
     // User properties
     userProperties,

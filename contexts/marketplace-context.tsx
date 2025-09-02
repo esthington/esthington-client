@@ -144,6 +144,13 @@ type MarketplaceContextType = {
 
   // Loading states
   isSubmitting: boolean;
+
+  // Pagination
+  currentPage: number;
+  totalPages: number;
+  totalCount: number;
+  itemsPerPage: number;
+  handlePageChange: (page: number) => Promise<void>;
 };
 
 // Default filter values
@@ -176,21 +183,41 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [itemsPerPage] = useState(100);
+
   // Initialize with data
   useEffect(() => {
     fetchListings();
   }, []);
+
+  // Refetch data when page changes
+  useEffect(() => {
+    if (currentPage > 1) {
+      fetchListings();
+    }
+  }, [currentPage]);
 
   // Fetch listings from API
   const fetchListings = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await apiConfig.get("/marketplace/listings", {
+        params: {
+          page: currentPage,
+          limit: itemsPerPage,
+        },
         withCredentials: true,
       });
 
       if (response.status === 200) {
         setListings(response.data.data || []);
+        setTotalPages(response.data.pages || 1);
+        setTotalCount(response.data.total || 0);
+        setCurrentPage(response.data.currentPage || 1);
       }
     } catch (error) {
       console.error("Failed to fetch marketplace listings:", error);
@@ -198,7 +225,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [currentPage, itemsPerPage]);
 
   // Fetch user purchases
   const fetchUserPurchases = useCallback(async () => {
@@ -503,7 +530,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     quantity: number
   ): Promise<boolean> => {
     setIsSubmitting(true);
-    
+
     try {
       const response = await apiConfig.patch(
         `/marketplace/listings/${listingId}/quantity`,
@@ -685,6 +712,11 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Handle page change
+  const handlePageChange = useCallback(async (page: number) => {
+    setCurrentPage(page);
+  }, []);
+
   const value = {
     // Listings
     listings,
@@ -720,6 +752,13 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     // Loading states
     isLoading,
     isSubmitting,
+
+    // Pagination
+    currentPage,
+    totalPages,
+    totalCount,
+    itemsPerPage,
+    handlePageChange,
   };
 
   return (
