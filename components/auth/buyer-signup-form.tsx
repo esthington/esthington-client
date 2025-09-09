@@ -310,7 +310,12 @@ export default function BuyerSignupForm() {
       </p>
       <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-4">
         Want to become an Agent?{" "}
-        <Link href="/agent/signup" className="text-primary hover:underline">
+        <Link
+          href={`/agent/signup${
+            referralAgent ? `?ref=${encodeURIComponent(referralAgent)}` : ""
+          }`}
+          className="text-primary hover:underline"
+        >
           Click here
         </Link>
       </p>
