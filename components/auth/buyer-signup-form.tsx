@@ -308,6 +308,12 @@ export default function BuyerSignupForm() {
           Sign In
         </Link>
       </p>
+      <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-4">
+        Want to become an Agent?{" "}
+        <Link href="/agent/signup" className="text-primary hover:underline">
+          Click here
+        </Link>
+      </p>
     </div>
   );
 }
